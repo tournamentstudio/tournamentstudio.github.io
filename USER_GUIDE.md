@@ -50,7 +50,7 @@ In **Participants**, choose **Add entrants** and paste one name per line.
 or objects with a `name` field. Review the resulting names before adding them.
 XLSX and CSV files with multiline quoted fields are not supported by this importer.
 
-Choose **Edit** beside an entrant to change its name, seed, organization or
+Choose **Edit** beside an entrant to change its name, seed, region, organization or
 active/withdrawn/disqualified status. Team rosters can contain players, a captain,
 substitutes and coaches. The check-in checkbox records attendance; CSV and
 **Print check-in** provide portable sheets.
@@ -83,6 +83,42 @@ The normal creation range is 2 to 512 entrants. Standalone round robin supports
 up to 128. GSL needs a multiple of four. More entrants and more repeated meetings
 can reach the 20,000-match document limit. These are capacity limits, not a
 promise of the same rendering speed on every device.
+
+## Draw groups from pots
+
+Pot draws work with **Groups & pools** and **GSL groups**. For eighteen teams
+in four groups, the balanced group sizes are five, five, four and four.
+See the [pot draw preview](docs/screenshots/pot-draw-preview.png) for an example.
+
+1. Enter each team's **Region** and **Organization** in Participants if you want
+   those restrictions. Use consistent labels. For example, do not mix a country
+   abbreviation with its full name.
+2. In **Structure**, select the group stage. If an unplayed draw already exists,
+   confirm **Reset unplayed draw** first. Played matches cannot be redrawn here.
+3. Choose **Configure pot draw**, then **Fill pots by seed**. This puts the
+   highest seeds in the first pot, with at most four teams per pot for four
+   groups. You can rename pots, add or remove them, and change each entrant's pot.
+4. Enable **Limit entrants from the same region** or **Limit entrants from the
+   same organization**, and set the maximum allowed in one group. Both limits
+   can apply together. Remove all pots to use restrictions alone.
+5. Choose **Preview group draw**. Inspect the proposed groups and any reported
+   errors, then **Apply draw rules**.
+6. Choose **Generate draw** to create matches. The saved seed and rules reproduce
+   the preview. Changing a seed requires discarding or applying the current
+   rule draft first.
+
+Every entrant must belong to exactly one pot when pots are used. No group
+receives two entrants from the same pot. An incomplete pot assignment, missing
+affiliation or impossible combination blocks the draw. A search-limit message
+means the app has not established whether a solution exists; it does not prove
+that the draw is impossible. Try another seed, revise the agreed restrictions,
+or split a large stage. The app never changes restrictions on its own.
+
+If entrants arrive from earlier stages, complete those stages and resolve
+qualification before assigning pots. A different tab changing the stage
+invalidates an unsaved draft. Discard that draft to start from the latest saved
+rules. Exported tournament files retain pots and restrictions; recipes create
+new unnamed entrants, so fill their regions and organizations before drawing.
 
 ## Build groups followed by playoffs
 

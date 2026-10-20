@@ -9,7 +9,9 @@ import type {
 import { validateResult } from "../scoring";
 import { getStandings } from "../standings";
 import { advancementErrors } from "../domain/advancement";
+import { groupDrawErrors, groupDrawIssueText } from "../domain/draw";
 import { previewAdvancement } from "./advancement";
+import { previewGroupDraw } from "./group-draw";
 import { gauntlet, gsl, singleElimination } from "./elimination";
 import {
   distributeGroups,
@@ -23,6 +25,13 @@ import { ladderRound, swissRound, tripleRound } from "./pairing";
 import { DRAW_ALGORITHM, shuffle } from "./random";
 
 export { formats, getStandings, previewAdvancement };
+export { previewGroupDraw };
+export {
+  GROUP_DRAW_ALGORITHM,
+  GROUP_DRAW_NODE_LIMIT,
+  GROUP_DRAW_WORK_LIMIT,
+} from "./group-draw";
+export { groupDrawIssueText, normalizeDrawLabel } from "../domain/draw";
 export { autoSchedule, detectConflicts, estimateDuration } from "../scheduling";
 export { DRAW_ALGORITHM, randomSource, seedPositions, shuffle } from "./random";
 export { PairingError } from "./pairing";
@@ -44,35 +53,6 @@ function requireStage(tournament: Tournament, id: string): Stage {
   const stage = tournament.stages.find((value) => value.id === id);
   if (!stage) throw new Error("The stage does not exist.");
   return stage;
-}
-
-function groupLists(stage: Stage, ids: string[]): string[][] {
-  if (Array.isArray(stage.config.groups)) {
-    const groups = stage.config.groups;
-    if (
-      !groups.every(
-        (group) =>
-          Array.isArray(group) && group.every((id) => typeof id === "string"),
-      )
-    )
-      throw new Error("Manual groups must contain participant identifiers.");
-    const flat = (groups as string[][]).flat();
-    if (
-      new Set(flat).size !== flat.length ||
-      flat.length !== ids.length ||
-      flat.some((id) => !ids.includes(id))
-    )
-      throw new Error("Manual groups must assign each entrant exactly once.");
-    if (groups.some((group) => (group as string[]).length < 1))
-      throw new Error("Groups cannot be empty.");
-    return groups as string[][];
-  }
-  return distributeGroups(
-    ids,
-    stage.format === "gsl"
-      ? Math.ceil(ids.length / 4)
-      : stage.config.groupCount,
-  );
 }
 
 function resolveEntrants(tournament: Tournament, stage: Stage): string[] {
@@ -152,7 +132,11 @@ export function generateStage(input: Tournament, stageId: string): Tournament {
   );
   if (stage.config.seeding === "random") ids = shuffle(ids, stage.config.seed);
   else if (stage.config.seeding !== "manual" && !stage.sources.length)
-    ids.sort((a, b) => seeds.get(a)! - seeds.get(b)! || a.localeCompare(b));
+    ids.sort(
+      (a, b) =>
+        seeds.get(a)! - seeds.get(b)! ||
+        (stage.config.draw ? (a < b ? -1 : a > b ? 1 : 0) : a.localeCompare(b)),
+    );
   stage.metadata.drawAlgorithm = DRAW_ALGORITHM;
   stage.metadata.drawSeed = stage.config.seed;
   stage.metadata.drawOrder = [...ids];
@@ -175,7 +159,10 @@ export function generateStage(input: Tournament, stageId: string): Tournament {
   if (stage.format === "gauntlet") matches = gauntlet(stage, ids);
   if (stage.format === "round-robin") matches = roundRobin(stage, ids);
   if (stage.format === "groups" || stage.format === "gsl") {
-    const groups = groupLists(stage, ids);
+    const preview = previewGroupDraw(tournament, stageId);
+    if (!preview.ready) throw new Error(preview.issues.join(" "));
+    const groups = preview.groups;
+    stage.metadata.drawAlgorithm = preview.algorithm;
     if (stage.format === "gsl" && groups.some((group) => group.length !== 4))
       throw new Error("Each GSL group must have four entrants.");
     stage.metadata.groups = groups;
@@ -594,6 +581,11 @@ export function validateGraph(tournament: Tournament): string[] {
     errors.push("Match identifiers must be unique.");
   for (const stage of tournament.stages) {
     errors.push(...advancementErrors(tournament, stage));
+    errors.push(
+      ...groupDrawErrors(tournament, stage).map((issue) =>
+        groupDrawIssueText(issue),
+      ),
+    );
     if (
       new Set(stage.participantIds).size !== stage.participantIds.length ||
       stage.participantIds.some((id) => !participants.has(id))

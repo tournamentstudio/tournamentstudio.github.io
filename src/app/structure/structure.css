@@ -82,27 +82,36 @@
 }
 .structure-graph-node {
   position: absolute;
-  width: 224px;
-  height: 172px;
   pointer-events: auto;
 }
 .structure-graph-node .stage-node {
   position: absolute;
   inset: 0;
-  width: 224px;
-  height: 172px;
+  width: 100%;
+  height: 100%;
   padding: 21px 20px 16px;
   cursor: pointer;
 }
 .structure-graph-node .stage-node b {
   max-width: 100%;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  line-height: 1.7;
+  min-height: 2lh;
+  flex-shrink: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 14px;
 }
+.structure-graph-node .stage-node-order {
+  padding-inline-end: 24px;
+  line-height: 1.7;
+}
 .structure-graph-node .stage-node small {
   font-size: 11px;
+  line-height: 1.7;
 }
 .structure-graph-node .stage-node > span:last-child {
   width: 100%;
@@ -112,7 +121,7 @@
 .stage-move-handle {
   position: absolute;
   top: 7px;
-  right: 7px;
+  inset-inline-end: 7px;
   z-index: 3;
   width: 32px;
   height: 32px;
@@ -129,7 +138,6 @@
 }
 .stage-port {
   position: absolute;
-  top: 70px;
   width: 44px;
   height: 44px;
   border: 0;

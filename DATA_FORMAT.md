@@ -82,6 +82,55 @@ Selections and slot mappings survive public snapshots, archives and patches.
 Older app builds that do not recognize these fields reject the document safely;
 update the app before importing it.
 
+## Group draw rules
+
+Groups and GSL stages can store an optional versioned `config.draw`:
+
+```json
+{
+  "version": 1,
+  "pots": [
+    {
+      "id": "pot-1",
+      "name": "Top seeds",
+      "participantIds": ["team-1", "team-2"]
+    },
+    {
+      "id": "pot-2",
+      "name": "Next seeds",
+      "participantIds": ["team-3", "team-4"]
+    }
+  ],
+  "restrictions": [
+    { "field": "region", "maxPerGroup": 1 },
+    { "field": "organization", "maxPerGroup": 1 }
+  ]
+}
+```
+
+Pots must assign every active stage entrant once, with at most one entrant from
+each pot in a group. An empty `pots` list permits restrictions without pots.
+Region and organization use participant fields. The rule schema rejects unknown
+properties, duplicate pots, duplicate entrants, missing participant references
+and repeated restrictions. Semantic draw checks run separately, so a draft can
+remain stored while a source stage is unfinished.
+
+Generated `metadata.groups`, `drawSeed`, `drawOrder` and `drawAlgorithm` record
+the draw. This configuration survives public snapshots, archives, encrypted
+backups and update packets. Pot names and affiliations are public data. Unknown
+configuration versions fail safely. Absent optional draw fields remain absent,
+preserving the canonical form of older documents.
+Older app releases can preserve this configuration as extension data but do not
+enforce it when regenerating groups. Update the app before drawing a shared
+tournament that uses these rules.
+
+New recipes use `participantReferences: "positions"` and replace participant
+identifiers in pots and other configuration lists with `slot-1`, `slot-2`, and
+so on. Import resolves these positions to new participant identifiers. Recipes
+retain restrictions but omit participant affiliations; the recipient must fill
+those fields before drawing. Legacy recipes without this marker retain their
+original interpretation.
+
 ## Canonical form and hashes
 
 JSON object keys are sorted recursively; array order remains significant. Optional properties with `undefined` values are omitted in the same way as `JSON.stringify`. Non-finite numbers and unsafe object keys are rejected.
@@ -122,7 +171,7 @@ The following structural metadata is retained through a typed allowlist because 
 
 - Stages: `drawOrder`, `groups`, `championId`, `ladderOrder`, `policy`, `drawAlgorithm`, `drawSeed`, and bounded `canvasPosition`.
 - Matches: `championship`, `qualifier`, `conditionalReset`, `undefeatedFinalist`, `pairingBye`, `ladderChallenge`.
-- Stage configuration extensions: `groups`, `forbiddenPairs`, `manualQualifiers`.
+- Stage configuration extensions: `groups`, `forbiddenPairs`, `manualQualifiers`, and validated `draw` rules.
 - Participants: a bounded finite numeric `pointsAdjustment`, because it changes public standings and qualification. Other participant metadata stays private.
 
 Presentation scene text is deliberately public. Do not put private information in an announcement, rules slide, or other published scene.

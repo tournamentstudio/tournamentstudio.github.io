@@ -3,6 +3,10 @@ import { GripVertical, Link2, Maximize, Minus, Plus, X } from "lucide-react";
 import type { Tournament } from "../../domain/types";
 import { formatName, useI18n } from "../../i18n";
 
+const NODE_WIDTH = 224;
+const NODE_HEIGHT = 204;
+const PORT_Y = NODE_HEIGHT / 2;
+
 export interface CanvasPosition {
   x: number;
   y: number;
@@ -92,8 +96,10 @@ export function StageCanvas({
     if (!points.length || !viewport.current) return;
     const left = Math.min(...points.map((point) => point.x));
     const top = Math.min(...points.map((point) => point.y));
-    const width = Math.max(...points.map((point) => point.x + 224)) - left;
-    const height = Math.max(...points.map((point) => point.y + 172)) - top;
+    const width =
+      Math.max(...points.map((point) => point.x + NODE_WIDTH)) - left;
+    const height =
+      Math.max(...points.map((point) => point.y + NODE_HEIGHT)) - top;
     const next = Math.max(
       0.35,
       Math.min(
@@ -272,10 +278,10 @@ export function StageCanvas({
               stage.sources.map((source, index) => {
                 const from = nodePosition(source.stageId);
                 const to = nodePosition(stage.id);
-                const x1 = from.x + 224,
-                  y1 = from.y + 92,
+                const x1 = from.x + NODE_WIDTH,
+                  y1 = from.y + PORT_Y,
                   x2 = to.x,
-                  y2 = to.y + 92;
+                  y2 = to.y + PORT_Y;
                 const bend = Math.max(65, Math.abs(x2 - x1) / 2);
                 return (
                   <g
@@ -300,7 +306,7 @@ export function StageCanvas({
             {connecting && pointer && (
               <path
                 className="pending-wire"
-                d={`M${nodePosition(connecting).x + 224} ${nodePosition(connecting).y + 92} L${pointer.x} ${pointer.y}`}
+                d={`M${nodePosition(connecting).x + NODE_WIDTH} ${nodePosition(connecting).y + PORT_Y} L${pointer.x} ${pointer.y}`}
               />
             )}
           </svg>
@@ -310,7 +316,12 @@ export function StageCanvas({
               <div
                 className="structure-graph-node"
                 key={stage.id}
-                style={{ left: position.x, top: position.y }}
+                style={{
+                  left: position.x,
+                  top: position.y,
+                  width: NODE_WIDTH,
+                  height: NODE_HEIGHT,
+                }}
                 dir={locale === "fa" ? "rtl" : "ltr"}
               >
                 <button
@@ -348,6 +359,7 @@ export function StageCanvas({
                 <button
                   className={`stage-node ${stage.id === selected ? "active" : ""}`}
                   aria-pressed={stage.id === selected}
+                  title={stage.name}
                   onClick={() => onSelect(stage.id)}
                 >
                   <span className="stage-node-order">
@@ -367,6 +379,7 @@ export function StageCanvas({
                 </button>
                 <button
                   className={`stage-port stage-port-input ${connecting && connecting !== stage.id && !locked(stage.id) ? "available" : ""}`}
+                  style={{ top: PORT_Y - 22 }}
                   data-input-stage={stage.id}
                   aria-label={`${t("Connect to", "اتصال به")} ${stage.name}`}
                   disabled={
@@ -378,6 +391,7 @@ export function StageCanvas({
                 </button>
                 <button
                   className={`stage-port stage-port-output ${connecting === stage.id ? "connecting" : ""}`}
+                  style={{ top: PORT_Y - 22 }}
                   aria-label={`${t("Connect from", "اتصال از")} ${stage.name}`}
                   aria-pressed={connecting === stage.id}
                   onPointerDown={(event) => {

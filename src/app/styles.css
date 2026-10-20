@@ -167,7 +167,10 @@ kbd {
   font-size: 12px;
   font-weight: 550;
   line-height: 1.4;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+  min-width: 0;
   min-height: 40px;
   transition:
     background 0.15s,
@@ -323,6 +326,13 @@ kbd {
   color: var(--muted);
   font-size: 12px;
 }
+.section-heading > div,
+.modal-heading h2,
+.notice > div,
+.notice > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .notice {
   display: flex;
   align-items: flex-start;
@@ -361,8 +371,10 @@ kbd {
   font-weight: 550;
   padding: 5px 9px;
   border-radius: 5px;
-  line-height: 1.2;
-  white-space: nowrap;
+  line-height: 1.5;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  max-width: 100%;
 }
 .status-in-progress {
   background: #eef5ce;
@@ -2668,6 +2680,24 @@ kbd {
 [dir="rtl"] .brand {
   letter-spacing: 0;
 }
+[dir="rtl"] h1,
+[dir="rtl"] h2,
+[dir="rtl"] h3,
+[dir="rtl"] h4 {
+  line-height: 1.6;
+}
+[dir="rtl"] .button,
+[dir="rtl"] .badge,
+[dir="rtl"] .field > span,
+[dir="rtl"] .step-list b {
+  line-height: 1.8;
+}
+[dir="rtl"] .eyebrow,
+[dir="rtl"] .stage-node-order,
+[dir="rtl"] .studio-label,
+[dir="rtl"] .sidebar-section-label {
+  letter-spacing: normal;
+}
 [dir="rtl"] .hero h2 {
   line-height: 1.5;
   font-size: 35px;
@@ -2997,9 +3027,11 @@ kbd {
     transform: translateX(-100%);
     width: 224px;
     transition: transform 0.2s;
+    visibility: hidden;
   }
   .sidebar-open .sidebar {
     transform: translateX(0);
+    visibility: visible;
   }
   [dir="rtl"] .sidebar {
     transform: translateX(100%);
@@ -3748,11 +3780,13 @@ kbd {
     grid-template-columns: 1fr;
     gap: 6px;
   }
-  .modal .two-columns,
-  .create-form .two-columns,
-  .referee-panel .two-columns {
+  .create-form .two-columns {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+  }
+  .modal .two-columns,
+  .referee-panel .two-columns {
+    grid-template-columns: minmax(0, 1fr);
   }
   .modal .field {
     font-size: 10px;

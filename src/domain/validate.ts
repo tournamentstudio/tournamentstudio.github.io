@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { JsonValue, Tournament } from "./types";
 import { advancementErrors } from "./advancement";
+import { groupDrawErrors, groupDrawIssueText, groupDrawSchema } from "./draw";
 import {
   assertSafeJson,
   LIMITS,
@@ -125,6 +126,7 @@ export const stageConfigSchema = z
     grandFinalReset: z.boolean(),
     seed: shortText,
     seeding: z.enum(["ranked", "random", "snake", "manual"]),
+    draw: groupDrawSchema.optional(),
   })
   .catchall(json);
 
@@ -482,6 +484,11 @@ export function validateTournament(input: unknown): Tournament {
   };
   for (const stage of document.stages) {
     const errors = advancementErrors(document, stage);
+    errors.push(
+      ...groupDrawErrors(document, stage).map((issue) =>
+        groupDrawIssueText(issue),
+      ),
+    );
     if (errors.length) throw new Error(errors.join(" "));
     if (
       stage.metadata.canvasPosition !== undefined &&

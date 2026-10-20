@@ -215,7 +215,13 @@ export function Participants({ tournament: doc, onChange }: EditorProps) {
                       <span className="avatar">{p.name.slice(0, 2)}</span>
                       <div>
                         <bdi>{p.name}</bdi>
-                        <small>{p.organization}</small>
+                        <small>
+                          <bdi>
+                            {[p.organization, p.region]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </bdi>
+                        </small>
                       </div>
                     </div>
                   </td>
@@ -318,6 +324,21 @@ export function Participants({ tournament: doc, onChange }: EditorProps) {
                 value={editing.organization ?? ""}
                 onChange={(e) =>
                   setEditing({ ...editing, organization: e.target.value })
+                }
+              />
+            </Field>
+            <Field
+              label={t("Region", "منطقه")}
+              hint={t(
+                "Enter a country, city, or area. Use the same label for entrants that should be separated in group draws.",
+                "کشور، شهر یا منطقه را وارد کنید. برای شرکت‌کنندگانی که باید در قرعه گروهی جدا شوند، نام یکسان بنویسید.",
+              )}
+            >
+              <input
+                maxLength={180}
+                value={editing.region ?? ""}
+                onChange={(event) =>
+                  setEditing({ ...editing, region: event.target.value })
                 }
               />
             </Field>

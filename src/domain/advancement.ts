@@ -59,6 +59,17 @@ function groupSize(
   if (stage.format === "gsl") return 4;
   if (stage.format === "groups" && stage.participantIds.length) {
     const count = stage.config.groupCount;
+    if (stage.config.draw) {
+      const active = new Set(
+        tournament.participants
+          .filter((participant) => participant.status === "active")
+          .map((participant) => participant.id),
+      );
+      const entrants = stage.participantIds.filter((id) =>
+        active.has(id),
+      ).length;
+      return Math.floor(entrants / count) + Number(index < entrants % count);
+    }
     const sizes = Array.from({ length: count }, () => 0);
     for (let entrant = 0; entrant < stage.participantIds.length; entrant++) {
       const position =

@@ -15,6 +15,7 @@ The application is a static React and TypeScript bundle hosted on GitHub Pages. 
 - A documented progressive three-loss elimination policy.
 - Round robin, balanced uneven groups, GSL groups of four, Swiss, and qualifying stages feeding playoffs.
 - Multiple qualifying sources, exact cross-group bracket slots, and wildcard comparisons by totals, per-match values or retained group results.
+- Seed pots for Groups and GSL, with previewed balanced draws and limits on entrants from the same region or organization.
 - Multi-entrant free-for-all heats, time trials, Grand Prix points, gauntlets, and an adjacent-challenge ladder.
 - Schedules with multiple resources, rest periods, referee conflicts, and CSV or calendar export.
 
@@ -111,7 +112,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for contracts and [FEATURES.md](FEATURES.
 
 There is no hosted registration service, account system, payment processing, cloud storage, or cross-device live collaboration. Registration and scorekeeper responses are explicit file exchanges.
 
-Some requested capabilities remain unfinished: pot and geographic draw restrictions, two-legged ties, full season/event records, prediction brackets, XLSX, slide-file exports, advanced broadcast overlays, and parts of the theme editor. Counts are capped at 512 entrants and 20,000 matches per document. A 512-entrant round robin exceeds the match cap; the limit is not a promise that every format supports the same field size.
+Some requested capabilities remain unfinished: constrained knockout draws, two-legged ties, full season/event records, prediction brackets, XLSX, slide-file exports, advanced broadcast overlays, and parts of the theme editor. Counts are capped at 512 entrants and 20,000 matches per document. A 512-entrant round robin exceeds the match cap; the limit is not a promise that every format supports the same field size.
 
 Modern Chromium, Firefox, and WebKit are the browser targets. PWA installation and persistent-storage permission vary by browser. A secure context is required for crypto and service workers; HTTPS and localhost qualify.
 

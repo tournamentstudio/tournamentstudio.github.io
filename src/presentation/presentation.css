@@ -18,6 +18,10 @@
   margin: 12px 0;
   font-weight: 500;
 }
+.presentation-studio[dir="rtl"] .presentation-studio-intro h2 {
+  font-family: "Vazirmatn Variable", "Inter Variable", sans-serif;
+  line-height: 1.6;
+}
 .studio-eyebrow {
   letter-spacing: 0.16em;
   font-size: 11px;
@@ -141,6 +145,17 @@
   line-height: 1.12;
   margin: 24px 0;
   letter-spacing: -0.045em;
+  overflow-wrap: anywhere;
+}
+.presentation-shell[dir="rtl"] h1,
+.presentation-shell[dir="rtl"] h2 {
+  line-height: 1.6;
+  letter-spacing: normal;
+}
+.presentation-shell[dir="rtl"] .presentation-kicker,
+.presentation-shell[dir="rtl"] .presentation-topline,
+.presentation-studio[dir="rtl"] .studio-eyebrow {
+  letter-spacing: normal;
 }
 .presentation-kicker {
   color: var(--theme-accent);

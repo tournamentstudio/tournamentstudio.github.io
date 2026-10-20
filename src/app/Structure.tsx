@@ -4,6 +4,7 @@ import {
   DEFAULT_CONFIG,
   uid,
   type Advancement,
+  type GroupDrawConfig,
   type Stage,
   type Tournament,
 } from "../domain/types";
@@ -11,6 +12,7 @@ import {
   advanceStage,
   generateStage,
   getChampion,
+  previewGroupDraw,
   simulate,
   validateGraph,
 } from "../engine";
@@ -21,6 +23,11 @@ import type { EditorProps } from "./Participants";
 import { StageCanvas, type CanvasPosition } from "./structure/StageCanvas";
 import { StageSettings } from "./structure/StageSettings";
 import { ConnectionsEditor } from "./structure/ConnectionsEditor";
+import {
+  GroupDrawEditor,
+  groupDrawBasis,
+  withGroupDraw,
+} from "./structure/GroupDrawEditor";
 import { stageProtection } from "./structure/helpers";
 import "./structure/structure.css";
 
@@ -30,6 +37,9 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
   const [error, setError] = useState<unknown>();
   const [simulation, setSimulation] = useState<Tournament>();
   const [drafts, setDrafts] = useState<Record<string, Advancement[]>>({});
+  const [drawDrafts, setDrawDrafts] = useState<
+    Record<string, { value: GroupDrawConfig | null; base: string }>
+  >({});
   const [confirmation, setConfirmation] = useState<{
     action: "remove" | "reset";
     stageId: string;
@@ -41,11 +51,35 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
   const sources = stage ? (drafts[stage.id] ?? stage.sources) : [];
   const dirty =
     !!stage && JSON.stringify(sources) !== JSON.stringify(stage.sources);
-  const anyDraft = doc.stages.some(
-    (item) =>
-      drafts[item.id] &&
-      JSON.stringify(drafts[item.id]) !== JSON.stringify(item.sources),
-  );
+  const drawDraft = stage ? drawDrafts[stage.id] : undefined;
+  const drawValue =
+    drawDraft?.value !== undefined
+      ? drawDraft.value
+      : (stage?.config.draw ?? null);
+  const drawDirty =
+    !!stage &&
+    !!drawDraft &&
+    JSON.stringify(drawDraft.value) !==
+      JSON.stringify(stage.config.draw ?? null);
+  const drawStale =
+    !!stage &&
+    drawDirty &&
+    !!drawDraft &&
+    drawDraft.base !== groupDrawBasis(stage);
+  const anyDraft =
+    Object.keys(drawDrafts).some((id) => {
+      const item = doc.stages.find((candidate) => candidate.id === id);
+      return (
+        item &&
+        JSON.stringify(drawDrafts[id].value) !==
+          JSON.stringify(item.config.draw ?? null)
+      );
+    }) ||
+    doc.stages.some(
+      (item) =>
+        drafts[item.id] &&
+        JSON.stringify(drafts[item.id]) !== JSON.stringify(item.sources),
+    );
   const graphDocument = {
     ...doc,
     stages: doc.stages.map((item) => ({
@@ -67,7 +101,7 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
     if (!stage) return;
     if (
       (patch.config || patch.sources || patch.participantIds || patch.format) &&
-      stageProtection(doc, stage.id).locked
+      (stageProtection(doc, stage.id).locked || drawDirty)
     ) {
       setError(
         t(
@@ -91,8 +125,43 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
       return next;
     });
   }
+  function clearDrawDraft(id: string) {
+    setDrawDrafts((current) => {
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+  }
+  function hasDrawDraft(id: string) {
+    const target = doc.stages.find((item) => item.id === id);
+    return (
+      !!target &&
+      !!drawDrafts[id] &&
+      JSON.stringify(drawDrafts[id].value) !==
+        JSON.stringify(target.config.draw ?? null)
+    );
+  }
+  function applyDrawRules() {
+    if (!stage || protection?.locked || dirty || drawStale) return;
+    const next = structuredClone(doc);
+    next.stages = next.stages.map((item) =>
+      item.id === stage.id ? withGroupDraw(item, drawValue) : item,
+    );
+    const preview = previewGroupDraw(next, stage.id);
+    if (!preview.ready) {
+      setError(
+        t(
+          "The draw is no longer valid. Preview the latest entrants and rules again.",
+          "قرعه دیگر معتبر نیست. شرکت‌کنندگان و قوانین تازه را دوباره پیش‌نمایش کنید.",
+        ),
+      );
+      return;
+    }
+    if (update(next, t("Apply group draw rules", "اعمال قوانین قرعه گروهی")))
+      clearDrawDraft(stage.id);
+  }
   function applyConnections() {
-    if (!stage || protection?.locked) return;
+    if (!stage || protection?.locked || drawDirty) return;
     const next = structuredClone(doc);
     const target = next.stages.find((item) => item.id === stage.id)!;
     target.sources = structuredClone(sources);
@@ -141,11 +210,11 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
         return;
       }
       if (!stage) return;
-      if (dirty)
+      if (dirty || drawDirty)
         throw new Error(
           t(
-            "Apply connection edits before generating matches.",
-            "پیش از ساخت دیدارها تغییرات اتصال را اعمال کنید.",
+            "Apply connection and draw edits before generating matches.",
+            "پیش از ساخت دیدارها، تغییرات اتصال و قرعه را اعمال کنید.",
           ),
         );
       if (action === "draw" && stageProtection(doc, stage.id).locked)
@@ -251,6 +320,7 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
       }
       if (update(next, t("Remove stage", "حذف مرحله"))) {
         clearDraft(targetStage.id);
+        clearDrawDraft(targetStage.id);
         setSelected(next.stages[0].id);
       }
     }
@@ -280,7 +350,8 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
     update(next, t("Arrange stage graph", "چیدمان نمودار مراحل"));
   }
   function connect(from: string, to: string) {
-    if (from === to || stageProtection(doc, to).locked) return;
+    if (from === to || stageProtection(doc, to).locked || hasDrawDraft(to))
+      return;
     const target = doc.stages.find((item) => item.id === to);
     if (!target) return;
     setDrafts((current) => ({
@@ -347,7 +418,7 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
             onSelect={setSelected}
             onMove={moveNode}
             onConnect={connect}
-            locked={(id) => stageProtection(doc, id).locked}
+            locked={(id) => stageProtection(doc, id).locked || hasDrawDraft(id)}
           />
           {stage && (
             <>
@@ -370,7 +441,7 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
                 tournament={doc}
                 stage={stage}
                 sources={sources}
-                locked={!!protection?.locked}
+                locked={!!protection?.locked || drawDirty}
                 dirty={dirty}
                 onDraft={(value) =>
                   setDrafts((current) => ({ ...current, [stage.id]: value }))
@@ -378,6 +449,35 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
                 onApply={applyConnections}
                 onDiscard={() => clearDraft(stage.id)}
               />
+              {(stage.format === "groups" || stage.format === "gsl") && (
+                <GroupDrawEditor
+                  key={`draw-${stage.id}`}
+                  tournament={doc}
+                  stage={stage}
+                  value={drawValue}
+                  dirty={drawDirty}
+                  stale={drawStale}
+                  locked={!!protection?.locked || dirty}
+                  onDraft={(value) => {
+                    if (
+                      JSON.stringify(value) ===
+                      JSON.stringify(stage.config.draw ?? null)
+                    ) {
+                      clearDrawDraft(stage.id);
+                    } else
+                      setDrawDrafts((current) => ({
+                        ...current,
+                        [stage.id]: {
+                          value,
+                          base:
+                            current[stage.id]?.base ?? groupDrawBasis(stage),
+                        },
+                      }));
+                  }}
+                  onDiscard={() => clearDrawDraft(stage.id)}
+                  onApply={applyDrawRules}
+                />
+              )}
             </>
           )}
         </div>
@@ -387,7 +487,7 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
             locked={protection.locked}
             canReset={protection.canReset}
             lockReason={lockReason}
-            hasDraft={dirty}
+            hasDraft={dirty || drawDirty}
             onEdit={editStage}
             onRefreshEntrants={() => {
               if (dirty || stage.sources.length) return;

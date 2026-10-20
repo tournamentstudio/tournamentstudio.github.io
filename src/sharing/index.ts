@@ -1,6 +1,7 @@
 import { Unzip, UnzipInflate, strToU8, zipSync } from "fflate";
 import { z } from "zod";
 import { createParticipant, createTournament } from "../domain/types";
+import { groupDrawSchema } from "../domain/draw";
 import type { JsonValue, Tournament } from "../domain/types";
 import {
   formatSchema,
@@ -101,6 +102,8 @@ function publicStageConfig(
     if (value !== undefined && schema.safeParse(value).success)
       config[key] = structuredClone(value);
   }
+  if (stage.config.draw !== undefined)
+    config.draw = groupDrawSchema.parse(stage.config.draw);
   return config;
 }
 
@@ -515,6 +518,11 @@ function remapRecipeReferences(
             return group.map(resolve);
           });
   }
+  if (config.draw)
+    config.draw.pots = config.draw.pots.map((pot) => ({
+      ...pot,
+      participantIds: pot.participantIds.map(resolve),
+    }));
   return config;
 }
 

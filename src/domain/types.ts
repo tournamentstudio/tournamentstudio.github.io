@@ -105,7 +105,28 @@ export interface Match {
   private?: { concealedPosition?: string; notes?: string };
   metadata: Record<string, JsonValue>;
 }
-export interface StageConfig {
+export type GroupDrawConfig = {
+  version: 1;
+  pots: { id: string; name: string; participantIds: string[] }[];
+  restrictions: {
+    field: "region" | "organization";
+    maxPerGroup: number;
+  }[];
+};
+export interface GroupDrawIssue {
+  code: string;
+  values: string[];
+}
+export interface GroupDrawPreview {
+  ready: boolean;
+  groups: string[][];
+  participantIds: string[];
+  issues: string[];
+  issueDetails: GroupDrawIssue[];
+  algorithm: string;
+  exploredNodes: number;
+}
+export type StageConfig = {
   groupCount: number;
   meetings: number;
   rounds: number;
@@ -115,8 +136,8 @@ export interface StageConfig {
   grandFinalReset: boolean;
   seed: string;
   seeding: "ranked" | "random" | "snake" | "manual";
-  [key: string]: JsonValue;
-}
+  draw?: GroupDrawConfig;
+} & { [key: string]: JsonValue };
 export interface Advancement {
   stageId: string;
   count: number;

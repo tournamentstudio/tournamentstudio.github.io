@@ -144,13 +144,44 @@ graph. The canvas supports node movement, ports, panning and zoom, with keyboard
 controls and a form alternative. Bounded node coordinates persist as
 `stage.metadata.canvasPosition`. Editing inputs of a stage with an existing draw
 or drawn descendants is blocked. Winner/loser routing between separate stages
-and pot or geographic restrictions still need dedicated rules and controls.
+still needs dedicated rules and controls.
 
 Match slots reference either an entrant or a source match's winner/loser.
 Resolution waits until the source is terminal. A BYE can carry one entrant or
 no entrants; missing inputs are not treated as BYEs while their sources remain
 unfinished. The optional double-elimination reset is canceled only when the
 undefeated finalist wins the first grand final.
+
+## Pot draws and group restrictions
+
+`previewGroupDraw(tournament, stageId)` resolves active entrants and returns a
+candidate group assignment without changing the document. `generateStage` uses
+the same function after checking draw locks. The optional `config.draw` object
+is supported for Groups and GSL only. Without it, the original seeded, random,
+snake or manual-group behavior is preserved.
+
+Pots partition the active entrants. Each pot contributes at most one entrant
+to a group. Groups have fixed balanced capacities, differing by at most one;
+GSL capacities are exactly four. Restrictions cap entrants with the same region
+or organization in each group. Missing labels block restricted draws. Labels
+are compared after Unicode normalization, case folding, whitespace cleanup,
+and normalization of common Persian/Arabic Yeh and Kaf forms. Labels such as
+country abbreviations and full country names are not inferred to be equivalent.
+
+The `group-csp-fnv1a-mulberry32-v1` algorithm uses the saved seed to order
+candidates, chooses the most constrained next entrant, and backtracks when a
+placement prevents completion. Equivalent group states are pruned. It never
+weakens a restriction. The search stops after 100,000 nodes or 20,000,000
+candidate checks. Exhaustion reports that feasibility is unknown; a completed
+unsuccessful search reports infeasibility. A valid result is reproducible, but
+is not advertised as uniform sampling of every possible valid draw.
+
+The editor retains rule changes as drafts. Preview is required before applying
+them, and applying revalidates the current document. Changes to the saved stage
+invalidate stale drafts. Participant changes invalidate the displayed preview.
+Existing draws and generated descendants remain protected. Pot rules cannot
+coexist with exact manual group lists; the editor explains when applying rules
+will replace those lists.
 
 ## Scores and standings
 

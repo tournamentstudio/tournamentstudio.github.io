@@ -93,18 +93,34 @@ export function StageSettings({
       <Field label={t("Format", "قالب")}>
         <select
           value={stage.format}
-          disabled={locked}
+          disabled={locked || hasDraft}
           onChange={(event) =>
             onEdit({ format: event.target.value as FormatId })
           }
         >
           {formats.map((format) => (
-            <option key={format.id} value={format.id}>
+            <option
+              key={format.id}
+              value={format.id}
+              disabled={
+                !!stage.config.draw &&
+                format.id !== "groups" &&
+                format.id !== "gsl"
+              }
+            >
               {formatName(format.id, locale)}
             </option>
           ))}
         </select>
       </Field>
+      {!!stage.config.draw && (
+        <p className="muted">
+          {t(
+            "To change to a non-group format, choose Use standard draw in Draw studio, preview it, and apply the rules first.",
+            "برای تغییر به قالب غیرگروهی، ابتدا «استفاده از قرعه معمول» را در استودیوی قرعه انتخاب کنید، پیش‌نمایش را ببینید و قوانین را اعمال کنید.",
+          )}
+        </p>
+      )}
       {!stage.sources.length && (
         <button
           className="text-button"
@@ -127,7 +143,7 @@ export function StageSettings({
           <Field key={key} label={label}>
             <input
               type="number"
-              disabled={locked}
+              disabled={locked || hasDraft}
               min={min}
               max={max}
               value={stage.config[key]}
@@ -142,7 +158,7 @@ export function StageSettings({
       </div>
       <Field label={t("Draw seed", "بذر قرعه")}>
         <input
-          disabled={locked}
+          disabled={locked || hasDraft}
           key={stage.id + stage.config.seed}
           defaultValue={stage.config.seed}
           maxLength={240}
@@ -155,7 +171,7 @@ export function StageSettings({
       <Field label={t("Seeding", "سیدبندی")}>
         <select
           value={stage.config.seeding}
-          disabled={locked}
+          disabled={locked || hasDraft}
           onChange={(event) =>
             onEdit({
               config: {
@@ -180,7 +196,7 @@ export function StageSettings({
       <label className="check-row">
         <input
           type="checkbox"
-          disabled={locked}
+          disabled={locked || hasDraft}
           checked={stage.config.thirdPlace}
           onChange={(event) =>
             onEdit({
@@ -193,7 +209,7 @@ export function StageSettings({
       <label className="check-row">
         <input
           type="checkbox"
-          disabled={locked}
+          disabled={locked || hasDraft}
           checked={stage.config.grandFinalReset}
           onChange={(event) =>
             onEdit({
@@ -233,8 +249,8 @@ export function StageSettings({
       {hasDraft && (
         <p className="muted">
           {t(
-            "Apply or discard connection edits before generating matches.",
-            "پیش از ساخت دیدارها، تغییرات اتصال را اعمال یا کنار بگذارید.",
+            "Apply or discard connection and draw edits before changing settings or generating matches.",
+            "پیش از تغییر تنظیمات یا ساخت دیدارها، تغییرات اتصال و قرعه را اعمال یا کنار بگذارید.",
           )}
         </p>
       )}

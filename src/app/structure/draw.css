@@ -1,0 +1,159 @@
+.group-draw-editor {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 24px;
+  background: var(--surface);
+  min-width: 0;
+}
+.group-draw-editor h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.group-draw-editor h3 svg {
+  flex-shrink: 0;
+}
+.group-draw-editor p {
+  line-height: 1.8;
+}
+.draw-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.draw-fields > * {
+  margin-block-end: 18px;
+}
+.draw-fields:disabled {
+  opacity: 0.7;
+}
+.draw-summary,
+.draw-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.draw-summary {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.draw-actions {
+  margin-block: 20px;
+}
+.draw-pots {
+  display: grid;
+  gap: 10px;
+}
+.draw-pot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: end;
+}
+.draw-pot .field {
+  margin: 0;
+}
+.draw-pot .badge,
+.draw-pot .icon-button {
+  margin-block-end: 7px;
+}
+.draw-overfull {
+  color: #a22d2d;
+  background: #fff0f0;
+}
+.draw-assignments {
+  max-height: 380px;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.draw-entrant {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(100px, 0.7fr);
+  gap: 16px;
+  padding: 12px 14px;
+  align-items: center;
+}
+.draw-entrant + .draw-entrant {
+  border-block-start: 1px solid var(--line);
+}
+.draw-entrant > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.draw-entrant small,
+.draw-preview-group small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.7;
+}
+.draw-restriction {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.draw-restriction .field {
+  margin-block-start: 14px;
+  max-width: 380px;
+}
+.draw-group-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  gap: 12px;
+}
+.draw-preview-group {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  min-width: 0;
+}
+.draw-preview-group h5 {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 14px;
+  background: #f4f7ef;
+  font-size: 0.85rem;
+}
+.draw-preview-group h5 span {
+  margin-inline-start: auto;
+  color: var(--muted);
+}
+.draw-preview-group ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.draw-preview-group li {
+  padding: 12px 14px;
+  overflow-wrap: anywhere;
+  line-height: 1.8;
+}
+.draw-preview-group li + li {
+  border-block-start: 1px solid var(--line);
+}
+.group-draw-editor .notice {
+  margin-block: 12px;
+}
+@media (max-width: 600px) {
+  .group-draw-editor {
+    padding: 16px;
+  }
+  .draw-entrant {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .draw-actions > .button {
+    flex: 1 1 180px;
+  }
+  .draw-pot {
+    gap: 8px;
+  }
+  .draw-summary {
+    gap: 8px 16px;
+  }
+}
