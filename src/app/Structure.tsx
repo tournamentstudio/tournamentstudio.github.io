@@ -1,69 +1,120 @@
 import { useState } from "react";
-import {
-  Plus,
-  Play,
-  Copy,
-  Trash2,
-  ArrowUp,
-  ArrowDown,
-  Shuffle,
-  CheckCircle2,
-} from "lucide-react";
+import { Play, Plus } from "lucide-react";
 import {
   DEFAULT_CONFIG,
   uid,
+  type Advancement,
   type Stage,
-  type FormatId,
   type Tournament,
 } from "../domain/types";
 import {
-  formats,
-  generateStage,
   advanceStage,
-  validateGraph,
-  simulate,
+  generateStage,
   getChampion,
+  simulate,
+  validateGraph,
 } from "../engine";
-import { Field, ErrorText, Notice, Modal } from "../components/ui";
 import { Bracket } from "../components/Bracket";
-import { useI18n, formatName } from "../i18n";
+import { Confirm, ErrorText, Field, Modal, Notice } from "../components/ui";
+import { useI18n } from "../i18n";
 import type { EditorProps } from "./Participants";
+import { StageCanvas, type CanvasPosition } from "./structure/StageCanvas";
+import { StageSettings } from "./structure/StageSettings";
+import { ConnectionsEditor } from "./structure/ConnectionsEditor";
+import { stageProtection } from "./structure/helpers";
+import "./structure/structure.css";
 
 export function Structure({ tournament: doc, onChange }: EditorProps) {
   const { t, locale } = useI18n();
   const [selected, setSelected] = useState(doc.stages[0]?.id);
   const [error, setError] = useState<unknown>();
   const [simulation, setSimulation] = useState<Tournament>();
-  const [zoom, setZoom] = useState(1);
-  const stage = doc.stages.find((s) => s.id === selected);
+  const [drafts, setDrafts] = useState<Record<string, Advancement[]>>({});
+  const [confirmation, setConfirmation] = useState<{
+    action: "remove" | "reset";
+    stageId: string;
+  }>();
+  const stage =
+    doc.stages.find((item) => item.id === selected) ?? doc.stages[0];
   const errors = validateGraph(doc);
+  const protection = stage ? stageProtection(doc, stage.id) : undefined;
+  const sources = stage ? (drafts[stage.id] ?? stage.sources) : [];
+  const dirty =
+    !!stage && JSON.stringify(sources) !== JSON.stringify(stage.sources);
+  const anyDraft = doc.stages.some(
+    (item) =>
+      drafts[item.id] &&
+      JSON.stringify(drafts[item.id]) !== JSON.stringify(item.sources),
+  );
+  const graphDocument = {
+    ...doc,
+    stages: doc.stages.map((item) => ({
+      ...item,
+      sources: drafts[item.id] ?? item.sources,
+    })),
+  };
   function update(next: Tournament, action: string) {
     const issues = validateGraph(next);
     if (issues.length) {
       setError(issues.join(" "));
-      return;
+      return false;
     }
     onChange(next, action);
     setError(undefined);
+    return true;
   }
   function editStage(patch: Partial<Stage>) {
     if (!stage) return;
+    if (
+      (patch.config || patch.sources || patch.participantIds || patch.format) &&
+      stageProtection(doc, stage.id).locked
+    ) {
+      setError(
+        t(
+          "This stage or a later stage already has matches. Reset an unplayed draw before changing its structure.",
+          "این مرحله یا مرحله بعد دیدار دارد. پیش از تغییر ساختار، قرعه بدون نتیجه را بازنشانی کنید.",
+        ),
+      );
+      return;
+    }
     const next = structuredClone(doc);
     Object.assign(
-      next.stages.find((s) => s.id === stage.id)!,
+      next.stages.find((item) => item.id === stage.id)!,
       patch,
     );
     update(next, t("Edit stage", "ویرایش مرحله"));
   }
+  function clearDraft(id: string) {
+    setDrafts((current) => {
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+  }
+  function applyConnections() {
+    if (!stage || protection?.locked) return;
+    const next = structuredClone(doc);
+    const target = next.stages.find((item) => item.id === stage.id)!;
+    target.sources = structuredClone(sources);
+    target.participantIds = sources.length
+      ? []
+      : doc.participants
+          .filter((participant) => participant.status === "active")
+          .map((participant) => participant.id);
+    delete target.config.manualQualifiers;
+    if (update(next, t("Apply stage connections", "اعمال اتصال‌های مرحله")))
+      clearDraft(stage.id);
+  }
   function add(copy?: Stage) {
     const next = structuredClone(doc);
-    const s: Stage = copy
+    const added: Stage = copy
       ? {
           ...structuredClone(copy),
           id: uid(),
           name: `${copy.name} ${t("copy", "کپی")}`,
           order: next.stages.length,
           status: "draft",
+          metadata: {},
         }
       : {
           id: uid(),
@@ -72,14 +123,16 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
           formatVersion: 1,
           order: next.stages.length,
           config: { ...DEFAULT_CONFIG },
-          participantIds: [],
+          participantIds: doc.participants
+            .filter((participant) => participant.status === "active")
+            .map((participant) => participant.id),
           sources: [],
           status: "draft",
           metadata: {},
         };
-    next.stages.push(s);
-    onChange(next, t("Add stage", "افزودن مرحله"));
-    setSelected(s.id);
+    if (copy) delete added.config.manualQualifiers;
+    next.stages.push(added);
+    if (update(next, t("Add stage", "افزودن مرحله"))) setSelected(added.id);
   }
   function run(action: "draw" | "advance" | "simulate") {
     try {
@@ -88,68 +141,175 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
         return;
       }
       if (!stage) return;
+      if (dirty)
+        throw new Error(
+          t(
+            "Apply connection edits before generating matches.",
+            "پیش از ساخت دیدارها تغییرات اتصال را اعمال کنید.",
+          ),
+        );
+      if (action === "draw" && stageProtection(doc, stage.id).locked)
+        throw new Error(
+          t(
+            "Reset the unplayed draw before generating it again.",
+            "پیش از ساخت دوباره، قرعه بدون نتیجه را بازنشانی کنید.",
+          ),
+        );
       const next =
         action === "draw"
           ? generateStage(doc, stage.id)
           : advanceStage(doc, stage.id);
-      onChange(
+      update(
         next,
         action === "draw"
           ? t("Generate stage", "ساخت مرحله")
           : t("Advance competition", "پیشروی مسابقات"),
       );
-      setError(undefined);
-    } catch (e) {
-      setError(e);
+    } catch (caught) {
+      setError(caught);
     }
   }
   function remove() {
     if (!stage) return;
     if (
-      doc.matches.some(
-        (m) => m.stageId === stage.id && m.status === "completed",
-      ) ||
-      doc.stages.some((s) => s.sources.some((x) => x.stageId === stage.id))
+      stageProtection(doc, stage.id).played ||
+      doc.stages.some((item) =>
+        item.sources.some((source) => source.stageId === stage.id),
+      )
     ) {
       setError(
         t(
-          "A played stage or one feeding another stage cannot be removed. Duplicate the tournament to redesign it.",
-          "مرحله دارای نتیجه یا صعود به مرحله دیگر حذف نمی‌شود. برای طراحی دوباره مسابقات را تکثیر کنید.",
+          "A played stage or one feeding another stage cannot be removed. Remove its draft connections first, or duplicate the tournament.",
+          "مرحله دارای نتیجه یا ورودی مرحله دیگر حذف نمی‌شود. ابتدا اتصال‌های پیش‌نویس را حذف کنید یا مسابقات را تکثیر کنید.",
         ),
       );
       return;
     }
-    const next = {
-      ...doc,
-      stages: doc.stages.filter((s) => s.id !== stage.id),
-      matches: doc.matches.filter((m) => m.stageId !== stage.id),
-    };
-    update(next, t("Remove stage", "حذف مرحله"));
-    setSelected(next.stages[0]?.id);
+    setConfirmation({ action: "remove", stageId: stage.id });
+  }
+  function confirmAction() {
+    const targetStage = doc.stages.find(
+      (item) => item.id === confirmation?.stageId,
+    );
+    if (!targetStage) return;
+    if (confirmation?.action === "reset") {
+      if (!stageProtection(doc, targetStage.id).canReset) {
+        setError(
+          t(
+            "The stage changed while confirmation was open. Its draw can no longer be reset safely.",
+            "مرحله هنگام نمایش تأیید تغییر کرده است. بازنشانی قرعه اکنون ممکن نیست.",
+          ),
+        );
+        return;
+      }
+      const next = structuredClone(doc);
+      next.matches = next.matches.filter(
+        (match) => match.stageId !== targetStage.id,
+      );
+      const target = next.stages.find((item) => item.id === targetStage.id)!;
+      target.status = "draft";
+      target.metadata = target.metadata.canvasPosition
+        ? { canvasPosition: target.metadata.canvasPosition }
+        : {};
+      if (target.sources.length) target.participantIds = [];
+      update(
+        next,
+        t("Reset unplayed stage draw", "بازنشانی قرعه بدون نتیجه مرحله"),
+      );
+    } else {
+      if (
+        stageProtection(doc, targetStage.id).played ||
+        doc.stages.some((item) =>
+          item.sources.some((source) => source.stageId === targetStage.id),
+        )
+      ) {
+        setError(
+          t(
+            "The stage changed while confirmation was open. Played stages and stages feeding another stage cannot be removed.",
+            "مرحله هنگام نمایش تأیید تغییر کرده است. مرحله دارای نتیجه یا ورودی مرحله دیگر حذف نمی‌شود.",
+          ),
+        );
+        return;
+      }
+      const next = {
+        ...doc,
+        stages: doc.stages
+          .filter((item) => item.id !== targetStage.id)
+          .map((item, index) => ({ ...item, order: index })),
+        matches: doc.matches.filter(
+          (match) => match.stageId !== targetStage.id,
+        ),
+      };
+      if (!next.stages.length) {
+        setError(
+          t(
+            "Keep at least one stage in the tournament.",
+            "حداقل یک مرحله در مسابقات نگه دارید.",
+          ),
+        );
+        return;
+      }
+      if (update(next, t("Remove stage", "حذف مرحله"))) {
+        clearDraft(targetStage.id);
+        setSelected(next.stages[0].id);
+      }
+    }
   }
   function reorder(direction: number) {
     if (!stage) return;
     const ordered = [...doc.stages].sort((a, b) => a.order - b.order);
-    const idx = ordered.findIndex((s) => s.id === stage.id);
-    if (idx + direction < 0 || idx + direction >= ordered.length) return;
-    [ordered[idx], ordered[idx + direction]] = [
-      ordered[idx + direction],
-      ordered[idx],
+    const index = ordered.findIndex((item) => item.id === stage.id);
+    if (index + direction < 0 || index + direction >= ordered.length) return;
+    [ordered[index], ordered[index + direction]] = [
+      ordered[index + direction],
+      ordered[index],
     ];
     update(
-      { ...doc, stages: ordered.map((s, i) => ({ ...s, order: i })) },
+      { ...doc, stages: ordered.map((item, order) => ({ ...item, order })) },
       t("Reorder stages", "تغییر ترتیب مراحل"),
     );
   }
-  const locked =
-    !!stage &&
-    doc.matches.some(
-      (m) =>
-        m.stageId === stage.id &&
-        (m.status === "completed" || m.status === "live"),
-    );
+  function moveNode(id: string, position: CanvasPosition) {
+    const next = structuredClone(doc);
+    const target = next.stages.find((item) => item.id === id);
+    if (!target) return;
+    target.metadata.canvasPosition = {
+      x: Math.round(position.x),
+      y: Math.round(position.y),
+    };
+    update(next, t("Arrange stage graph", "چیدمان نمودار مراحل"));
+  }
+  function connect(from: string, to: string) {
+    if (from === to || stageProtection(doc, to).locked) return;
+    const target = doc.stages.find((item) => item.id === to);
+    if (!target) return;
+    setDrafts((current) => ({
+      ...current,
+      [to]: [
+        ...(current[to] ?? target.sources),
+        { stageId: from, count: 1, perGroup: false },
+      ],
+    }));
+    setSelected(to);
+  }
+  const lockReason = protection?.drawnDescendants.length
+    ? t(
+        "A later stage already has a draw. Its input rules and upstream structure are locked.",
+        "مرحله بعدی قرعه دارد. قوانین ورودی و ساختار مراحل قبلی قفل هستند.",
+      ) +
+      " " +
+      protection.drawnDescendants.map((item) => item.name).join(", ")
+    : protection?.played
+      ? t(
+          "Play has started. Structure is locked; results remain editable in Matches.",
+          "بازی شروع شده است. ساختار قفل است؛ نتایج در بخش دیدارها قابل ویرایش‌اند.",
+        )
+      : t(
+          "Reset this unplayed draw to change its format or connections. The previous draw stays in saved history.",
+          "برای تغییر قالب یا اتصال‌ها، قرعه بدون نتیجه را بازنشانی کنید. قرعه قبلی در تاریخچه ذخیره می‌ماند.",
+        );
   return (
-    <div className="panel-content">
+    <div className="panel-content structure-studio">
       <div className="section-heading">
         <div>
           <h2>
@@ -163,7 +323,11 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
           </p>
         </div>
         <div className="button-row">
-          <button className="button secondary" onClick={() => run("simulate")}>
+          <button
+            className="button secondary"
+            disabled={anyDraft}
+            onClick={() => run("simulate")}
+          >
             <Play size={16} />
             {t("Run simulation", "اجرای شبیه‌سازی")}
           </button>
@@ -174,364 +338,91 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
         </div>
       </div>
       <ErrorText error={error} />
-      {errors.length > 0 && <Notice danger>{errors.join(" ")}</Notice>}
-      <div className="structure-layout">
-        <div>
-          <div className="graph-toolbar">
-            <label>
-              {t("Zoom", "بزرگنمایی")}
-              <input
-                type="range"
-                min={0.6}
-                max={1.5}
-                step={0.1}
-                value={zoom}
-                onChange={(e) => setZoom(Number(e.target.value))}
-              />
-            </label>
-            <span>
-              <CheckCircle2 size={14} />
-              {errors.length
-                ? t("Needs attention", "نیازمند بررسی")
-                : t("Valid structure", "ساختار معتبر")}
-            </span>
-          </div>
-          <div className="stage-canvas">
-            <div
-              className="stage-canvas-inner"
-              style={{
-                transform: `scale(${zoom})`,
-                transformOrigin: "top left",
-                width: Math.max(650, doc.stages.length * 250),
-                height: 400,
-              }}
-            >
-              <svg
-                className="stage-wires"
-                width="100%"
-                height="400"
-                aria-hidden="true"
-              >
-                {doc.stages.map((s, i) =>
-                  s.sources.map((source, j) => {
-                    const from = doc.stages.findIndex(
-                      (x) => x.id === source.stageId,
-                    );
-                    return (
-                      <path
-                        key={`${s.id}-${j}`}
-                        d={`M ${from * 250 + 220} ${180 + (from % 2) * 65} C ${from * 250 + 260} ${180 + (from % 2) * 65}, ${i * 250 - 15} ${180 + (i % 2) * 65}, ${i * 250 + 20} ${180 + (i % 2) * 65}`}
-                        fill="none"
-                        stroke="#7a9e86"
-                        strokeWidth="2"
-                      />
-                    );
-                  }),
-                )}
-              </svg>
-              {doc.stages.map((s, i) => (
-                <button
-                  key={s.id}
-                  className={`stage-node ${s.id === selected ? "active" : ""}`}
-                  style={{ left: i * 250 + 20, top: 115 + (i % 2) * 65 }}
-                  onClick={() => setSelected(s.id)}
+      {!!errors.length && <Notice danger>{errors.join(" ")}</Notice>}
+      <div className="structure-workbench">
+        <div className="structure-main">
+          <StageCanvas
+            tournament={graphDocument}
+            selected={stage?.id}
+            onSelect={setSelected}
+            onMove={moveNode}
+            onConnect={connect}
+            locked={(id) => stageProtection(doc, id).locked}
+          />
+          {stage && (
+            <>
+              <Field label={t("Selected stage", "مرحله انتخاب‌شده")}>
+                <select
+                  value={stage.id}
+                  onChange={(event) => setSelected(event.target.value)}
                 >
-                  <span className="stage-node-order">
-                    {t("STAGE", "مرحله")} {i + 1}
-                  </span>
-                  <b>{s.name}</b>
-                  <small>{formatName(s.format, locale)}</small>
-                  <span>
-                    {doc.matches.filter((m) => m.stageId === s.id).length}{" "}
-                    {t("matches", "دیدار")}
-                    <span className={`status-dot ${s.status}`} />
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="structure-help">
-            <p>
-              {t(
-                "Select a stage to edit. Scroll the canvas to inspect larger structures. The up and down controls provide keyboard-friendly stage ordering.",
-                "برای ویرایش مرحله را انتخاب کنید. برای ساختار بزرگ صفحه را حرکت دهید. دکمه‌های بالا و پایین ترتیب مراحل را بدون کشیدن تغییر می‌دهند.",
-              )}
-            </p>
-          </div>
+                  {[...doc.stages]
+                    .sort((a, b) => a.order - b.order)
+                    .map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                </select>
+              </Field>
+              <ConnectionsEditor
+                key={stage.id}
+                tournament={doc}
+                stage={stage}
+                sources={sources}
+                locked={!!protection?.locked}
+                dirty={dirty}
+                onDraft={(value) =>
+                  setDrafts((current) => ({ ...current, [stage.id]: value }))
+                }
+                onApply={applyConnections}
+                onDiscard={() => clearDraft(stage.id)}
+              />
+            </>
+          )}
         </div>
-        {stage && (
-          <aside className="stage-inspector">
-            <div className="section-heading">
-              <h3>{t("Stage settings", "تنظیمات مرحله")}</h3>
-              <div className="button-row">
-                <button
-                  className="icon-button"
-                  title={t("Move earlier", "جابجایی به قبل")}
-                  onClick={() => reorder(-1)}
-                >
-                  <ArrowUp size={15} />
-                </button>
-                <button
-                  className="icon-button"
-                  title={t("Move later", "جابجایی به بعد")}
-                  onClick={() => reorder(1)}
-                >
-                  <ArrowDown size={15} />
-                </button>
-                <button
-                  className="icon-button"
-                  title={t("Duplicate stage", "تکثیر مرحله")}
-                  onClick={() => add(stage)}
-                >
-                  <Copy size={15} />
-                </button>
-                <button
-                  className="icon-button"
-                  title={t("Remove stage", "حذف مرحله")}
-                  onClick={remove}
-                >
-                  <Trash2 size={15} />
-                </button>
-              </div>
-            </div>
-            <Field label={t("Stage name", "نام مرحله")}>
-              <input
-                key={stage.id + stage.name}
-                defaultValue={stage.name}
-                maxLength={180}
-                onBlur={(e) => {
-                  if (e.target.value !== stage.name)
-                    editStage({ name: e.target.value });
-                }}
-              />
-            </Field>
-            <Field label={t("Format", "قالب")}>
-              <select
-                value={stage.format}
-                disabled={locked}
-                onChange={(e) =>
-                  editStage({ format: e.target.value as FormatId })
-                }
-              >
-                {formats.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {formatName(f.id, locale)}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label={t("Entrants from", "ورودی از")}>
-              <select
-                disabled={locked}
-                value={stage.sources[0]?.stageId ?? "all"}
-                onChange={(e) =>
-                  editStage(
-                    e.target.value === "all"
-                      ? {
-                          sources: [],
-                          participantIds: doc.participants
-                            .filter((p) => p.status === "active")
-                            .map((p) => p.id),
-                        }
-                      : {
-                          participantIds: [],
-                          sources: [
-                            {
-                              stageId: e.target.value,
-                              count: 2,
-                              perGroup: true,
-                            },
-                          ],
-                        },
-                  )
-                }
-              >
-                <option value="all">
-                  {t("All active participants", "همه شرکت‌کنندگان فعال")}
-                </option>
-                {doc.stages
-                  .filter((s) => s.id !== stage.id)
-                  .map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-              </select>
-            </Field>
-            {!stage.sources.length && (
-              <button
-                className="text-button"
-                disabled={locked}
-                onClick={() =>
-                  editStage({
-                    participantIds: doc.participants
-                      .filter((p) => p.status === "active")
-                      .map((p) => p.id),
-                  })
-                }
-              >
-                {t("Refresh entrant list", "به‌روز کردن فهرست ورودی")}
-              </button>
-            )}
-            {!!stage.sources.length && (
-              <>
-                <Field label={t("Qualifiers to take", "تعداد صعودکنندگان")}>
-                  <input
-                    type="number"
-                    min={1}
-                    max={512}
-                    disabled={locked}
-                    value={stage.sources[0].count}
-                    onChange={(e) =>
-                      editStage({
-                        sources: [
-                          {
-                            ...stage.sources[0],
-                            count: Number(e.target.value),
-                          },
-                        ],
-                      })
-                    }
-                  />
-                </Field>
-                <label className="check-row">
-                  <input
-                    type="checkbox"
-                    disabled={locked}
-                    checked={stage.sources[0].perGroup}
-                    onChange={(e) =>
-                      editStage({
-                        sources: [
-                          { ...stage.sources[0], perGroup: e.target.checked },
-                        ],
-                      })
-                    }
-                  />
-                  {t("From each group", "از هر گروه")}
-                </label>
-              </>
-            )}
-            <div className="two-columns">
-              {[
-                ["groupCount", t("Groups", "گروه‌ها")],
-                ["meetings", t("Meetings", "تعداد رویارویی")],
-                ["rounds", t("Rounds", "دورها")],
-                ["capacity", t("Match capacity", "ظرفیت دیدار")],
-              ].map(([key, label]) => (
-                <Field key={key} label={label}>
-                  <input
-                    type="number"
-                    disabled={locked}
-                    min={1}
-                    max={key === "rounds" ? 30 : 512}
-                    value={stage.config[key] as number}
-                    onChange={(e) =>
-                      editStage({
-                        config: {
-                          ...stage.config,
-                          [key]: Number(e.target.value),
-                        },
-                      })
-                    }
-                  />
-                </Field>
-              ))}
-            </div>
-            <Field label={t("Draw seed", "بذر قرعه")}>
-              <input
-                disabled={locked}
-                key={stage.id + stage.config.seed}
-                defaultValue={stage.config.seed}
-                onBlur={(e) => {
-                  if (e.target.value !== stage.config.seed)
-                    editStage({
-                      config: { ...stage.config, seed: e.target.value },
-                    });
-                }}
-              />
-            </Field>
-            <Field label={t("Seeding", "سیدبندی")}>
-              <select
-                value={stage.config.seeding}
-                disabled={locked}
-                onChange={(e) =>
-                  editStage({
-                    config: {
-                      ...stage.config,
-                      seeding: e.target.value as Stage["config"]["seeding"],
-                    },
-                  })
-                }
-              >
-                {[
-                  ["ranked", "Ranked", "رتبه‌بندی"],
-                  ["random", "Random", "تصادفی"],
-                  ["snake", "Snake", "مارپیچی"],
-                  ["manual", "Manual order", "ترتیب دستی"],
-                ].map(([id, en, fa]) => (
-                  <option value={id} key={id}>
-                    {t(en, fa)}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <label className="check-row">
-              <input
-                type="checkbox"
-                disabled={locked}
-                checked={stage.config.thirdPlace}
-                onChange={(e) =>
-                  editStage({
-                    config: { ...stage.config, thirdPlace: e.target.checked },
-                  })
-                }
-              />
-              {t("Third-place match", "دیدار رده‌بندی")}
-            </label>
-            <label className="check-row">
-              <input
-                type="checkbox"
-                disabled={locked}
-                checked={stage.config.grandFinalReset}
-                onChange={(e) =>
-                  editStage({
-                    config: {
-                      ...stage.config,
-                      grandFinalReset: e.target.checked,
-                    },
-                  })
-                }
-              />
-              {t("Double elimination final reset", "بازنشانی فینال دو حذفی")}
-            </label>
-            {locked && (
-              <p className="muted">
-                {t(
-                  "Draw settings are locked after play starts. Results remain editable in Matches.",
-                  "پس از شروع بازی تنظیمات قرعه قفل می‌شوند. نتایج در بخش دیدارها قابل ویرایش‌اند.",
-                )}
-              </p>
-            )}
-            <div className="form-stack">
-              <button
-                className="button primary"
-                disabled={locked}
-                onClick={() => run("draw")}
-              >
-                <Shuffle size={16} />
-                {t("Generate draw", "ساخت قرعه")}
-              </button>
-              <button
-                className="button secondary"
-                onClick={() => run("advance")}
-              >
-                <Play size={16} />
-                {t("Advance / next round", "صعود / دور بعد")}
-              </button>
-            </div>
-          </aside>
+        {stage && protection && (
+          <StageSettings
+            stage={stage}
+            locked={protection.locked}
+            canReset={protection.canReset}
+            lockReason={lockReason}
+            hasDraft={dirty}
+            onEdit={editStage}
+            onReorder={reorder}
+            onDuplicate={() => add(stage)}
+            onRemove={remove}
+            onReset={() =>
+              setConfirmation({ action: "reset", stageId: stage.id })
+            }
+            onDraw={() => run("draw")}
+            onAdvance={() => run("advance")}
+          />
         )}
       </div>
+      {confirmation && (
+        <Confirm
+          title={
+            confirmation.action === "reset"
+              ? t("Reset unplayed draw?", "بازنشانی قرعه بدون نتیجه؟")
+              : t("Remove this stage?", "حذف این مرحله؟")
+          }
+          message={
+            confirmation.action === "reset"
+              ? t(
+                  "This removes the unplayed matches, including their schedules and notes. The previous saved revision remains in History. No later stage has a draw.",
+                  "دیدارهای بدون نتیجه همراه زمان‌بندی و یادداشت آن‌ها حذف می‌شوند. نسخه ذخیره‌شده قبلی در تاریخچه باقی می‌ماند. هیچ مرحله بعدی قرعه ندارد.",
+                )
+              : t(
+                  "This removes the stage and any unplayed matches. Saved history keeps the previous version.",
+                  "مرحله و دیدارهای بدون نتیجه آن حذف می‌شوند. نسخه قبلی در تاریخچه ذخیره‌شده باقی می‌ماند.",
+                )
+          }
+          destructive
+          onConfirm={confirmAction}
+          onClose={() => setConfirmation(undefined)}
+        />
+      )}
       {simulation && (
         <Modal
           wide
@@ -545,7 +436,7 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
             )}
           </Notice>
           <p>
-            {simulation.matches.filter((m) => m.result).length}{" "}
+            {simulation.matches.filter((match) => match.result).length}{" "}
             {t("completed matches", "دیدار کامل")} · {t("Champion", "قهرمان")}:{" "}
             {getChampion(simulation)?.name ??
               t("See standings", "جدول را ببینید")}

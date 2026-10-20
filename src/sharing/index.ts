@@ -51,6 +51,12 @@ function publicMetadata(
     policy: z.string().max(200),
     drawAlgorithm: z.string().max(200),
     drawSeed: z.string().max(240),
+    canvasPosition: z
+      .object({
+        x: z.number().finite().min(-10000).max(10000),
+        y: z.number().finite().min(-10000).max(10000),
+      })
+      .strict(),
   };
   const matchSchemas: Record<string, z.ZodType> = {
     championship: z.boolean(),
@@ -98,6 +104,17 @@ function publicStageConfig(
   return config;
 }
 
+function publicParticipantMetadata(
+  input: Record<string, JsonValue>,
+): Record<string, JsonValue> {
+  const adjustment = input.pointsAdjustment;
+  return typeof adjustment === "number" &&
+    Number.isFinite(adjustment) &&
+    Math.abs(adjustment) <= 1e12
+    ? { pointsAdjustment: adjustment }
+    : {};
+}
+
 export function publicProjection(tournament: Tournament): Tournament {
   const source = validateTournament(tournament);
   return {
@@ -119,7 +136,7 @@ export function publicProjection(tournament: Tournament): Tournament {
       roster: [],
       tags: [],
       checkedIn: false,
-      metadata: {},
+      metadata: publicParticipantMetadata(participant.metadata),
     })),
     stages: source.stages.map((stage, index) => ({
       ...stage,

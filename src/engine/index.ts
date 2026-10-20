@@ -8,6 +8,8 @@ import type {
 } from "../domain/types";
 import { validateResult } from "../scoring";
 import { getStandings } from "../standings";
+import { advancementErrors } from "../domain/advancement";
+import { previewAdvancement } from "./advancement";
 import { gauntlet, gsl, singleElimination } from "./elimination";
 import {
   distributeGroups,
@@ -20,7 +22,7 @@ import {
 import { ladderRound, swissRound, tripleRound } from "./pairing";
 import { DRAW_ALGORITHM, shuffle } from "./random";
 
-export { formats, getStandings };
+export { formats, getStandings, previewAdvancement };
 export { autoSchedule, detectConflicts, estimateDuration } from "../scheduling";
 export { DRAW_ALGORITHM, randomSource, seedPositions, shuffle } from "./random";
 export { PairingError } from "./pairing";
@@ -75,68 +77,9 @@ function groupLists(stage: Stage, ids: string[]): string[][] {
 
 function resolveEntrants(tournament: Tournament, stage: Stage): string[] {
   if (!stage.sources.length) return stage.participantIds;
-  const entrants: string[] = [];
-  for (const source of stage.sources) {
-    const previous = requireStage(tournament, source.stageId);
-    if (previous.status !== "completed")
-      throw new Error(
-        `Complete ${previous.name} before advancing its entrants.`,
-      );
-    const groups = source.perGroup
-      ? [
-          ...new Set(
-            tournament.matches
-              .filter((match) => match.stageId === source.stageId)
-              .map((match) => match.group)
-              .filter((group): group is string => !!group),
-          ),
-        ].sort()
-      : [undefined];
-    if (source.perGroup && !groups.length)
-      throw new Error(
-        "Per-group advancement needs a source stage with groups.",
-      );
-    for (const group of groups) {
-      const standings = getStandings(tournament, previous.id, group);
-      if (standings.length < source.count)
-        throw new Error(
-          "The qualification count exceeds the number of entrants.",
-        );
-      const chosen = standings.slice(0, source.count);
-      const next = standings[source.count];
-      if (
-        !Array.isArray(stage.config.manualQualifiers) &&
-        next &&
-        chosen.at(-1)?.rank === next.rank
-      )
-        throw new Error(
-          "Qualification is tied at the cutoff. Add a valid tie-breaker or set explicit manual qualifiers.",
-        );
-      entrants.push(...chosen.map((row) => row.participantId));
-    }
-  }
-  if (Array.isArray(stage.config.manualQualifiers)) {
-    const manual = stage.config.manualQualifiers;
-    const eligible = new Set(
-      stage.sources.flatMap(
-        (source) => requireStage(tournament, source.stageId).participantIds,
-      ),
-    );
-    if (
-      manual.length !== entrants.length ||
-      new Set(manual).size !== manual.length ||
-      !manual.every((id) => typeof id === "string" && eligible.has(id))
-    )
-      throw new Error(
-        "Manual qualifiers must match the required count and belong to a source stage.",
-      );
-    return manual as string[];
-  }
-  if (new Set(entrants).size !== entrants.length)
-    throw new Error(
-      "An entrant qualified more than once. Adjust the stage sources.",
-    );
-  return entrants;
+  const preview = previewAdvancement(tournament, stage.id);
+  if (!preview.ready) throw new Error(preview.issues.join(" "));
+  return preview.participantIds;
 }
 
 function validateConfig(stage: Stage, count: number): void {
@@ -227,6 +170,7 @@ export function generateStage(input: Tournament, stageId: string): Tournament {
       stage,
       ids,
       stage.format === "double-elimination",
+      previewAdvancement(tournament, stage.id).bracketSlots,
     );
   if (stage.format === "gauntlet") matches = gauntlet(stage, ids);
   if (stage.format === "round-robin") matches = roundRobin(stage, ids);
@@ -649,6 +593,7 @@ export function validateGraph(tournament: Tournament): string[] {
   if (matches.size !== tournament.matches.length)
     errors.push("Match identifiers must be unique.");
   for (const stage of tournament.stages) {
+    errors.push(...advancementErrors(tournament, stage));
     if (
       new Set(stage.participantIds).size !== stage.participantIds.length ||
       stage.participantIds.some((id) => !participants.has(id))

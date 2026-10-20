@@ -102,10 +102,57 @@ qualification cutoff, the application refuses automatic advancement. Apply an
 agreed tie-break rule in **Rules** and inspect the standings before continuing.
 Do not add seed as a ranking rule merely to disguise an unresolved sporting tie.
 
-The graph shows connections and allows stage selection, zoom and scrolling.
-Inspector arrows reorder stages without dragging. A stage feeding another stage,
-or one with played results, cannot be removed casually. There is no arbitrary
-slot-mapping or wildcard-normalization editor in this version.
+The graph shows connections and allows stage selection, zoom and panning. Drag
+the dotted handle to move a stage, or focus the handle and use arrow keys. Drag
+from an output port to an input port to start a connection. The form below the
+canvas provides the same connection controls without dragging. Inspector arrows
+change the stage order independently of its canvas position.
+
+Connections stay in a draft until you choose **Apply connections**. Review the
+qualification preview first. A stage with a generated draw, or a generated
+descendant, locks its inputs to protect the existing competition.
+
+### Set exact cross-group matchups
+
+Select the destination stage and edit its connection:
+
+1. Set **Qualification rule** to **Exact group / rank positions**.
+2. Choose Group A, rank 1. Use **Add position** for Group B, rank 2.
+3. Enter `1, 2` in **First-round bracket slots**.
+4. Add another connection for B1 and A2, using slots `3, 4`.
+5. Choose **Apply connections**. Once the source is complete, generate the draw.
+
+Slots are physical first-round positions: 1 plays 2, then 3 plays 4. They are
+available for single and double elimination. Leave slots blank for normal seeded
+placement. A slot cannot be occupied twice. You can combine qualifiers from
+several source stages by adding more connections.
+
+### Compare wildcards from uneven groups
+
+For eighteen teams in four groups, decide the comparison policy before play.
+Five-team groups provide more matches than four-team groups.
+
+1. Add a direct connection for group winners or any other guaranteed places.
+2. Add another connection with **Wildcard across groups**.
+3. Set **Candidate rank**, the number of **Qualifiers to take**, and the groups
+   to compare. Rank 2 selects runner-up candidates; rank 3 selects third places.
+4. Choose a comparison: **Total statistics**, **Statistics per match**, or
+   **Discard results against bottom teams**.
+5. Set the ordered wildcard tie-break criteria. The preview shows original and
+   compared values, selection reasons, and the number of matches compared.
+6. Choose **Apply connections**, finish the source, then generate the destination.
+
+Per-match comparison divides the selected statistics by played matches.
+Discard-bottom comparison removes games against the lowest places in larger
+groups until the retained group sizes match. It does not change the original
+group standings or the candidate's source rank. Direct qualifiers are excluded
+before wildcard selection, even when the wildcard connection is listed first.
+
+An unresolved source position, discard boundary or cutoff tie blocks the draw.
+Choose and apply the event's agreed tie-break rules before continuing. Adding
+seed as a criterion is an explicit sporting decision, not an automatic fallback.
+Wildcards currently require a round-robin groups source; GSL uses its defined
+qualification positions.
 
 Use **Run simulation** to inspect a separate synthetic competition. Simulation
 results are not saved into the real tournament.

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { JsonValue, Tournament } from "./types";
+import { advancementErrors } from "./advancement";
 import {
   assertSafeJson,
   LIMITS,
@@ -127,6 +128,49 @@ export const stageConfigSchema = z
   })
   .catchall(json);
 
+export const advancementSchema = z
+  .object({
+    stageId: id,
+    count: positive.max(512),
+    perGroup: z.boolean(),
+    selection: z
+      .discriminatedUnion("kind", [
+        z
+          .object({
+            kind: z.literal("positions"),
+            picks: z
+              .array(
+                z
+                  .object({
+                    group: shortText.min(1).optional(),
+                    rank: positive.max(512),
+                  })
+                  .strict(),
+              )
+              .min(1)
+              .max(512),
+          })
+          .strict(),
+        z
+          .object({
+            kind: z.literal("wildcard"),
+            rank: positive.max(512),
+            groups: z.array(shortText.min(1)).min(1).max(128).optional(),
+            comparison: z.enum(["total", "per-match", "discard-bottom"]),
+            tieBreakers: z
+              .array(
+                z.enum(["points", "wins", "differential", "scored", "seed"]),
+              )
+              .min(1)
+              .max(5),
+          })
+          .strict(),
+      ])
+      .optional(),
+    bracketSlots: z.array(positive.max(512)).min(1).max(512).optional(),
+  })
+  .strict();
+
 export const stageSchema = z
   .object({
     id,
@@ -136,17 +180,7 @@ export const stageSchema = z
     order: count,
     config: stageConfigSchema,
     participantIds: z.array(id).max(LIMITS.participants),
-    sources: z
-      .array(
-        z
-          .object({
-            stageId: id,
-            count: positive.max(512),
-            perGroup: z.boolean(),
-          })
-          .strict(),
-      )
-      .max(64),
+    sources: z.array(advancementSchema).max(64),
     status: z.enum(["draft", "active", "completed"]),
     metadata,
   })
@@ -447,6 +481,21 @@ export function validateTournament(input: unknown): Tournament {
       );
   };
   for (const stage of document.stages) {
+    const errors = advancementErrors(document, stage);
+    if (errors.length) throw new Error(errors.join(" "));
+    if (
+      stage.metadata.canvasPosition !== undefined &&
+      !z
+        .object({
+          x: z.number().finite().min(-10000).max(10000),
+          y: z.number().finite().min(-10000).max(10000),
+        })
+        .strict()
+        .safeParse(stage.metadata.canvasPosition).success
+    )
+      throw new Error(
+        "Stage canvas positions require bounded x and y coordinates.",
+      );
     if (
       stage.participantIds.some(
         (participantId) => !participants.has(participantId),

@@ -6,9 +6,33 @@ export function singleElimination(
   stage: Stage,
   ids: string[],
   double = false,
+  placements: { slot: number; participantId: string }[] = [],
 ): Match[] {
   const size = 2 ** Math.ceil(Math.log2(Math.max(2, ids.length)));
-  const seeded = seedPositions(size).map((seed) => ids[seed - 1]);
+  let seeded: (string | undefined)[] = seedPositions(size).map(
+    (seed) => ids[seed - 1],
+  );
+  if (placements.length) {
+    const placed = new Set(
+      placements.map((placement) => placement.participantId),
+    );
+    const reserved = new Set(placements.map((placement) => placement.slot));
+    const remaining = seeded.filter(
+      (id): id is string => !!id && !placed.has(id),
+    );
+    seeded = Array.from({ length: size });
+    for (const placement of placements)
+      seeded[placement.slot - 1] = placement.participantId;
+    // Fill unreserved positions in seed-position priority, leaving real empty slots.
+    const priority = seedPositions(size)
+      .map((seed, index) => ({ seed, index }))
+      .sort((a, b) => a.seed - b.seed)
+      .filter(({ index }) => !reserved.has(index + 1));
+    remaining.sort((a, b) => ids.indexOf(a) - ids.indexOf(b));
+    remaining.forEach((id, index) => {
+      seeded[priority[index].index] = id;
+    });
+  }
   const rounds: Match[][] = [];
   let current: Match[] = [];
   for (let i = 0; i < size / 2; i++)

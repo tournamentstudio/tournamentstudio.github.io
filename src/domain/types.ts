@@ -121,6 +121,54 @@ export interface Advancement {
   stageId: string;
   count: number;
   perGroup: boolean;
+  selection?:
+    | {
+        kind: "positions";
+        picks: { group?: string; rank: number }[];
+      }
+    | {
+        kind: "wildcard";
+        rank: number;
+        groups?: string[];
+        comparison: "total" | "per-match" | "discard-bottom";
+        tieBreakers: WildcardTieBreaker[];
+      };
+  bracketSlots?: number[];
+}
+export type WildcardTieBreaker =
+  "points" | "wins" | "differential" | "scored" | "seed";
+export interface AdvancementMetrics {
+  played: number;
+  points: number;
+  wins: number;
+  differential: number;
+  scored: number;
+}
+export interface AdvancementCandidate {
+  participantId: string;
+  group?: string;
+  rank: number;
+  selected: boolean;
+  excluded: boolean;
+  tied: boolean;
+  reason: string;
+  metrics: AdvancementMetrics;
+  compared: Omit<AdvancementMetrics, "played">;
+  comparisonPlayed: number;
+}
+export interface AdvancementSourcePreview {
+  index: number;
+  stageId: string;
+  candidates: AdvancementCandidate[];
+  qualifierIds: string[];
+  issues: string[];
+}
+export interface AdvancementPreview {
+  ready: boolean;
+  issues: string[];
+  participantIds: string[];
+  sources: AdvancementSourcePreview[];
+  bracketSlots: { slot: number; participantId: string }[];
 }
 export interface Stage {
   id: string;

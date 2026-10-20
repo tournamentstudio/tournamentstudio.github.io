@@ -42,6 +42,7 @@ generateStage(tournament, stageId)
 recordResult(tournament, matchId, result, confirmInvalidate?)
 getCorrectionImpact(tournament, matchId)
 getStandings(tournament, stageId?, group?)
+previewAdvancement(tournament, stageId)
 advanceStage(tournament, stageId)
 validateGraph(tournament)
 simulate(tournament)
@@ -102,23 +103,48 @@ format scripting.
 
 ## Stage graph and qualification
 
-A stage lists its input stages in `sources`, with a count and an optional
-per-group selection flag. Sources must exist and form a directed acyclic graph.
-The destination draw is generated after its sources complete. A duplicate
-qualifier, an excessive count, or a tie crossing the cutoff raises an error.
-The advanced document configuration can supply an explicit `manualQualifiers`
-array; it must contain distinct entrants from the source stages and match the
-required total.
+A stage lists its input stages in `sources`. Each connection selects top entrants,
+top entrants per group, exact finishing positions, or wildcards from a chosen
+finishing position across round-robin groups. Sources must exist and form a
+directed acyclic graph. Qualification waits for all sources to complete.
+Duplicate qualifiers, impossible counts and unresolved cutoff ties block a draw.
 
-The UI supports choosing a source stage and taking its top entrants or the top
-entrants from each group. The domain can represent several source stages.
-Source qualification order becomes the default seed order for its destination,
-so taking two per group places groupmates in opposite bracket halves. Direct
-draws rank their entrants by the participant seed. Random seeding can override
-either ordering.
-There is no dedicated editor for wildcard normalization, arbitrary named-slot
-mapping, or winner/loser routing between stages. Cross-group overall standings
-use raw results; unequal schedules are not normalized for best-runner-up rules.
+`previewAdvancement` is a pure calculation. It returns each candidate's source
+rank, original metrics, compared metrics, retained match count, selection status
+and reasons. Direct qualifications resolve before wildcards, regardless of the
+order of the connections. Wildcards exclude entrants already selected directly.
+Inactive wildcard candidates are excluded; an inactive direct qualifier blocks
+advancement rather than silently reducing the field.
+
+Wildcard policies are explicit:
+
+- `total` compares the candidates' full group totals.
+- `per-match` compares each selected metric divided by played matches. The
+  comparator cross-multiplies values so display rounding cannot decide a place.
+- `discard-bottom` retains the top places up to the smallest selected group size
+  and recomputes candidate metrics without matches against lower places. Source
+  finishing positions stay based on the original group standings. A tie at the
+  discard boundary blocks this comparison.
+
+Each policy uses ordered points, wins, differential, scored and optional seed
+criteria. Source-position ties, zero played comparison matches and a tie crossing
+the wildcard cutoff are reported. Seed provides stable display order but decides
+qualification only when explicitly selected as a criterion. The optional
+`manualQualifiers` configuration may resolve an eligible cutoff tie; it must
+retain every clear qualifier and cannot bypass eligibility rules.
+
+For single and double elimination, connections can assign one-based physical
+first-round bracket slots. Slots 1 and 2 meet, then 3 and 4, and so on. Reserved
+slots are unique and within the destination's next-power-of-two draw size.
+Unassigned entrants fill the remaining positions using the draw's seed order.
+Without explicit slots, source order supplies destination seeds as before.
+
+The editor keeps connection drafts separate until Apply validates the complete
+graph. The canvas supports node movement, ports, panning and zoom, with keyboard
+controls and a form alternative. Bounded node coordinates persist as
+`stage.metadata.canvasPosition`. Editing inputs of a stage with an existing draw
+or drawn descendants is blocked. Winner/loser routing between separate stages
+and pot or geographic restrictions still need dedicated rules and controls.
 
 Match slots reference either an entrant or a source match's winner/loser.
 Resolution waits until the source is terminal. A BYE can carry one entrant or

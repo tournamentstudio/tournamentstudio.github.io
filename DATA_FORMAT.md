@@ -28,6 +28,60 @@ Current document limits:
 
 The match cap means a full round robin with 512 entrants does not fit one document. Algorithm tests for a participant count do not imply every format fits that count.
 
+## Stage advancement connections
+
+Existing sources remain `{ "stageId": "...", "count": 2, "perGroup": true }`.
+Two optional fields extend the version 1 schema without inserting defaults into
+older documents, so parsing a legacy source does not change its revision hash.
+
+`selection` can choose exact positions:
+
+```json
+{
+  "stageId": "groups",
+  "count": 2,
+  "perGroup": false,
+  "selection": {
+    "kind": "positions",
+    "picks": [
+      { "group": "A", "rank": 1 },
+      { "group": "B", "rank": 2 }
+    ]
+  },
+  "bracketSlots": [1, 2]
+}
+```
+
+Omit a pick's group to use overall stage standings. The count must equal the
+number of picks. `bracketSlots` maps the source's output order to physical
+first-round positions in single or double elimination. Slots are one-based;
+adjacent pairs play each other. Every mapped qualifier needs a distinct slot.
+
+A wildcard source selects a finishing position across round-robin groups:
+
+```json
+{
+  "stageId": "groups",
+  "count": 2,
+  "perGroup": false,
+  "selection": {
+    "kind": "wildcard",
+    "rank": 3,
+    "groups": ["A", "B", "C", "D"],
+    "comparison": "per-match",
+    "tieBreakers": ["points", "differential", "scored"]
+  }
+}
+```
+
+Omitting `groups` includes every source group. Comparison is `total`,
+`per-match`, or `discard-bottom`. Criteria are ordered and distinct; supported
+values are `points`, `wins`, `differential`, `scored` and `seed`. The algorithms
+and unresolved-tie behavior are described in [ARCHITECTURE.md](ARCHITECTURE.md).
+Selections and slot mappings survive public snapshots, archives and patches.
+Older app builds that do not recognize these fields reject the document safely;
+update the app before importing it.
+
 ## Canonical form and hashes
 
 JSON object keys are sorted recursively; array order remains significant. Optional properties with `undefined` values are omitted in the same way as `JSON.stringify`. Non-finite numbers and unsafe object keys are rejected.
@@ -66,9 +120,10 @@ The public projection removes organizer notes, referee identities, concealed pos
 
 The following structural metadata is retained through a typed allowlist because it affects standings or progression:
 
-- Stages: `drawOrder`, `groups`, `championId`, `ladderOrder`, `policy`, `drawAlgorithm`, `drawSeed`.
+- Stages: `drawOrder`, `groups`, `championId`, `ladderOrder`, `policy`, `drawAlgorithm`, `drawSeed`, and bounded `canvasPosition`.
 - Matches: `championship`, `qualifier`, `conditionalReset`, `undefeatedFinalist`, `pairingBye`, `ladderChallenge`.
 - Stage configuration extensions: `groups`, `forbiddenPairs`, `manualQualifiers`.
+- Participants: a bounded finite numeric `pointsAdjustment`, because it changes public standings and qualification. Other participant metadata stays private.
 
 Presentation scene text is deliberately public. Do not put private information in an announcement, rules slide, or other published scene.
 
