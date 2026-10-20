@@ -131,6 +131,52 @@ retain restrictions but omit participant affiliations; the recipient must fill
 those fields before drawing. Legacy recipes without this marker retain their
 original interpretation.
 
+## Knockout draw rules
+
+Single and double elimination accept an optional, separate `config.knockoutDraw`:
+
+```json
+{
+  "version": 1,
+  "pots": [
+    {
+      "id": "pot-1",
+      "name": "Top seeds",
+      "participantIds": ["team-1", "team-2"]
+    },
+    {
+      "id": "pot-2",
+      "name": "Next seeds",
+      "participantIds": ["team-3", "team-4"]
+    }
+  ],
+  "restrictions": ["region", "organization"],
+  "protectedSeeds": 2
+}
+```
+
+With pots enabled, each active stage entrant must appear exactly once. Entrants
+from the same pot cannot meet in the first round. Each selected affiliation
+restriction also forbids matching two equal normalized labels in that round.
+Empty pots and restrictions permit seed protection alone. These rules do not
+constrain later winners-bracket rounds or the losers bracket.
+
+`protectedSeeds` pins the first specified number of entrants in the selected
+draw order to their standard seed positions. For a field of `n`, the bracket
+has the next power-of-two slot count and exactly `slotCount - n` BYEs. The first
+that many entrants in the selected order receive those BYEs. Random seeding
+therefore randomizes BYE recipients and protected entrants too. Explicit source
+`bracketSlots` remain fixed. Contradictory pins, protection and BYE entitlements
+fail rather than changing the source mapping or awarding extra BYEs.
+
+The optional object is validated on import and retained by public snapshots,
+files, encrypted backups and updates. Pot names and affiliations remain public.
+Recipes remap its pot references to new entrant IDs, without carrying names or
+affiliations. Absent fields remain absent in older documents and their hashes.
+Unknown rule versions are rejected. Older app releases may preserve this object
+as extension data without enforcing it when generating a new draw; update the
+app before regenerating a shared tournament that uses it.
+
 ## Canonical form and hashes
 
 JSON object keys are sorted recursively; array order remains significant. Optional properties with `undefined` values are omitted in the same way as `JSON.stringify`. Non-finite numbers and unsafe object keys are rejected.
@@ -171,7 +217,7 @@ The following structural metadata is retained through a typed allowlist because 
 
 - Stages: `drawOrder`, `groups`, `championId`, `ladderOrder`, `policy`, `drawAlgorithm`, `drawSeed`, and bounded `canvasPosition`.
 - Matches: `championship`, `qualifier`, `conditionalReset`, `undefeatedFinalist`, `pairingBye`, `ladderChallenge`.
-- Stage configuration extensions: `groups`, `forbiddenPairs`, `manualQualifiers`, and validated `draw` rules.
+- Stage configuration extensions: `groups`, `forbiddenPairs`, `manualQualifiers`, and validated `draw` and `knockoutDraw` rules.
 - Participants: a bounded finite numeric `pointsAdjustment`, because it changes public standings and qualification. Other participant metadata stays private.
 
 Presentation scene text is deliberately public. Do not put private information in an announcement, rules slide, or other published scene.

@@ -3,6 +3,11 @@ import type { JsonValue, Tournament } from "./types";
 import { advancementErrors } from "./advancement";
 import { groupDrawErrors, groupDrawIssueText, groupDrawSchema } from "./draw";
 import {
+  knockoutDrawErrors,
+  knockoutDrawIssueText,
+  knockoutDrawSchema,
+} from "./knockout-draw";
+import {
   assertSafeJson,
   LIMITS,
   safeParse,
@@ -127,6 +132,7 @@ export const stageConfigSchema = z
     seed: shortText,
     seeding: z.enum(["ranked", "random", "snake", "manual"]),
     draw: groupDrawSchema.optional(),
+    knockoutDraw: knockoutDrawSchema.optional(),
   })
   .catchall(json);
 
@@ -487,6 +493,9 @@ export function validateTournament(input: unknown): Tournament {
     errors.push(
       ...groupDrawErrors(document, stage).map((issue) =>
         groupDrawIssueText(issue),
+      ),
+      ...knockoutDrawErrors(document, stage).map((issue) =>
+        knockoutDrawIssueText(issue),
       ),
     );
     if (errors.length) throw new Error(errors.join(" "));

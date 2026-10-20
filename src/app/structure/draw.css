@@ -1,19 +1,19 @@
-.group-draw-editor {
+:is(.group-draw-editor, .knockout-draw-editor) {
   border: 1px solid var(--line);
   border-radius: 18px;
   padding: 24px;
   background: var(--surface);
   min-width: 0;
 }
-.group-draw-editor h3 {
+:is(.group-draw-editor, .knockout-draw-editor) h3 {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-.group-draw-editor h3 svg {
+:is(.group-draw-editor, .knockout-draw-editor) h3 svg {
   flex-shrink: 0;
 }
-.group-draw-editor p {
+:is(.group-draw-editor, .knockout-draw-editor) p {
   line-height: 1.8;
 }
 .draw-fields {
@@ -85,7 +85,7 @@
   overflow-wrap: anywhere;
 }
 .draw-entrant small,
-.draw-preview-group small {
+:is(.draw-preview-group, .draw-preview-pair) small {
   display: block;
   color: var(--muted);
   font-size: 0.75rem;
@@ -105,13 +105,13 @@
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
   gap: 12px;
 }
-.draw-preview-group {
+:is(.draw-preview-group, .draw-preview-pair) {
   border: 1px solid var(--line);
   border-radius: 12px;
   overflow: hidden;
   min-width: 0;
 }
-.draw-preview-group h5 {
+:is(.draw-preview-group, .draw-preview-pair) h5 {
   display: flex;
   gap: 8px;
   margin: 0;
@@ -119,28 +119,39 @@
   background: #f4f7ef;
   font-size: 0.85rem;
 }
-.draw-preview-group h5 span {
+:is(.draw-preview-group, .draw-preview-pair) h5 span {
   margin-inline-start: auto;
   color: var(--muted);
 }
-.draw-preview-group ol {
+:is(.draw-preview-group, .draw-preview-pair) ol {
   list-style: none;
   margin: 0;
   padding: 0;
 }
-.draw-preview-group li {
+:is(.draw-preview-group, .draw-preview-pair) li {
   padding: 12px 14px;
   overflow-wrap: anywhere;
   line-height: 1.8;
 }
-.draw-preview-group li + li {
+:is(.draw-preview-group, .draw-preview-pair) li + li {
   border-block-start: 1px solid var(--line);
 }
-.group-draw-editor .notice {
+:is(.group-draw-editor, .knockout-draw-editor) .notice {
   margin-block: 12px;
 }
+.draw-preview-pair .draw-slot-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-block-end: 4px;
+}
+.draw-slot-label .badge {
+  white-space: normal;
+  max-width: 100%;
+}
 @media (max-width: 600px) {
-  .group-draw-editor {
+  :is(.group-draw-editor, .knockout-draw-editor) {
     padding: 16px;
   }
   .draw-entrant {

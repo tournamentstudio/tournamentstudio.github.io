@@ -5,6 +5,7 @@ import {
   uid,
   type Advancement,
   type GroupDrawConfig,
+  type KnockoutDrawConfig,
   type Stage,
   type Tournament,
 } from "../domain/types";
@@ -13,6 +14,7 @@ import {
   generateStage,
   getChampion,
   previewGroupDraw,
+  previewKnockoutDraw,
   simulate,
   validateGraph,
 } from "../engine";
@@ -28,6 +30,10 @@ import {
   groupDrawBasis,
   withGroupDraw,
 } from "./structure/GroupDrawEditor";
+import {
+  KnockoutDrawEditor,
+  withKnockoutDraw,
+} from "./structure/KnockoutDrawEditor";
 import { stageProtection } from "./structure/helpers";
 import "./structure/structure.css";
 
@@ -39,6 +45,9 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
   const [drafts, setDrafts] = useState<Record<string, Advancement[]>>({});
   const [drawDrafts, setDrawDrafts] = useState<
     Record<string, { value: GroupDrawConfig | null; base: string }>
+  >({});
+  const [knockoutDrafts, setKnockoutDrafts] = useState<
+    Record<string, { value: KnockoutDrawConfig | null; base: string }>
   >({});
   const [confirmation, setConfirmation] = useState<{
     action: "remove" | "reset";
@@ -66,6 +75,22 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
     drawDirty &&
     !!drawDraft &&
     drawDraft.base !== groupDrawBasis(stage);
+  const knockoutDraft = stage ? knockoutDrafts[stage.id] : undefined;
+  const knockoutValue =
+    knockoutDraft?.value !== undefined
+      ? knockoutDraft.value
+      : (stage?.config.knockoutDraw ?? null);
+  const knockoutDirty =
+    !!stage &&
+    !!knockoutDraft &&
+    JSON.stringify(knockoutDraft.value) !==
+      JSON.stringify(stage.config.knockoutDraw ?? null);
+  const knockoutStale =
+    !!stage &&
+    knockoutDirty &&
+    !!knockoutDraft &&
+    knockoutDraft.base !== groupDrawBasis(stage);
+  const anyDrawDirty = drawDirty || knockoutDirty;
   const anyDraft =
     Object.keys(drawDrafts).some((id) => {
       const item = doc.stages.find((candidate) => candidate.id === id);
@@ -73,6 +98,14 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
         item &&
         JSON.stringify(drawDrafts[id].value) !==
           JSON.stringify(item.config.draw ?? null)
+      );
+    }) ||
+    Object.keys(knockoutDrafts).some((id) => {
+      const item = doc.stages.find((candidate) => candidate.id === id);
+      return (
+        item &&
+        JSON.stringify(knockoutDrafts[id].value) !==
+          JSON.stringify(item.config.knockoutDraw ?? null)
       );
     }) ||
     doc.stages.some(
@@ -101,7 +134,7 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
     if (!stage) return;
     if (
       (patch.config || patch.sources || patch.participantIds || patch.format) &&
-      (stageProtection(doc, stage.id).locked || drawDirty)
+      (stageProtection(doc, stage.id).locked || anyDrawDirty)
     ) {
       setError(
         t(
@@ -132,13 +165,23 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
       return next;
     });
   }
+  function clearKnockoutDraft(id: string) {
+    setKnockoutDrafts((current) => {
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+  }
   function hasDrawDraft(id: string) {
     const target = doc.stages.find((item) => item.id === id);
     return (
       !!target &&
-      !!drawDrafts[id] &&
-      JSON.stringify(drawDrafts[id].value) !==
-        JSON.stringify(target.config.draw ?? null)
+      ((!!drawDrafts[id] &&
+        JSON.stringify(drawDrafts[id].value) !==
+          JSON.stringify(target.config.draw ?? null)) ||
+        (!!knockoutDrafts[id] &&
+          JSON.stringify(knockoutDrafts[id].value) !==
+            JSON.stringify(target.config.knockoutDraw ?? null)))
     );
   }
   function applyDrawRules() {
@@ -160,8 +203,26 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
     if (update(next, t("Apply group draw rules", "اعمال قوانین قرعه گروهی")))
       clearDrawDraft(stage.id);
   }
+  function applyKnockoutRules() {
+    if (!stage || protection?.locked || dirty || knockoutStale) return;
+    const next = structuredClone(doc);
+    next.stages = next.stages.map((item) =>
+      item.id === stage.id ? withKnockoutDraw(item, knockoutValue) : item,
+    );
+    if (!previewKnockoutDraw(next, stage.id).ready) {
+      setError(
+        t(
+          "The draw is no longer valid. Preview the latest entrants and rules again.",
+          "قرعه دیگر معتبر نیست. شرکت‌کنندگان و قوانین تازه را دوباره پیش‌نمایش کنید.",
+        ),
+      );
+      return;
+    }
+    if (update(next, t("Apply knockout draw rules", "اعمال قوانین قرعه حذفی")))
+      clearKnockoutDraft(stage.id);
+  }
   function applyConnections() {
-    if (!stage || protection?.locked || drawDirty) return;
+    if (!stage || protection?.locked || anyDrawDirty) return;
     const next = structuredClone(doc);
     const target = next.stages.find((item) => item.id === stage.id)!;
     target.sources = structuredClone(sources);
@@ -210,7 +271,7 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
         return;
       }
       if (!stage) return;
-      if (dirty || drawDirty)
+      if (dirty || anyDrawDirty)
         throw new Error(
           t(
             "Apply connection and draw edits before generating matches.",
@@ -321,6 +382,7 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
       if (update(next, t("Remove stage", "حذف مرحله"))) {
         clearDraft(targetStage.id);
         clearDrawDraft(targetStage.id);
+        clearKnockoutDraft(targetStage.id);
         setSelected(next.stages[0].id);
       }
     }
@@ -441,7 +503,7 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
                 tournament={doc}
                 stage={stage}
                 sources={sources}
-                locked={!!protection?.locked || drawDirty}
+                locked={!!protection?.locked || anyDrawDirty}
                 dirty={dirty}
                 onDraft={(value) =>
                   setDrafts((current) => ({ ...current, [stage.id]: value }))
@@ -478,6 +540,36 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
                   onApply={applyDrawRules}
                 />
               )}
+              {(stage.format === "single-elimination" ||
+                stage.format === "double-elimination") && (
+                <KnockoutDrawEditor
+                  key={`knockout-draw-${stage.id}`}
+                  tournament={doc}
+                  stage={stage}
+                  value={knockoutValue}
+                  dirty={knockoutDirty}
+                  stale={knockoutStale}
+                  locked={!!protection?.locked || dirty}
+                  onDraft={(value) => {
+                    if (
+                      JSON.stringify(value) ===
+                      JSON.stringify(stage.config.knockoutDraw ?? null)
+                    ) {
+                      clearKnockoutDraft(stage.id);
+                    } else
+                      setKnockoutDrafts((current) => ({
+                        ...current,
+                        [stage.id]: {
+                          value,
+                          base:
+                            current[stage.id]?.base ?? groupDrawBasis(stage),
+                        },
+                      }));
+                  }}
+                  onDiscard={() => clearKnockoutDraft(stage.id)}
+                  onApply={applyKnockoutRules}
+                />
+              )}
             </>
           )}
         </div>
@@ -487,7 +579,7 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
             locked={protection.locked}
             canReset={protection.canReset}
             lockReason={lockReason}
-            hasDraft={dirty || drawDirty}
+            hasDraft={dirty || anyDrawDirty}
             onEdit={editStage}
             onRefreshEntrants={() => {
               if (dirty || stage.sources.length) return;

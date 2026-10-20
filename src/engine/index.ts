@@ -12,6 +12,11 @@ import { advancementErrors } from "../domain/advancement";
 import { groupDrawErrors, groupDrawIssueText } from "../domain/draw";
 import { previewAdvancement } from "./advancement";
 import { previewGroupDraw } from "./group-draw";
+import { previewKnockoutDraw } from "./knockout-draw";
+import {
+  knockoutDrawErrors,
+  knockoutDrawIssueText,
+} from "../domain/knockout-draw";
 import { gauntlet, gsl, singleElimination } from "./elimination";
 import {
   distributeGroups,
@@ -26,6 +31,12 @@ import { DRAW_ALGORITHM, shuffle } from "./random";
 
 export { formats, getStandings, previewAdvancement };
 export { previewGroupDraw };
+export { previewKnockoutDraw, knockoutDrawIssueText };
+export {
+  KNOCKOUT_DRAW_ALGORITHM,
+  KNOCKOUT_DRAW_NODE_LIMIT,
+  KNOCKOUT_DRAW_WORK_LIMIT,
+} from "./knockout-draw";
 export {
   GROUP_DRAW_ALGORITHM,
   GROUP_DRAW_NODE_LIMIT,
@@ -135,7 +146,13 @@ export function generateStage(input: Tournament, stageId: string): Tournament {
     ids.sort(
       (a, b) =>
         seeds.get(a)! - seeds.get(b)! ||
-        (stage.config.draw ? (a < b ? -1 : a > b ? 1 : 0) : a.localeCompare(b)),
+        (stage.config.draw || stage.config.knockoutDraw
+          ? a < b
+            ? -1
+            : a > b
+              ? 1
+              : 0
+          : a.localeCompare(b)),
     );
   stage.metadata.drawAlgorithm = DRAW_ALGORITHM;
   stage.metadata.drawSeed = stage.config.seed;
@@ -149,13 +166,26 @@ export function generateStage(input: Tournament, stageId: string): Tournament {
   if (
     stage.format === "single-elimination" ||
     stage.format === "double-elimination"
-  )
+  ) {
+    const preview = stage.config.knockoutDraw
+      ? previewKnockoutDraw(tournament, stageId)
+      : undefined;
+    if (preview && !preview.ready) throw new Error(preview.issues.join(" "));
+    if (preview) {
+      stage.metadata.drawAlgorithm = preview.algorithm;
+      stage.metadata.drawOrder = [...preview.participantIds];
+    }
     matches = singleElimination(
       stage,
       ids,
       stage.format === "double-elimination",
-      previewAdvancement(tournament, stage.id).bracketSlots,
+      preview
+        ? preview.slots.flatMap((participantId, index) =>
+            participantId ? [{ participantId, slot: index + 1 }] : [],
+          )
+        : previewAdvancement(tournament, stage.id).bracketSlots,
     );
+  }
   if (stage.format === "gauntlet") matches = gauntlet(stage, ids);
   if (stage.format === "round-robin") matches = roundRobin(stage, ids);
   if (stage.format === "groups" || stage.format === "gsl") {
@@ -584,6 +614,9 @@ export function validateGraph(tournament: Tournament): string[] {
     errors.push(
       ...groupDrawErrors(tournament, stage).map((issue) =>
         groupDrawIssueText(issue),
+      ),
+      ...knockoutDrawErrors(tournament, stage).map((issue) =>
+        knockoutDrawIssueText(issue),
       ),
     );
     if (

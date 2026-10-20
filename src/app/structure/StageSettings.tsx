@@ -103,9 +103,12 @@ export function StageSettings({
               key={format.id}
               value={format.id}
               disabled={
-                !!stage.config.draw &&
-                format.id !== "groups" &&
-                format.id !== "gsl"
+                (!!stage.config.draw &&
+                  format.id !== "groups" &&
+                  format.id !== "gsl") ||
+                (!!stage.config.knockoutDraw &&
+                  format.id !== "single-elimination" &&
+                  format.id !== "double-elimination")
               }
             >
               {formatName(format.id, locale)}
@@ -118,6 +121,14 @@ export function StageSettings({
           {t(
             "To change to a non-group format, choose Use standard draw in Draw studio, preview it, and apply the rules first.",
             "برای تغییر به قالب غیرگروهی، ابتدا «استفاده از قرعه معمول» را در استودیوی قرعه انتخاب کنید، پیش‌نمایش را ببینید و قوانین را اعمال کنید.",
+          )}
+        </p>
+      )}
+      {!!stage.config.knockoutDraw && (
+        <p className="muted">
+          {t(
+            "To change to another format family, choose Use standard draw in Draw studio, preview it, and apply the rules first.",
+            "برای تغییر به خانواده دیگری از قالب‌ها، ابتدا «استفاده از قرعه معمول» را در استودیوی قرعه انتخاب کنید، پیش‌نمایش را ببینید و قوانین را اعمال کنید.",
           )}
         </p>
       )}

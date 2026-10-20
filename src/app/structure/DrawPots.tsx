@@ -8,18 +8,20 @@ import {
 import { Field, Notice } from "../../components/ui";
 import { useI18n } from "../../i18n";
 
-export function DrawPots({
+export function DrawPots<T extends Pick<GroupDrawConfig, "pots">>({
   value,
   entrants,
   groupCount,
+  summaryLabel,
   sourcesReady,
   onChange,
 }: {
-  value: GroupDrawConfig;
+  value: T;
   entrants: Participant[];
   groupCount: number;
+  summaryLabel?: string;
   sourcesReady: boolean;
-  onChange: (value: GroupDrawConfig) => void;
+  onChange: (value: T) => void;
 }) {
   const { t, locale } = useI18n();
   const [search, setSearch] = useState("");
@@ -33,7 +35,7 @@ export function DrawPots({
       (a, b) => a.seed - b.seed || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
     );
     changed({
-      version: 1,
+      ...value,
       pots: Array.from(
         { length: Math.ceil(ranked.length / Math.max(1, groupCount)) },
         (_, index) => ({
@@ -44,7 +46,6 @@ export function DrawPots({
             .map((participant) => participant.id),
         }),
       ),
-      restrictions: value?.restrictions ?? [],
     });
   }
   function assign(participantId: string, potId: string) {
@@ -64,7 +65,8 @@ export function DrawPots({
     <>
       <div className="draw-summary">
         <span>
-          {t("Groups", "گروه‌ها")}: {groupCount.toLocaleString(locale)}
+          {summaryLabel ?? t("Groups", "گروه‌ها")}:{" "}
+          {groupCount.toLocaleString(locale)}
         </span>
         <span>
           {t("Entrants", "شرکت‌کنندگان")}:{" "}

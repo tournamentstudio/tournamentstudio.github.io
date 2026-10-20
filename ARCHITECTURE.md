@@ -183,6 +183,39 @@ Existing draws and generated descendants remain protected. Pot rules cannot
 coexist with exact manual group lists; the editor explains when applying rules
 will replace those lists.
 
+## Knockout draw constraints
+
+`previewKnockoutDraw(tournament, stageId)` handles the optional
+`config.knockoutDraw` rules for single and double elimination. It resolves the
+same qualifiers as generation and returns exact first-round slots, BYE
+recipients, fixed positions and localized issue codes. Generating a constrained
+stage passes all occupied positions to the existing elimination generator.
+The winners bracket, loser drop paths and final-reset logic remain shared with
+standard draws.
+
+Pots partition the active entrants. Played first-round pairs must differ in pot
+and every selected affiliation field. Label normalization matches group draws.
+The algorithm never claims separation in later rounds. The next power-of-two
+bracket supplies exactly the required number of BYEs, assigned to the leading
+entrants in the selected draw order. Random seeding randomizes this order.
+Protected seeds pin a leading count to standard seed positions. Source slot
+mappings are also pins; inconsistent pins or occupied opponents of a fixed BYE
+recipient are errors.
+
+The `knockout-matching-fnv1a-mulberry32-v1` policy first validates fully pinned
+pairs. It builds a compatibility graph for remaining played entrants, removing
+edges between entrants pinned to different matches. A deterministic
+most-constrained-first search finds pairs, with seeded candidate ordering and a
+preference for standard seeded opponents. It then fits the pairs and BYEs around
+the pinned positions. The search budget is 100,000 nodes or 20,000,000 work
+units. A budget failure reports unknown feasibility and returns no partial draw.
+Successful assignments are reproducible, without a uniform-random guarantee.
+
+The editor follows the same draft, preview, revalidation and draw-lock rules as
+group drawing. The optional configuration stays absent in legacy documents.
+Public projections validate it explicitly, and recipes remap its pot entrant
+references instead of leaking or reusing original participant identifiers.
+
 ## Scores and standings
 
 Results support high scores, low scores, time values, manual decisions, completed

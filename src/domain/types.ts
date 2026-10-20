@@ -126,6 +126,23 @@ export interface GroupDrawPreview {
   algorithm: string;
   exploredNodes: number;
 }
+export type KnockoutDrawConfig = {
+  version: 1;
+  pots: { id: string; name: string; participantIds: string[] }[];
+  restrictions: ("region" | "organization")[];
+  protectedSeeds: number;
+};
+export interface KnockoutDrawPreview {
+  ready: boolean;
+  slots: (string | null)[];
+  participantIds: string[];
+  byeIds: string[];
+  fixedSlots: { slot: number; participantId: string }[];
+  issues: string[];
+  issueDetails: GroupDrawIssue[];
+  algorithm: string;
+  exploredNodes: number;
+}
 export type StageConfig = {
   groupCount: number;
   meetings: number;
@@ -137,6 +154,7 @@ export type StageConfig = {
   seed: string;
   seeding: "ranked" | "random" | "snake" | "manual";
   draw?: GroupDrawConfig;
+  knockoutDraw?: KnockoutDrawConfig;
 } & { [key: string]: JsonValue };
 export interface Advancement {
   stageId: string;

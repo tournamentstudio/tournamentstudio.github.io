@@ -120,6 +120,46 @@ invalidates an unsaved draft. Discard that draft to start from the latest saved
 rules. Exported tournament files retain pots and restrictions; recipes create
 new unnamed entrants, so fill their regions and organizations before drawing.
 
+## Restrict a knockout opening round
+
+Single and double elimination support pot, region and organization restrictions.
+They apply to the first round of the winners bracket. Later rounds and the
+losers bracket can contain entrants from the same pot or affiliation.
+See the [knockout preview](docs/screenshots/knockout-draw-preview.png) for a
+thirteen-entrant draw with three BYEs and two protected positions.
+
+1. Enter consistent **Region** and **Organization** values in **Participants**
+   for any restriction you intend to use.
+2. In **Structure**, select the knockout stage. Reset an existing unplayed draw
+   first. Played matches remain protected.
+3. Choose **Configure knockout draw**. Use **Fill pots by seed** or assign pots
+   manually. Every entrant needs exactly one pot when pots are enabled. Remove
+   all pots to use affiliation restrictions alone.
+4. Enable **Separate the same region** or **Separate the same organization**.
+   Both can apply together.
+5. Set **Protected seed positions** to pin a leading count at their standard
+   bracket positions. Leave it at zero to let all unpinned entrants move.
+6. Choose **Preview knockout draw**. Review every pair, slot, BYE and fixed
+   position, then choose **Apply draw rules** and **Generate draw**.
+
+A thirteen-entrant bracket needs sixteen slots and three BYEs. Those BYEs go to
+the first three entrants in the selected draw order. Ranked seeding uses seeds,
+manual ordering uses the stage's entrant order, and random seeding randomizes
+the order. Entrants from source stages use their qualification order unless
+random seeding is selected. The same order determines protected seed positions.
+The app does not add BYEs to avoid difficult pairings.
+
+Fixed qualifier slots from stage connections are retained. A conflict with a
+protected position, a BYE recipient or an opening-round restriction blocks the
+draw. Review the source mapping, selected order or agreed rules. A search-limit
+message means feasibility is still unknown; it is not a proof of impossibility.
+The app never relaxes restrictions automatically.
+
+To return to standard drawing, choose **Use standard draw**, preview it and apply
+the change. This also allows switching to formats outside single/double
+elimination. Saved files and snapshot links retain knockout rules. Recipes
+retain the structure but require new affiliation values before restricted draws.
+
 ## Build groups followed by playoffs
 
 For sixteen teams in four groups:

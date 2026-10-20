@@ -2,6 +2,7 @@ import { Unzip, UnzipInflate, strToU8, zipSync } from "fflate";
 import { z } from "zod";
 import { createParticipant, createTournament } from "../domain/types";
 import { groupDrawSchema } from "../domain/draw";
+import { knockoutDrawSchema } from "../domain/knockout-draw";
 import type { JsonValue, Tournament } from "../domain/types";
 import {
   formatSchema,
@@ -104,6 +105,8 @@ function publicStageConfig(
   }
   if (stage.config.draw !== undefined)
     config.draw = groupDrawSchema.parse(stage.config.draw);
+  if (stage.config.knockoutDraw !== undefined)
+    config.knockoutDraw = knockoutDrawSchema.parse(stage.config.knockoutDraw);
   return config;
 }
 
@@ -520,6 +523,11 @@ function remapRecipeReferences(
   }
   if (config.draw)
     config.draw.pots = config.draw.pots.map((pot) => ({
+      ...pot,
+      participantIds: pot.participantIds.map(resolve),
+    }));
+  if (config.knockoutDraw)
+    config.knockoutDraw.pots = config.knockoutDraw.pots.map((pot) => ({
       ...pot,
       participantIds: pot.participantIds.map(resolve),
     }));
