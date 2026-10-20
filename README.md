@@ -49,12 +49,13 @@ The development server binds to `127.0.0.1`. No environment secrets or external 
 npm run typecheck
 npm run lint
 npm test
+npm run test:release
 npm run build
 npx playwright install chromium firefox webkit
 npm run test:e2e
 ```
 
-Browser tests use the production bundle at port 4173. Run the build first. `playwright.config.ts` defines the browser projects. The deployment workflow runs Chromium; local Firefox and WebKit runs can be selected by project.
+Browser tests use the production bundle at port 4173. Run the build first. `playwright.config.ts` defines the Chromium, Firefox and WebKit projects. All validation runs locally; this repository has no CI workflow.
 
 For a local production preview:
 
@@ -82,11 +83,21 @@ Browser storage can be lost through data clearing, eviction, private browsing, o
 
 ## Deploy to GitHub Pages
 
-The `main` branch is the source of truth. `.github/workflows/deploy.yml` installs dependencies, checks types and lint, runs unit tests, builds, runs Chromium flows, and deploys the `dist` artifact with the official Pages action.
+I run tests and compile releases locally. GitHub Pages publishes the prepared files from `main/docs`; there are no repository Actions workflows. The `.nojekyll` file skips Jekyll. GitHub handles publication of those files, without running npm or the test suite.
 
-For a fork, enable **Settings > Pages > Build and deployment > GitHub Actions**. Repository administration permission is needed for that setting.
+```sh
+npm run check
+npm run test:release
+npm run test:e2e
+npm run pages:prepare
+git add docs
+```
 
-`vite.config.ts` reads `GITHUB_REPOSITORY` during CI. Repositories ending in `.github.io` use `/`; project repositories use `/<repository>/`. Hash routes keep refreshes and snapshot links compatible with static hosting. Share links derive their origin and path from the running app.
+Review and commit the source changes together with the prepared `docs` files, then push `main`. `pages:prepare` builds the app and copies only generated assets into `docs`. Its checksum manifest removes obsolete build assets while preserving documentation screenshots. It refuses to replace unrelated files or silently discard edits to previously published assets.
+
+For a fork, choose **Settings > Pages > Build and deployment > Deploy from a branch**, then **main** and **/docs**. Repository administration permission is needed for that setting. There is no custom CI to enable.
+
+`pages:prepare` derives `GITHUB_REPOSITORY` from the origin remote unless it is explicitly set. Repositories ending in `.github.io` use `/`; project repositories use `/<repository>/`. Hash routes keep refreshes and snapshot links compatible with static hosting. Share links derive their origin and path from the running app.
 
 The service worker caches the application shell and bundled assets. It offers an update prompt and does not remove the tournament database. Local preview and GitHub Pages use separate browser storage because they have different origins.
 
