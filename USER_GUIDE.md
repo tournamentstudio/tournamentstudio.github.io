@@ -120,11 +120,12 @@ invalidates an unsaved draft. Discard that draft to start from the latest saved
 rules. Exported tournament files retain pots and restrictions; recipes create
 new unnamed entrants, so fill their regions and organizations before drawing.
 
-## Restrict a knockout opening round
+## Restrict knockout pairings
 
 Single and double elimination support pot, region and organization restrictions.
-They apply to the first round of the winners bracket. Later rounds and the
-losers bracket can contain entrants from the same pot or affiliation.
+Pots separate entrants in the first round. Region and organization restrictions
+can extend through a chosen winners-bracket round. They do not cover the losers
+bracket, grand finals, resets or third-place matches.
 See the [knockout preview](docs/screenshots/knockout-draw-preview.png) for a
 thirteen-entrant draw with three BYEs and two protected positions.
 
@@ -136,11 +137,31 @@ thirteen-entrant draw with three BYEs and two protected positions.
    manually. Every entrant needs exactly one pot when pots are enabled. Remove
    all pots to use affiliation restrictions alone.
 4. Enable **Separate the same region** or **Separate the same organization**.
-   Both can apply together.
+   Both can apply together. Set **Separate regions through round** and
+   **Separate organizations through round** for each enabled rule. Round 1 keeps
+   the original opening-round behavior; higher numbers protect later rounds.
 5. Set **Protected seed positions** to pin a leading count at their standard
    bracket positions. Leave it at zero to let all unpinned entrants move.
 6. Choose **Preview knockout draw**. Review every pair, slot, BYE and fixed
-   position, then choose **Apply draw rules** and **Generate draw**.
+   position. For later-round rules, also inspect the protected sections:
+   each section can contain only one entrant with a given restricted label.
+   Then choose **Apply draw rules** and **Generate draw**.
+
+For a sixteen-slot winners bracket:
+
+| Protect through        | Earliest possible meeting         | Maximum entrants with one label |
+| ---------------------- | --------------------------------- | ------------------------------- |
+| Round 2, quarterfinals | Round 3, semifinals               | 4                               |
+| Round 3, semifinals    | Round 4, final                    | 2                               |
+| Round 4, final         | No meeting in the winners bracket | 1                               |
+
+The rule holds for every possible match result. A BYE still occupies a bracket
+position and counts toward these limits. Region and organization may use
+different round limits. Labels are compared after normalization, so common
+Persian/Arabic letter forms and extra spaces do not bypass a restriction.
+Country codes and full country names are not automatically treated as aliases.
+See the [protected-section preview](docs/screenshots/knockout-separation.png)
+for a draw that separates regions through round 2 and organizations through round 3.
 
 A thirteen-entrant bracket needs sixteen slots and three BYEs. Those BYEs go to
 the first three entrants in the selected draw order. Ranked seeding uses seeds,
@@ -150,15 +171,20 @@ random seeding is selected. The same order determines protected seed positions.
 The app does not add BYEs to avoid difficult pairings.
 
 Fixed qualifier slots from stage connections are retained. A conflict with a
-protected position, a BYE recipient or an opening-round restriction blocks the
+protected position, a BYE recipient or a separation rule blocks the
 draw. Review the source mapping, selected order or agreed rules. A search-limit
 message means feasibility is still unknown; it is not a proof of impossibility.
 The app never relaxes restrictions automatically.
+Rules are checked when previewing and generating. Editing an affiliation after
+the draw does not move saved matches. If the agreed categories change, reset an
+unplayed draw and preview it again; keep played results intact.
 
 To return to standard drawing, choose **Use standard draw**, preview it and apply
 the change. This also allows switching to formats outside single/double
 elimination. Saved files and snapshot links retain knockout rules. Recipes
 retain the structure but require new affiliation values before restricted draws.
+Later-round rules use version 2. Recipients need an app release that supports
+that version before importing the shared tournament.
 
 ## Build groups followed by playoffs
 

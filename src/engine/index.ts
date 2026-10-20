@@ -34,6 +34,7 @@ export { previewGroupDraw };
 export { previewKnockoutDraw, knockoutDrawIssueText };
 export {
   KNOCKOUT_DRAW_ALGORITHM,
+  KNOCKOUT_SEPARATION_ALGORITHM,
   KNOCKOUT_DRAW_NODE_LIMIT,
   KNOCKOUT_DRAW_WORK_LIMIT,
 } from "./knockout-draw";

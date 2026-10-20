@@ -126,12 +126,22 @@ export interface GroupDrawPreview {
   algorithm: string;
   exploredNodes: number;
 }
-export type KnockoutDrawConfig = {
-  version: 1;
+type KnockoutDrawFields = {
   pots: { id: string; name: string; participantIds: string[] }[];
   restrictions: ("region" | "organization")[];
   protectedSeeds: number;
 };
+export type KnockoutDrawConfig = KnockoutDrawFields &
+  (
+    | { version: 1 }
+    | {
+        version: 2;
+        separation: {
+          field: "region" | "organization";
+          throughRound: number;
+        }[];
+      }
+  );
 export interface KnockoutDrawPreview {
   ready: boolean;
   slots: (string | null)[];

@@ -330,8 +330,8 @@ export function Participants({ tournament: doc, onChange }: EditorProps) {
             <Field
               label={t("Region", "منطقه")}
               hint={t(
-                "Enter a country, city, or area. Use the same label for entrants that should be separated in group draws.",
-                "کشور، شهر یا منطقه را وارد کنید. برای شرکت‌کنندگانی که باید در قرعه گروهی جدا شوند، نام یکسان بنویسید.",
+                "Enter a country, city, or area. Use the same label for entrants that should be separated in draws.",
+                "کشور، شهر یا منطقه را وارد کنید. برای شرکت‌کنندگانی که باید در قرعه جدا شوند، نام یکسان بنویسید.",
               )}
             >
               <input

@@ -158,8 +158,42 @@ Single and double elimination accept an optional, separate `config.knockoutDraw`
 With pots enabled, each active stage entrant must appear exactly once. Entrants
 from the same pot cannot meet in the first round. Each selected affiliation
 restriction also forbids matching two equal normalized labels in that round.
-Empty pots and restrictions permit seed protection alone. These rules do not
-constrain later winners-bracket rounds or the losers bracket.
+Empty pots and restrictions permit seed protection alone. Version 1 restricts
+only the first round.
+
+Version 2 adds a required nonempty `separation` array for later-round rules:
+
+```json
+{
+  "version": 2,
+  "pots": [],
+  "restrictions": ["region", "organization"],
+  "protectedSeeds": 2,
+  "separation": [
+    { "field": "region", "throughRound": 3 },
+    { "field": "organization", "throughRound": 2 }
+  ]
+}
+```
+
+Each separation field must also appear in `restrictions`, and may appear only
+once in `separation`. `throughRound` is an integer from 2 to 9 and cannot exceed
+the number of winners-bracket rounds in the actual draw. Restrictions without
+a separation entry keep their version 1 first-round meaning. Pot separation
+always applies only to the first round.
+
+For a rule through round `r`, equal normalized labels must occupy different
+blocks of `2^r` consecutive physical opening slots. This guarantees they cannot
+meet through that winners-bracket round for any results. BYE recipients count
+toward the rule. A field with sixteen slots has four blocks for round 2, so no
+region can have more than four entrants under that rule. Protecting through the
+winners final requires every entrant's restricted label to be unique.
+
+The guarantee does not cover the losers bracket, double-elimination grand finals
+or resets, or third-place matches. The solver does not change pairings after
+results are entered. Regions are participant labels, not geographic distances.
+Older version 1 configurations retain their representation and algorithm.
+Setting every restriction back to round 1 in the editor restores version 1.
 
 `protectedSeeds` pins the first specified number of entrants in the selected
 draw order to their standard seed positions. For a field of `n`, the bracket
@@ -173,9 +207,11 @@ The optional object is validated on import and retained by public snapshots,
 files, encrypted backups and updates. Pot names and affiliations remain public.
 Recipes remap its pot references to new entrant IDs, without carrying names or
 affiliations. Absent fields remain absent in older documents and their hashes.
-Unknown rule versions are rejected. Older app releases may preserve this object
-as extension data without enforcing it when generating a new draw; update the
-app before regenerating a shared tournament that uses it.
+Unknown rule versions are rejected. Releases that validate version 1 reject
+version 2 rules instead of treating them as first-round rules. Earlier releases
+from before knockout-rule validation may preserve the entire object as extension
+data without enforcing it; update the app before regenerating a shared tournament
+that uses it.
 
 ## Canonical form and hashes
 

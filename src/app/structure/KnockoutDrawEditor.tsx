@@ -15,6 +15,8 @@ import {
 import { Field, Notice } from "../../components/ui";
 import { useI18n } from "../../i18n";
 import { DrawPots } from "./DrawPots";
+import { KnockoutRestrictions } from "./KnockoutRestrictions";
+import { KnockoutSeparationPreview } from "./KnockoutSeparationPreview";
 import "./draw.css";
 
 interface Props {
@@ -88,12 +90,12 @@ export function KnockoutDrawEditor({
           <span className="eyebrow">{t("Draw studio", "استودیوی قرعه")}</span>
           <h3>
             <GitBranch size={18} />
-            {t("Shape the opening round", "رویارویی‌های دور نخست")}
+            {t("Shape the knockout draw", "طراحی قرعه حذفی")}
           </h3>
           <p>
             {t(
-              "Separate seed pots, regions, or organizations in the first round of the winners bracket.",
-              "در دور نخست جدول برندگان، شرکت‌کنندگان یک گلدان، منطقه یا سازمان را از هم جدا کنید.",
+              "Separate pots in opening matches, and keep regions or organizations apart through selected winners bracket rounds.",
+              "گلدان‌ها را در دیدارهای آغازین جدا کنید و جداسازی منطقه‌ها یا سازمان‌ها را تا دور دلخواه جدول برندگان ادامه دهید.",
             )}
           </p>
         </div>
@@ -124,8 +126,8 @@ export function KnockoutDrawEditor({
           <div className="draw-intro">
             <p>
               {t(
-                "The standard bracket follows your seeding method and source slots. Configure rules to restrict its opening pairings.",
-                "جدول معمول از روش سیدبندی و جایگاه‌های ورودی شما پیروی می‌کند. برای محدود کردن رویارویی‌های آغازین، قوانین را تنظیم کنید.",
+                "The standard bracket follows your seeding method and source slots. Configure rules to control how early entrants can meet.",
+                "جدول معمول از روش سیدبندی و جایگاه‌های ورودی شما پیروی می‌کند. با تنظیم قوانین، زودترین دور ممکن برای رویارویی را تعیین کنید.",
               )}
             </p>
             <button
@@ -147,8 +149,8 @@ export function KnockoutDrawEditor({
           <>
             <Notice>
               {t(
-                "These rules apply to the first round only. Entrants can meet again in later rounds or in the losers bracket. No restriction is relaxed automatically.",
-                "این قوانین فقط برای دور نخست هستند. شرکت‌کنندگان ممکن است در دورهای بعد یا جدول بازندگان با هم روبه‌رو شوند. هیچ محدودیتی خودکار کنار گذاشته نمی‌شود.",
+                "Separation applies to the winners bracket through each selected round. It does not cover the losers bracket, grand final, reset final, or placement matches. Pots restrict opening matches only. No rule is relaxed automatically.",
+                "جداسازی در جدول برندگان تا پایان دور انتخاب‌شده اعمال می‌شود؛ جدول بازندگان، فینال بزرگ، فینال تکراری و دیدارهای تعیین رتبه را پوشش نمی‌دهد. گلدان‌ها فقط دیدارهای آغازین را محدود می‌کنند. هیچ قانونی خودکار کنار گذاشته نمی‌شود.",
               )}
             </Notice>
             <p className="muted">
@@ -165,43 +167,17 @@ export function KnockoutDrawEditor({
               sourcesReady={!sourcePreview || sourcePreview.ready}
               onChange={onDraft}
             />
-            <h4>{t("Opening-round restrictions", "محدودیت‌های دور نخست")}</h4>
+            <KnockoutRestrictions
+              value={value}
+              bracketSize={bracketSize}
+              onChange={onDraft}
+            />
             <p className="muted">
               {t(
-                "Enter region and organization in Participants. Use consistent labels and fill blank values before previewing a restricted draw.",
-                "منطقه و سازمان را در بخش شرکت‌کنندگان وارد کنید. پیش از پیش‌نمایش قرعه محدودشده، نام‌ها را یکسان و مقادیر خالی را تکمیل کنید.",
+                "Round numbers count every bracket round, including rounds with BYEs. Preview validates the current entrant labels; changing labels after a draw does not move saved matches.",
+                "شماره دور، همه دورهای جدول از جمله دورهای دارای استراحت را می‌شمارد. پیش‌نمایش، نام‌های فعلی منطقه و سازمان را بررسی می‌کند؛ تغییر این نام‌ها پس از قرعه، دیدارهای ذخیره‌شده را جابه‌جا نمی‌کند.",
               )}
             </p>
-            {(["region", "organization"] as const).map((field) => (
-              <div className="draw-restriction" key={field}>
-                <label className="check-row">
-                  <input
-                    type="checkbox"
-                    checked={value.restrictions.includes(field)}
-                    onChange={(event) =>
-                      onDraft({
-                        ...value,
-                        restrictions: [
-                          ...value.restrictions.filter(
-                            (item) => item !== field,
-                          ),
-                          ...(event.target.checked ? [field] : []),
-                        ],
-                      })
-                    }
-                  />
-                  {field === "region"
-                    ? t(
-                        "Separate the same region",
-                        "جدا کردن شرکت‌کنندگان هم‌منطقه",
-                      )
-                    : t(
-                        "Separate the same organization",
-                        "جدا کردن شرکت‌کنندگان هم‌سازمان",
-                      )}
-                </label>
-              </div>
-            ))}
             <Field
               label={t("Protected seed positions", "جایگاه‌های سید محافظت‌شده")}
             >
@@ -288,6 +264,11 @@ export function KnockoutDrawEditor({
               {knockoutDrawIssueText(issue, locale)}
             </Notice>
           ))}
+          <KnockoutSeparationPreview
+            value={value}
+            preview={currentPreview}
+            participants={names}
+          />
           <div className="draw-group-grid">
             {Array.from(
               { length: currentPreview.slots.length / 2 },

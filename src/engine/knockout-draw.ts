@@ -11,12 +11,18 @@ import {
 import { previewAdvancement } from "./advancement";
 import { singleElimination } from "./elimination";
 import { DRAW_ALGORITHM, seedPositions, shuffle } from "./random";
+import {
+  solveKnockoutSeparation,
+  type SeparationRule,
+} from "./knockout-separation";
 
 export const KNOCKOUT_DRAW_ALGORITHM = "knockout-matching-fnv1a-mulberry32-v1";
+export const KNOCKOUT_SEPARATION_ALGORITHM =
+  "knockout-subtrees-fnv1a-mulberry32-v2";
 export const KNOCKOUT_DRAW_NODE_LIMIT = 100000;
 export const KNOCKOUT_DRAW_WORK_LIMIT = 20000000;
 
-/** First-round constraints do not promise separation in later rounds. */
+/** Draw versions retain their own pairing policy and deterministic algorithm. */
 export function previewKnockoutDraw(
   tournament: Tournament,
   stageId: string,
@@ -38,7 +44,9 @@ export function previewKnockoutDraw(
     issues: issueDetails.map((issue) => knockoutDrawIssueText(issue)),
     issueDetails,
     algorithm: stage?.config.knockoutDraw
-      ? KNOCKOUT_DRAW_ALGORITHM
+      ? stage.config.knockoutDraw.version === 2
+        ? KNOCKOUT_SEPARATION_ALGORITHM
+        : KNOCKOUT_DRAW_ALGORITHM
       : DRAW_ALGORITHM,
     exploredNodes,
   });
@@ -158,6 +166,43 @@ export function previewKnockoutDraw(
         add("capacity", name, String(total), String(playingMatches));
   }
   if (issueDetails.length) return result();
+  const separation: SeparationRule[] = [];
+  if (draw.version === 2) {
+    for (const rule of draw.separation) {
+      if (rule.throughRound > Math.log2(size)) {
+        add(
+          "separationRound",
+          String(rule.throughRound),
+          String(Math.log2(size)),
+        );
+        continue;
+      }
+      const labels = new Map<string, string>();
+      const totals = new Map<string, { name: string; count: number }>();
+      for (const id of participantIds) {
+        const raw = participants.get(id)![rule.field]!;
+        const label = normalizeDrawLabel(raw);
+        labels.set(id, label);
+        const previous = totals.get(label);
+        totals.set(label, {
+          name: previous?.name ?? raw.trim(),
+          count: (previous?.count ?? 0) + 1,
+        });
+      }
+      const capacity = size / 2 ** rule.throughRound;
+      for (const { name, count: total } of totals.values())
+        if (total > capacity)
+          add(
+            "separationCapacity",
+            name,
+            String(total),
+            String(rule.throughRound),
+            String(capacity),
+          );
+      separation.push({ ...rule, labels });
+    }
+  }
+  if (issueDetails.length) return result();
   const slots: (string | null)[] = Array.from({ length: size }, () => null);
   const fixedById = new Map<string, number>();
   for (const placement of fixedSlots) {
@@ -195,6 +240,40 @@ export function previewKnockoutDraw(
     }
   }
   if (issueDetails.length) return result();
+  if (draw.version === 2) {
+    for (const rule of separation) {
+      const seen = new Set<string>();
+      for (const [id, slot] of fixedById) {
+        const key = JSON.stringify([
+          Math.floor(slot / 2 ** rule.throughRound),
+          rule.labels.get(id),
+        ]);
+        if (seen.has(key)) {
+          add("separationFixed", rule.field, String(rule.throughRound));
+          break;
+        }
+        seen.add(key);
+      }
+    }
+    if (issueDetails.length) return result();
+    const solved = solveKnockoutSeparation({
+      slots,
+      participantIds,
+      byes,
+      keysById,
+      preferredSlot,
+      separation,
+      seed: stage.config.seed,
+      nodeLimit: KNOCKOUT_DRAW_NODE_LIMIT,
+      workLimit: KNOCKOUT_DRAW_WORK_LIMIT,
+    });
+    exploredNodes = solved.exploredNodes;
+    if (!solved.slots) {
+      add(solved.exhausted ? "exhausted" : "separationInfeasible");
+      return result();
+    }
+    return result(solved.slots);
+  }
   const entrants = playing.filter((id) => !paired.has(id));
   const neighbors = entrants.map((id) => {
     const preferredOpponent =

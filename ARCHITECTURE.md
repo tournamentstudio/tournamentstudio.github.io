@@ -195,14 +195,13 @@ standard draws.
 
 Pots partition the active entrants. Played first-round pairs must differ in pot
 and every selected affiliation field. Label normalization matches group draws.
-The algorithm never claims separation in later rounds. The next power-of-two
-bracket supplies exactly the required number of BYEs, assigned to the leading
+The next power-of-two bracket supplies exactly the required number of BYEs, assigned to the leading
 entrants in the selected draw order. Random seeding randomizes this order.
 Protected seeds pin a leading count to standard seed positions. Source slot
 mappings are also pins; inconsistent pins or occupied opponents of a fixed BYE
 recipient are errors.
 
-The `knockout-matching-fnv1a-mulberry32-v1` policy first validates fully pinned
+Version 1's `knockout-matching-fnv1a-mulberry32-v1` policy first validates fully pinned
 pairs. It builds a compatibility graph for remaining played entrants, removing
 edges between entrants pinned to different matches. A deterministic
 most-constrained-first search finds pairs, with seeded candidate ordering and a
@@ -211,8 +210,33 @@ the pinned positions. The search budget is 100,000 nodes or 20,000,000 work
 units. A budget failure reports unknown feasibility and returns no partial draw.
 Successful assignments are reproducible, without a uniform-random guarantee.
 
+Version 2 adds per-field `separation` rules through a chosen winners-bracket
+round. Equal normalized labels must occupy different blocks of `2^r` initial
+slots for round `r`. The least common ancestor of any two equal labels is
+therefore later than `r`, proving the guarantee for every possible result path.
+BYE entrants occupy those same paths and count toward section capacities.
+Losers brackets, grand finals, resets and placement matches are outside this
+guarantee.
+
+`knockout-subtrees-fnv1a-mulberry32-v2` assigns entrants to opening matches with
+one bounded search for pairing and section placement together. It chooses
+entrants with the fewest remaining match positions, prefers the standard seed
+position, then follows a seeded candidate order. Each placement removes
+incompatible positions from remaining entrants' domains. Backtracking restores
+those positions; equivalent empty matches within the same protected sections
+are skipped. A locally valid opening pair can be undone when it prevents the
+rest of the bracket from satisfying a later-round rule.
+
+Fixed source positions, protected seeds and BYE recipients remain constraints.
+Prechecks reject excess affiliation counts, conflicting fixed positions, and
+round limits beyond the actual bracket. Version 2 uses the same node and work
+budgets as version 1 and reports unknown feasibility on exhaustion. It does not
+partially return or silently weaken a rule.
+
 The editor follows the same draft, preview, revalidation and draw-lock rules as
-group drawing. The optional configuration stays absent in legacy documents.
+group drawing, with a per-field preview of protected bracket sections.
+The optional configuration stays absent in legacy documents, and version 1
+documents retain their original draw algorithm and hashes.
 Public projections validate it explicitly, and recipes remap its pot entrant
 references instead of leaking or reusing original participant identifiers.
 
