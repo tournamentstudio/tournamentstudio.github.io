@@ -135,6 +135,7 @@ test("connects graph ports by keyboard, persists node dragging and draws exact p
     exact: true,
   });
   await handle.scrollIntoViewIfNeeded();
+  await handle.hover();
   const before = await handle.boundingBox();
   expect(before).not.toBeNull();
   await page.mouse.move(before!.x + 15, before!.y + 15);
@@ -159,6 +160,9 @@ test("connects graph ports by keyboard, persists node dragging and draws exact p
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Generate draw", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "Refresh entrant list", exact: true }),
   ).toBeDisabled();
   expect(
     (await readDocument(page)).stages.find((stage) => stage.id === finals.id)!
@@ -395,4 +399,82 @@ test("rechecks stage removal after another tab records a result", async ({
     retained.matches.find((entry) => entry.stageId === finals.id)?.result
       ?.scores,
   ).toEqual([3, 1]);
+});
+
+test("adds a new entrant only after resetting and refreshing a root stage", async ({
+  page,
+}) => {
+  await page.goto("/#/create");
+  await page
+    .getByLabel("Tournament title", { exact: true })
+    .fill("Entrant refresh cup");
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByLabel("Participant count", { exact: true }).fill("4");
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Create tournament", exact: true })
+    .click();
+  await saved(page);
+  const original = await readDocument(page);
+  expect(original.matches).toHaveLength(3);
+  await page
+    .getByRole("navigation", { name: "Tournament sections" })
+    .getByRole("button", { name: "Participants", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Add entrants", exact: true }).click();
+  const add = page.getByRole("dialog", { name: "Add participants" });
+  await add
+    .getByLabel("One name per line", { exact: true })
+    .fill("Late entrant");
+  await add
+    .getByRole("button", { name: "Add participants", exact: true })
+    .click();
+  await expect(add).not.toBeVisible();
+  await saved(page);
+  const expanded = await readDocument(page);
+  const newcomer = expanded.participants.find(
+    (participant) => participant.name === "Late entrant",
+  )!;
+  expect(newcomer).toBeDefined();
+  expect(expanded.stages[0].participantIds).not.toContain(newcomer.id);
+  expect(expanded.matches).toEqual(original.matches);
+  await page
+    .getByRole("navigation", { name: "Tournament sections" })
+    .getByRole("button", { name: "Structure", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Refresh entrant list", exact: true }),
+  ).toBeDisabled();
+  await page
+    .getByRole("button", { name: "Reset unplayed draw", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "Reset unplayed draw?" })
+    .getByRole("button", { name: "Confirm", exact: true })
+    .click();
+  await saved(page);
+  expect((await readDocument(page)).stages[0].participantIds).not.toContain(
+    newcomer.id,
+  );
+  await page
+    .getByRole("button", { name: "Refresh entrant list", exact: true })
+    .click();
+  await saved(page);
+  expect((await readDocument(page)).stages[0].participantIds).toContain(
+    newcomer.id,
+  );
+  await page
+    .getByRole("button", { name: "Generate draw", exact: true })
+    .click();
+  await saved(page);
+  const redrawn = await readDocument(page);
+  expect(redrawn.stages[0].participantIds).toHaveLength(5);
+  expect(
+    redrawn.matches.some((match) =>
+      match.slots.some((slot) => slot.participantId === newcomer.id),
+    ),
+  ).toBe(true);
+  await expect(
+    page.getByRole("button", { name: "Refresh entrant list", exact: true }),
+  ).toBeDisabled();
 });

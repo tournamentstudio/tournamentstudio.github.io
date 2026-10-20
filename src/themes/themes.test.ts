@@ -6,8 +6,8 @@ import { getTheme, themes, themeStyle } from "./index";
 import { themeFileSchema } from "./ThemeStudio";
 
 describe("theme presets and sport defaults", () => {
-  it("has all 27 unique themes with meaningful geometry, patterns and font choices", () => {
-    expect(themes).toHaveLength(27);
+  it("has all 50 unique themes with meaningful geometry, patterns and font choices", () => {
+    expect(themes).toHaveLength(50);
     expect(new Set(themes.map((t) => t.id)).size).toBe(themes.length);
     expect(
       new Set(themes.map((t) => `${t.radius}:${t.font}:${t.pattern}`)).size,

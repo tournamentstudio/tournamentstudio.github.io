@@ -38,7 +38,7 @@ export const sports: SportPreset[] = [
     fa: "فوتسال",
     kind: "team",
     rule: { allowDraws: true, pointsWin: 3, pointsDraw: 1 },
-    theme: "football",
+    theme: "futsal-night",
     duration: 40,
   },
   {
@@ -74,7 +74,7 @@ export const sports: SportPreset[] = [
     fa: "تنیس روی میز",
     kind: "individual",
     rule: { scoring: "sets", bestOf: 5, targetScore: 11 },
-    theme: "minimal-light",
+    theme: "tabletennis-spin",
     duration: 30,
   },
   {
@@ -83,7 +83,7 @@ export const sports: SportPreset[] = [
     fa: "بدمینتون",
     kind: "individual",
     rule: { scoring: "sets", bestOf: 3, targetScore: 21 },
-    theme: "volleyball",
+    theme: "badminton-feather",
     duration: 40,
   },
   {
@@ -134,7 +134,7 @@ export const sports: SportPreset[] = [
     fa: "مسابقه علمی",
     kind: "team",
     rule: { scoring: "high", allowDraws: true, targetScore: 100 },
-    theme: "university",
+    theme: "quiz-academy",
     duration: 30,
   },
   {

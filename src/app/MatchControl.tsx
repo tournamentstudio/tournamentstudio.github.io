@@ -14,6 +14,9 @@ import { uid } from "../domain/types";
 import { getCorrectionImpact, recordResult } from "../engine";
 import { Field, Notice, ErrorText, Modal } from "../components/ui";
 import { useI18n } from "../i18n";
+import { getTheme, themeStyle } from "../themes";
+import { GameIdentity, ThemeMotif } from "../themes/ThemeMotif";
+import "./game-experience.css";
 
 export function MatchControl({
   tournament: doc,
@@ -28,7 +31,7 @@ export function MatchControl({
   onClose: () => void;
   busy?: boolean;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const entrants = match.slots.map((s) =>
     doc.participants.find((p) => p.id === s.participantId),
   );
@@ -140,10 +143,29 @@ export function MatchControl({
   return (
     <Modal wide title={t("Match control", "کنترل دیدار")} onClose={onClose}>
       <fieldset
-        className="match-control-fieldset"
+        className="match-control-fieldset game-match-control"
         disabled={busy}
         aria-busy={busy}
+        data-sport={doc.sport}
+        style={themeStyle(doc.theme)}
       >
+        <div
+          className="game-match-banner themed"
+          data-pattern={getTheme(doc.theme.preset).pattern}
+        >
+          <GameIdentity
+            sport={doc.sport}
+            preset={doc.theme.preset}
+            locale={locale}
+            compact
+          />
+          {doc.sport === "gol-ya-pooch" && (
+            <span className="game-target">
+              {t("Target", "امتیاز هدف")}{" "}
+              <strong>{doc.rules.targetScore}</strong>
+            </span>
+          )}
+        </div>
         <div className="match-modal-subtitle">
           {match.label} · {t("Round", "دور")} {match.round}
           {match.group && ` · ${match.group}`}
@@ -179,7 +201,13 @@ export function MatchControl({
         >
           {entrants.map((p, i) => (
             <div className="score-side" key={i}>
-              <span className="avatar large">{p?.name.slice(0, 2) ?? "?"}</span>
+              <span className="avatar large">
+                {doc.sport === "gol-ya-pooch" ? (
+                  <ThemeMotif preset={doc.theme.preset} variant="emblem" />
+                ) : (
+                  (p?.name.slice(0, 2) ?? "?")
+                )}
+              </span>
               <bdi>{p?.name ?? t("Awaiting qualifier", "در انتظار صعود")}</bdi>
               <input
                 aria-label={`${t("Score", "امتیاز")} ${p?.name ?? i + 1}`}
@@ -196,6 +224,21 @@ export function MatchControl({
                   )
                 }
               />
+              {doc.sport === "gol-ya-pooch" && (
+                <div className="gol-target-track">
+                  <progress
+                    aria-label={`${p?.name ?? i + 1}: ${t("Progress toward target", "پیشرفت تا امتیاز هدف")}`}
+                    max={Math.max(1, doc.rules.targetScore)}
+                    value={Math.min(
+                      Math.max(0, scores[i] ?? 0),
+                      Math.max(1, doc.rules.targetScore),
+                    )}
+                  />
+                  <span>
+                    {scores[i] ?? 0} / {doc.rules.targetScore}
+                  </span>
+                </div>
+              )}
             </div>
           ))}
         </div>

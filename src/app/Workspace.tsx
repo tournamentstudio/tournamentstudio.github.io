@@ -36,6 +36,9 @@ import { Schedule } from "./Schedule";
 import { Statistics } from "./Statistics";
 import { History } from "./History";
 import { Settings } from "./StorageHealth";
+import { getTheme, themeStyle } from "../themes";
+import { GameIdentity, ThemeMotif } from "../themes/ThemeMotif";
+import "./game-experience.css";
 const ThemeStudio = lazy(() =>
   import("../themes/ThemeStudio").then((m) => ({ default: m.ThemeStudio })),
 );
@@ -193,9 +196,20 @@ export function Workspace({
     );
   }
   return (
-    <div className="workspace-page">
+    <div
+      className="workspace-page game-workspace"
+      data-sport={doc.sport}
+      data-theme={doc.theme.preset}
+      style={themeStyle(doc.theme)}
+    >
       <header className="workspace-heading">
         <div>
+          <GameIdentity
+            sport={doc.sport}
+            preset={doc.theme.preset}
+            locale={locale}
+            compact
+          />
           <div className="workspace-breadcrumb">
             {t("My tournaments", "مسابقات من")}
             <span>/</span>
@@ -262,7 +276,10 @@ export function Workspace({
         >
           {tab === "overview" && (
             <div className="panel-content">
-              <div className="overview-top">
+              <div
+                className="overview-top game-overview themed"
+                data-pattern={getTheme(doc.theme.preset).pattern}
+              >
                 <div className="overview-welcome">
                   <span className="eyebrow">
                     {champion
@@ -298,7 +315,7 @@ export function Workspace({
                   </button>
                 </div>
                 <div className="overview-emblem">
-                  <Trophy size={56} strokeWidth={1.15} />
+                  <ThemeMotif preset={doc.theme.preset} variant="emblem" />
                 </div>
               </div>
               <div className="stat-grid">

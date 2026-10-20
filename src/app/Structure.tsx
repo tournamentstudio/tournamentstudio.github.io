@@ -389,6 +389,14 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
             lockReason={lockReason}
             hasDraft={dirty}
             onEdit={editStage}
+            onRefreshEntrants={() => {
+              if (dirty || stage.sources.length) return;
+              editStage({
+                participantIds: doc.participants
+                  .filter((participant) => participant.status === "active")
+                  .map((participant) => participant.id),
+              });
+            }}
             onReorder={reorder}
             onDuplicate={() => add(stage)}
             onRemove={remove}

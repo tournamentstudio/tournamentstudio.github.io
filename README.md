@@ -26,11 +26,13 @@ Quick Create accepts numbered entrants or pasted names. The workspace includes p
 
 English and Persian labels, local Inter and Vazirmatn fonts, and RTL layouts are included. The interface is designed for desktop and phones. Some engine validation messages remain English. [FEATURES.md](FEATURES.md) records that limitation along with other partial features.
 
-The 27 theme presets change typography, geometry, backgrounds, and colors. Presentation Studio has 17 scene types, playlists, keyboard controls, fullscreen, and three aspect ratios. A second tab in the same browser profile reloads confirmed revisions. That is local communication, not synchronization across devices.
+The 50 theme presets include game collections for all 14 activities. Original court diagrams, paddles, chess pieces, Persian geometry and other vector artwork sit on paper, wood, felt, tile and other material treatments. Theme Studio recommends related choices and lets you search the full catalog. The selected identity appears in creation, the workspace, match cards and scorekeeping.
 
-Gol Ya Pooch has a three-player default roster, editable target and hand points, configurable cards with use limits, a quick score form, and a hand-by-hand referee form. Public projections contain live totals but exclude hand logs and concealed positions. Its traditional, modern, and night themes also work in presentation mode.
+Presentation Studio has 17 scene types, playlists, keyboard controls, fullscreen, and three aspect ratios. A second tab in the same browser profile reloads confirmed revisions. That is local communication, not synchronization across devices.
 
-![TournaStudio match workspace with an example tournament](docs/screenshots/workspace.png)
+Gol Ya Pooch has a three-player default roster, editable target and hand points, configurable cards with use limits, a quick score form, and a hand-by-hand referee form. Its scorecards show progress toward the configured target. Public projections contain live totals but exclude hand logs and concealed positions. Traditional, Modern, Night, Saffron, Courtyard, Velvet and Ink House themes also work in presentation mode. Both sides receive identical decorative emblems, independent of concealed gameplay information.
+
+![Gol Ya Pooch theme collection in TournaStudio](docs/screenshots/gol-theme-gallery.png)
 
 ## Run it locally
 

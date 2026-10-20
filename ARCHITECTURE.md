@@ -210,6 +210,26 @@ It is a lower bound, not a promised finish time. Dependencies, rest, availabilit
 and ungenerated dynamic rounds can increase the duration. Scheduling is greedy;
 there is no optimal constraint solver or drag-and-drop timeline.
 
+## Theme identities
+
+The 50 presets combine color, typography and geometry tokens with 17 original
+vector motifs and 12 material treatments. `identities.ts` maps presets to the
+14 activity collections; `getThemesForSport` supplies creation and gallery
+recommendations. The original 27 preset IDs remain stable.
+
+`ThemeMotif` accepts a preset identifier and layout variant. It never receives
+matches, hand logs, possession or concealed positions. `GameIdentity` receives
+only sport, preset and locale. Theme artwork therefore cannot reveal a referee
+secret through a different emblem, position or color. Material textures and
+vector paths are local static definitions, without remote assets.
+
+Theme settings remain the existing version 1 data contract. The richer identity
+is derived from the preset ID, so exports do not duplicate artwork or create new
+executable fields. Predefined text, accent and muted tokens are checked for 4.5:1
+contrast on card and base backgrounds. Custom colors can reduce contrast; the
+editor warns about the text/background pair. This is not a claim of a full
+accessibility audit.
+
 ## Security boundaries
 
 All external packages are size-bounded and schema-validated before import.

@@ -19,7 +19,9 @@ import {
 } from "../domain/types";
 import { formats, generateStage } from "../engine";
 import { applySport, sports } from "../sports";
-import { themes } from "../themes";
+import { themes, getThemesForSport, getTheme, themeStyle } from "../themes";
+import { GameIdentity, ThemeMotif } from "../themes/ThemeMotif";
+import "./game-experience.css";
 import { Field, ErrorText, Notice } from "../components/ui";
 import { useI18n, formatName } from "../i18n";
 
@@ -52,11 +54,8 @@ export function CreateFlow({
   );
   const [names, setNames] = useState("");
   const [theme, setTheme] = useState(
-    template === "gol-ya-pooch"
-      ? "gol-traditional"
-      : template === "esports"
-        ? "esports-neon"
-        : "minimal-light",
+    () =>
+      sports.find((preset) => preset.id === template)?.theme ?? "minimal-light",
   );
   const [groups, setGroups] = useState(template === "gol-ya-pooch" ? 2 : 4);
   const [rounds, setRounds] = useState(5);
@@ -72,6 +71,7 @@ export function CreateFlow({
     .map((x) => x.trim())
     .filter(Boolean);
   const actualCount = participantNames.length || count;
+  const relatedThemes = getThemesForSport(sport);
   async function submit() {
     setError(undefined);
     setBusy(true);
@@ -419,13 +419,63 @@ export function CreateFlow({
                   value={theme}
                   onChange={(e) => setTheme(e.target.value)}
                 >
-                  {themes.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {locale === "fa" ? s.fa : s.name}
-                    </option>
-                  ))}
+                  <optgroup label={t("For this game", "ویژه این بازی")}>
+                    {relatedThemes.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {locale === "fa" ? s.fa : s.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label={t("All other themes", "سایر تم‌ها")}>
+                    {themes
+                      .filter((s) => !relatedThemes.some((p) => p.id === s.id))
+                      .map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {locale === "fa" ? s.fa : s.name}
+                        </option>
+                      ))}
+                  </optgroup>
                 </select>
               </Field>
+              <div
+                className="creation-theme-preview themed"
+                style={themeStyle({ preset: theme, reducedMotion: false })}
+                data-pattern={getTheme(theme).pattern}
+                data-theme={theme}
+              >
+                <GameIdentity sport={sport} preset={theme} locale={locale} />
+                <ThemeMotif
+                  preset={theme}
+                  variant="field"
+                  className="creation-theme-art"
+                />
+                <p>
+                  {locale === "fa"
+                    ? getTheme(theme).descriptionFa
+                    : getTheme(theme).description}
+                </p>
+              </div>
+              <div
+                className="creation-theme-options"
+                role="group"
+                aria-label={t("Game theme suggestions", "پیشنهاد تم بازی")}
+              >
+                {relatedThemes.map((preset) => (
+                  <button
+                    key={preset.id}
+                    className="creation-theme-option"
+                    aria-pressed={theme === preset.id}
+                    onClick={() => setTheme(preset.id)}
+                    style={themeStyle({
+                      preset: preset.id,
+                      reducedMotion: true,
+                    })}
+                  >
+                    <ThemeMotif preset={preset.id} variant="emblem" />
+                    <span>{locale === "fa" ? preset.fa : preset.name}</span>
+                  </button>
+                ))}
+              </div>
               <div className="creation-summary">
                 <ListChecks size={23} />
                 <div>

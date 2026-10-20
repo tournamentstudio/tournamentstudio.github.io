@@ -2594,6 +2594,7 @@ kbd {
   padding: 7px 0;
 }
 .toast {
+  pointer-events: none;
   display: flex;
   align-items: center;
   gap: 10px;

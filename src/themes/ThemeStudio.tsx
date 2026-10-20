@@ -3,7 +3,16 @@ import { z } from "zod";
 import type { Locale, ThemeSettings, Tournament } from "../domain/types";
 import { downloadText } from "../export";
 import { validateRasterAsset } from "../security/codec";
-import { getTheme, readImageAsset, themes, themeStyle } from "./index";
+import {
+  gameCollections,
+  getTheme,
+  getThemesForSport,
+  readImageAsset,
+  themes,
+  themeStyle,
+} from "./index";
+import { GameIdentity, ThemeMotif } from "./ThemeMotif";
+import { contrastRatio } from "./contrast";
 import "./themes.css";
 
 const color = z.string().regex(/^#[0-9a-f]{6}$/i);
@@ -37,9 +46,32 @@ export function ThemeStudio({
   const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
   const [error, setError] = useState("");
   const [category, setCategory] = useState("all");
+  const [search, setSearch] = useState("");
+  const [showAll, setShowAll] = useState(false);
   const id = useId(),
     current = tournament.theme,
     base = getTheme(current.preset);
+  const related = getThemesForSport(tournament.sport);
+  const game = gameCollections[tournament.sport] ?? gameCollections.generic;
+  const query = search.normalize("NFKC").toLocaleLowerCase(locale);
+  const visible = (showAll ? themes : related).filter(
+    (theme) =>
+      (category === "all" || theme.category === category) &&
+      [
+        theme.name,
+        theme.fa,
+        theme.description,
+        theme.descriptionFa,
+        theme.collection.name,
+        theme.collection.fa,
+      ].some((value) =>
+        value.normalize("NFKC").toLocaleLowerCase(locale).includes(query),
+      ),
+  );
+  const previewContrast = contrastRatio(
+    current.foreground ?? base.foreground,
+    current.background ?? base.background,
+  );
   const update = (part: Partial<ThemeSettings>) =>
     onChange({ ...current, ...part });
   const upload = async (
@@ -82,6 +114,18 @@ export function ThemeStudio({
         style={themeStyle(current)}
         data-pattern={base.pattern}
       >
+        <div className="theme-preview-top">
+          <GameIdentity
+            sport={tournament.sport}
+            preset={current.preset}
+            locale={locale}
+          />
+          <ThemeMotif
+            preset={current.preset}
+            variant="ornament"
+            className="theme-preview-art"
+          />
+        </div>
         {current.logo && (
           <img
             src={current.logo}
@@ -111,54 +155,172 @@ export function ThemeStudio({
           )}
         </small>
       </div>
-      <div className="theme-tools">
-        <label htmlFor={`${id}-category`}>{t("Collection", "مجموعه")}</label>
-        <select
-          id={`${id}-category`}
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
+      {previewContrast < 4.5 && (
+        <p className="theme-contrast-note" role="status">
+          {t(
+            "Your custom text and background have low contrast. Choose a darker or lighter text color for readable small labels.",
+            "رنگ متن و پس‌زمینه سفارشی کنتراست کمی دارند. برای خوانایی نوشته کوچک، رنگ متن روشن‌تر یا تیره‌تر انتخاب کنید.",
+          )}
+        </p>
+      )}
+      <div className="theme-gallery-heading">
+        <div>
+          <span className="theme-gallery-eyebrow">
+            {t("DESIGNED FOR THE GAME", "طراحی برای بازی")}
+          </span>
+          <h3>
+            {showAll
+              ? t("Explore every collection", "همه مجموعه‌ها را ببینید")
+              : t(game.name, game.fa)}
+          </h3>
+          <p>
+            {showAll
+              ? t(
+                  "Choose the setting, material and character of your competition.",
+                  "فضا، جنس و شخصیت رقابت را انتخاب کنید.",
+                )
+              : t(
+                  "A collection selected for this activity. Every theme can still be used with any game.",
+                  "مجموعه‌ای برای این فعالیت. هر قالب را می‌توانید برای هر بازی به کار ببرید.",
+                )}
+          </p>
+        </div>
+        <button
+          type="button"
+          className="theme-scope-toggle"
+          aria-pressed={showAll}
+          onClick={() => {
+            setShowAll(!showAll);
+            setCategory("all");
+          }}
         >
-          {[
-            ["all", "All themes", "همه قالب‌ها"],
-            ["general", "General", "عمومی"],
-            ["sports", "Sports", "ورزشی"],
-            ["gaming", "Gaming", "بازی"],
-            ["persian", "Persian", "ایرانی"],
-            ["seasonal", "Seasonal", "فصلی"],
-          ].map(([value, en, fa]) => (
-            <option key={value} value={value}>
-              {t(en, fa)}
-            </option>
-          ))}
-        </select>
+          {showAll
+            ? t("Show themes for my game", "قالب‌های بازی من")
+            : t(
+                `Show all ${themes.length} themes`,
+                `نمایش همه ${themes.length.toLocaleString("fa-IR")} قالب`,
+              )}
+        </button>
+      </div>
+      <div className="theme-gallery-tools">
+        <label className="theme-search" htmlFor={`${id}-search`}>
+          <span>{t("Search themes", "جستجوی قالب‌ها")}</span>
+          <input
+            id={`${id}-search`}
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t(
+              "Try velvet, court or ink",
+              "مثلاً مخمل، زمین یا مرکب",
+            )}
+          />
+        </label>
+        <label className="theme-category" htmlFor={`${id}-category`}>
+          {t("Collection", "مجموعه")}
+          <select
+            id={`${id}-category`}
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            {[
+              ["all", "All themes", "همه قالب‌ها"],
+              ["general", "General", "عمومی"],
+              ["sports", "Sports", "ورزشی"],
+              ["gaming", "Gaming", "بازی"],
+              ["persian", "Persian", "ایرانی"],
+              ["seasonal", "Seasonal", "فصلی"],
+            ].map(([value, en, fa]) => (
+              <option key={value} value={value}>
+                {t(en, fa)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <span className="theme-result-count" role="status">
+          {visible.length.toLocaleString(locale)} {t("themes", "قالب")}
+        </span>
       </div>
       <div className="theme-preset-grid">
-        {themes
-          .filter((x) => category === "all" || x.category === category)
-          .map((preset) => (
-            <button
-              type="button"
-              key={preset.id}
-              className="theme-choice themed"
-              data-pattern={preset.pattern}
-              style={themeStyle({ preset: preset.id, reducedMotion: false })}
-              aria-pressed={current.preset === preset.id}
-              onClick={() =>
-                onChange({
-                  preset: preset.id,
-                  reducedMotion: current.reducedMotion,
-                  logo: current.logo,
-                })
-              }
-            >
-              <span className="theme-swatch">
-                <span style={{ background: preset.accent }} />
-                <span style={{ background: preset.card }} />
-                <span style={{ background: preset.foreground }} />
+        {visible.map((preset) => (
+          <button
+            type="button"
+            key={preset.id}
+            className="theme-choice themed"
+            data-pattern={preset.pattern}
+            style={themeStyle({ preset: preset.id, reducedMotion: false })}
+            aria-label={t(preset.name, preset.fa)}
+            aria-pressed={current.preset === preset.id}
+            onClick={() =>
+              onChange({
+                preset: preset.id,
+                reducedMotion: current.reducedMotion,
+                logo: current.logo,
+                backgroundImage: current.backgroundImage,
+              })
+            }
+          >
+            <span className="theme-choice-top">
+              <span className="theme-choice-collection">
+                {t(preset.collection.name, preset.collection.fa)}
               </span>
-              <strong>{t(preset.name, preset.fa)}</strong>
-            </button>
-          ))}
+              <span className="theme-choice-check">
+                {current.preset === preset.id
+                  ? t("Selected", "انتخاب‌شده")
+                  : ""}
+              </span>
+            </span>
+            <ThemeMotif preset={preset.id} className="theme-choice-art" />
+            <span className="theme-choice-score">
+              <span>{t("HOME", "میزبان")}</span>
+              <b>3</b>
+              <i>:</i>
+              <b>1</b>
+              <span>{t("AWAY", "میهمان")}</span>
+            </span>
+            <span className="theme-swatch" aria-hidden="true">
+              <span style={{ background: preset.accent }} />
+              <span style={{ background: preset.card }} />
+              <span style={{ background: preset.foreground }} />
+            </span>
+            <strong>{t(preset.name, preset.fa)}</strong>
+            <span className="theme-choice-description">
+              {t(preset.description, preset.descriptionFa)}
+            </span>
+          </button>
+        ))}
+      </div>
+      {!visible.length && (
+        <div className="theme-gallery-empty">
+          <h4>
+            {t("No themes match this search.", "قالبی با این جستجو پیدا نشد.")}
+          </h4>
+          <p>
+            {t(
+              "Try another name or explore all game collections.",
+              "نام دیگری را امتحان کنید یا همه مجموعه‌های بازی را ببینید.",
+            )}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setSearch("");
+              setCategory("all");
+              setShowAll(true);
+            }}
+          >
+            {t("Browse all themes", "دیدن همه قالب‌ها")}
+          </button>
+        </div>
+      )}
+      <div className="theme-custom-heading">
+        <h3>{t("Make the details yours", "جزئیات به سلیقه شما")}</h3>
+        <p>
+          {t(
+            "Tune this preset without changing your tournament rules or results.",
+            "این قالب را بدون تغییر قوانین یا نتایج مسابقات تنظیم کنید.",
+          )}
+        </p>
       </div>
       <div className="theme-fields">
         {(
@@ -170,11 +332,15 @@ export function ThemeStudio({
         ).map(([field, en, fa]) => (
           <label key={field}>
             {t(en, fa)}
-            <input
-              type="color"
-              value={current[field] ?? base[field]}
-              onChange={(e) => update({ [field]: e.target.value })}
-            />
+            <span className="theme-color-control">
+              <input
+                type="color"
+                aria-label={t(en, fa)}
+                value={current[field] ?? base[field]}
+                onChange={(e) => update({ [field]: e.target.value })}
+              />
+              <code aria-hidden="true">{current[field] ?? base[field]}</code>
+            </span>
           </label>
         ))}
         <label>

@@ -116,35 +116,45 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for algorithms and measured engine tests.
 
 ## Appearance and presentation
 
-| Capability                               | Status                | Actual behavior                                                                                                                                                                                 |
-| ---------------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SVG knockout visualizations              | Implemented           | Real source links, upper/lower bracket lanes, conditional finals, selectable matches and long-name labels.                                                                                      |
-| Other competition displays               | Implemented           | Match grids, group/overall standings and multi-entrant scores.                                                                                                                                  |
-| Bracket controls                         | Implemented           | Zoom, fit, keyboard scrolling, round/stage selection, participant highlighting, score/seed visibility and RTL orientation.                                                                      |
-| Advanced bracket layouts                 | Not yet implemented   | No centered final, top-down layout, round collapse, drag panning or separate mobile graph algorithm.                                                                                            |
-| Theme presets                            | Implemented           | 27 presets with different typography, patterns, radius, borders, shadows and color tokens.                                                                                                      |
-| Theme Studio                             | Implemented           | Live preview, colors, fonts, size, spacing, borders, corners, connectors, raster background/logo and reduced motion.                                                                            |
-| Custom theme portability                 | Implemented           | Versioned theme JSON import/export, applied to the current tournament without changing results.                                                                                                 |
-| Saved personal theme library             | Not yet implemented   | Export custom files to reuse them.                                                                                                                                                              |
-| Advanced design controls                 | Partially implemented | No gradient-stop editor, font-weight control, alignment editor, custom card/table templates or per-element animation-speed editor.                                                              |
-| Presentation playlist                    | Implemented           | Add/remove/reorder scenes, duration/title/public text, rotation, pause and manual controls.                                                                                                     |
-| Presentation scenes                      | Implemented           | 17 types: title, participants, bracket, standings, current scoreboard, upcoming match, results, schedule, statistics, countdown, break, rules, sponsors, announcement, champion, podium and QR. |
-| Dedicated introductions and celebrations | Partially implemented | Title/announcement scenes can introduce semifinals or finals. No separate animated trophy scene or team-by-team introduction workflow.                                                          |
-| Display modes                            | Partially implemented | Fullscreen, 16:9, 4:3 and portrait layouts; responsive scoreboard. No transparent broadcast overlay or dedicated overlay editor.                                                                |
-| Local live display                       | Implemented           | Confirmed saves notify same-origin tabs; displays reload saved state. Protected tabs must be unlocked separately.                                                                               |
-| OBS use                                  | Partially implemented | Capture the unlocked browser window. A separate OBS browser source has its own storage.                                                                                                         |
-| QR generation                            | Implemented           | Creates a QR for links up to the conservative 1,800-byte limit; otherwise recommends a file/code.                                                                                               |
-| QR camera scanning / multipart transfer  | Not yet implemented   | Use a device camera outside the app for standard QR links.                                                                                                                                      |
+| Capability                               | Status                | Actual behavior                                                                                                                                                                                           |
+| ---------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SVG knockout visualizations              | Implemented           | Real source links, upper/lower bracket lanes, conditional finals, selectable matches and long-name labels.                                                                                                |
+| Other competition displays               | Implemented           | Match grids, group/overall standings and multi-entrant scores.                                                                                                                                            |
+| Bracket controls                         | Implemented           | Zoom, fit, keyboard scrolling, round/stage selection, participant highlighting, score/seed visibility and RTL orientation.                                                                                |
+| Advanced bracket layouts                 | Not yet implemented   | No centered final, top-down layout, round collapse, drag panning or separate mobile graph algorithm.                                                                                                      |
+| Theme presets                            | Implemented           | 50 presets across 14 game collections, with 17 original vector motifs and 12 material treatments as well as typography, geometry and color tokens. Original preset IDs remain compatible.                 |
+| Related game themes                      | Implemented           | At least two related choices for each activity. Game-specific creation previews, workspace identity, match cards, scorekeeper artwork and presentation backgrounds.                                       |
+| Theme Studio                             | Implemented           | Game recommendations, bilingual search, full-catalog browsing, live preview, colors with contrast warning, fonts, size, spacing, borders, corners, connectors, raster background/logo and reduced motion. |
+| Custom theme portability                 | Implemented           | Versioned theme JSON import/export, applied to the current tournament without changing results.                                                                                                           |
+| Saved personal theme library             | Not yet implemented   | Export custom files to reuse them.                                                                                                                                                                        |
+| Advanced design controls                 | Partially implemented | No gradient-stop editor, font-weight control, alignment editor, custom card/table templates or per-element animation-speed editor.                                                                        |
+| Presentation playlist                    | Implemented           | Add/remove/reorder scenes, duration/title/public text, rotation, pause and manual controls.                                                                                                               |
+| Presentation scenes                      | Implemented           | 17 types: title, participants, bracket, standings, current scoreboard, upcoming match, results, schedule, statistics, countdown, break, rules, sponsors, announcement, champion, podium and QR.           |
+| Dedicated introductions and celebrations | Partially implemented | Title/announcement scenes can introduce semifinals or finals. No separate animated trophy scene or team-by-team introduction workflow.                                                                    |
+| Display modes                            | Partially implemented | Fullscreen, 16:9, 4:3 and portrait layouts; responsive scoreboard. No transparent broadcast overlay or dedicated overlay editor.                                                                          |
+| Local live display                       | Implemented           | Confirmed saves notify same-origin tabs; displays reload saved state. Protected tabs must be unlocked separately.                                                                                         |
+| OBS use                                  | Partially implemented | Capture the unlocked browser window. A separate OBS browser source has its own storage.                                                                                                                   |
+| QR generation                            | Implemented           | Creates a QR for links up to the conservative 1,800-byte limit; otherwise recommends a file/code.                                                                                                         |
+| QR camera scanning / multipart transfer  | Not yet implemented   | Use a device camera outside the app for standard QR links.                                                                                                                                                |
 
-Theme collection:
+Theme collections:
 
-| Category | Presets                                                                                                               |
-| -------- | --------------------------------------------------------------------------------------------------------------------- |
-| General  | Minimal Light, Minimal Dark, Modern Glass, Editorial, Professional Corporate, Championship Gold, University, Festival |
-| Sports   | Football Stadium, Basketball Arena, Volleyball Court, Tennis Championship, Racing, Boxing, Classic Sports Broadcast   |
-| Gaming   | Esports Neon, Retro Arcade, Cyber Arena, Fantasy Championship, Chess Classic, Board Game                              |
-| Persian  | Persian Heritage, Gol Ya Pooch Traditional, Gol Ya Pooch Modern, Gol Ya Pooch Night                                   |
-| Seasonal | Winter, Summer                                                                                                        |
+| Activity         | Related choices                                                                                                                                             |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Open competition | Minimal Light, Minimal Dark, Modern Glass, Editorial, Professional Corporate, Championship Gold, Festival, Boxing, Classic Sports Broadcast, Winter, Summer |
+| Football         | Football Stadium, Football Chalkboard                                                                                                                       |
+| Futsal           | Futsal After Hours, Futsal Parquet                                                                                                                          |
+| Basketball       | Basketball Arena, Basketball Street Court                                                                                                                   |
+| Volleyball       | Volleyball Court, Volleyball Coastline                                                                                                                      |
+| Tennis           | Tennis Championship, Tennis Clay Club                                                                                                                       |
+| Table tennis     | Table Tennis Spin, Table Tennis Clubhouse                                                                                                                   |
+| Badminton        | Badminton Featherlight, Badminton Midnight Hall                                                                                                             |
+| Chess            | Chess Classic, Chess Manuscript                                                                                                                             |
+| Esports          | Esports Neon, Retro Arcade, Cyber Arena, Esports Pearl Console, Esports Terminal                                                                            |
+| Racing           | Racing, Racing Pit Lane, Racing Desert Rally                                                                                                                |
+| Board games      | Fantasy Championship, Board Game, Board Game Mahogany, Board Game Hex Atlas                                                                                 |
+| Quiz             | University, Quiz Academy, Quiz Laboratory                                                                                                                   |
+| Gol Ya Pooch     | Persian Heritage, Gol Ya Pooch Traditional, Modern, Night, Saffron, Courtyard, Velvet, Ink House                                                            |
 
 ## Sports and Gol Ya Pooch
 

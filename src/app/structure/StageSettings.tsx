@@ -25,6 +25,7 @@ interface Props {
   onReset: () => void;
   onDraw: () => void;
   onAdvance: () => void;
+  onRefreshEntrants: () => void;
 }
 
 export function StageSettings({
@@ -40,6 +41,7 @@ export function StageSettings({
   onReset,
   onDraw,
   onAdvance,
+  onRefreshEntrants,
 }: Props) {
   const { t, locale } = useI18n();
   return (
@@ -103,6 +105,15 @@ export function StageSettings({
           ))}
         </select>
       </Field>
+      {!stage.sources.length && (
+        <button
+          className="text-button"
+          disabled={locked || hasDraft}
+          onClick={onRefreshEntrants}
+        >
+          {t("Refresh entrant list", "به‌روز کردن فهرست ورودی")}
+        </button>
+      )}
       {locked && <p className="structure-lock-note">{lockReason}</p>}
       <div className="two-columns">
         {(

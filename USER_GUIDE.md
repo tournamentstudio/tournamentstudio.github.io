@@ -56,9 +56,11 @@ substitutes and coaches. The check-in checkbox records attendance; CSV and
 **Print check-in** provide portable sheets.
 
 Adding a participant does not silently redraw an existing stage. Before any
-results are recorded, open **Structure**, choose the stage, select
-**Refresh entrant list**, then **Generate draw**. Once play starts, keep the
-current draw or duplicate the tournament to redesign it.
+results are recorded, open **Structure**, choose the stage and confirm **Reset
+unplayed draw**. Select **Refresh entrant list**, then **Generate draw**. The
+refresh action is available for a stage with directly assigned participants.
+Stages fed by qualification connections resolve their own entrants. Once play
+starts, keep the current draw or duplicate the tournament to redesign it.
 
 ## Choose and operate a format
 
@@ -88,9 +90,10 @@ For sixteen teams in four groups:
 
 1. Create a **Groups & pools** tournament with sixteen entrants and four groups.
 2. Open **Structure** and choose **Add stage**.
-3. Name the new stage, choose **Single elimination**, and choose the group stage
-   under **Entrants from**.
-4. Set **Qualifiers to take** to `2` and enable **From each group**.
+3. Name the new stage and choose **Single elimination** in **Stage settings**.
+   Choose the group stage under **New connection source**, then **Add connection**.
+4. Set **Qualifiers to take 1** to `2`, enable **From each group**, and choose
+   **Apply connections**.
 5. Complete the group results.
 6. Select the playoff stage and choose **Generate draw** or
    **Advance / next round**. Eight qualifiers enter the bracket.
@@ -229,8 +232,13 @@ official score through quick scorekeeping.
 Public links, presentation views and generated public graphics exclude the
 concealed position, hand log and private notes. A **complete private backup**
 intentionally contains referee information. Never distribute one as a spectator
-package. Choose Gol Ya Pooch Traditional, Modern or Night in **Theme Studio**
-for the event screen.
+package. **Theme Studio** offers Traditional, Modern, Night, Saffron, Courtyard,
+Velvet and Ink House, along with Persian Heritage. The selection changes the
+workspace, scorecards and event screen. The quick scorekeeper shows progress
+toward the configured target without automatically ending a match. Decorative
+emblems are identical for both sides and never indicate the concealed position.
+
+![Gol Ya Pooch scorekeeper with the Night theme](docs/screenshots/gol-scorekeeper.png)
 
 ## Schedule the event
 
@@ -249,11 +257,18 @@ estimate does not predict all later Swiss or ladder matches.
 
 ## Change the appearance
 
-Open **Theme Studio**, select a collection and choose one of the twenty-seven
-presets. The preview scores are explicitly illustrative; changing a theme does
-not change the competition's actual results.
+Open **Theme Studio** to see choices related to your game. Every activity has at
+least two choices; there are fifty presets in total. Search by name or material,
+or choose **Show all 50 themes** to explore other games and general styles.
+You can still apply any theme to any activity.
+
+Quick Create also offers game-specific suggestions with a live preview. Theme
+changes affect the workspace header, match cards, scorekeeper, brackets and
+presentation screens. Preview scores are explicitly illustrative; changing a
+theme does not change the competition's actual results.
 
 Adjust colors, font, size, spacing, corners, borders and bracket connectors.
+The editor warns when custom text and background colors have low contrast.
 Upload a tournament logo or background as PNG, JPEG or WebP. Files must be
 under 2 MB and 16 megapixels. The app decodes and re-encodes them, reducing the
 image if needed to fit the embedded-asset limit. SVG and remote image URLs are
