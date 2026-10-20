@@ -1,0 +1,242 @@
+# TournaStudio architecture
+
+I built the application around a portable tournament document. The competition
+engine takes a document and returns another document; it does not know about
+React, IndexedDB, themes, or network connections.
+
+## Modules and data flow
+
+| Module             | Responsibility                                                                |
+| ------------------ | ----------------------------------------------------------------------------- |
+| `src/domain`       | Versioned TypeScript entities, defaults, Zod validation, compatibility checks |
+| `src/engine`       | Draws, match dependencies, progression, stage validation, simulation          |
+| `src/scoring`      | Result validation and winner calculation                                      |
+| `src/standings`    | Recomputed standings and ordered tie-break policies                           |
+| `src/scheduling`   | Resource scheduling, availability, rest, conflict detection                   |
+| `src/persistence`  | Dexie repository, revisions, trash, local change notifications                |
+| `src/security`     | Bounded codecs, safe JSON, raster validation, authenticated encryption        |
+| `src/sharing`      | Public projections, portable transports, update and submission packets        |
+| `src/themes`       | Appearance tokens and preset definitions                                      |
+| `src/presentation` | Spectator scenes and local presentation updates                               |
+| `src/export`       | Browser-generated graphics and printable documents                            |
+| `src/app`          | Organizer screens and user interactions                                       |
+| `src/i18n`         | English and Persian labels, direction, formatting                             |
+
+An organizer action first produces a candidate document. Domain and engine
+validation run before persistence. The repository checks the expected revision,
+writes the document and revision snapshot in one IndexedDB transaction, and only
+then publishes a BroadcastChannel notification. Other local tabs load the saved
+revision. A notification never contains the tournament document or an unlocking
+secret.
+
+React state holds the current editor document and temporary form values.
+Competition results are ordinary data. Standings and display layouts are derived
+instead of being an independent source of truth.
+
+## Engine contracts
+
+The public entry point is `src/engine/index.ts`:
+
+```ts
+generateStage(tournament, stageId)
+recordResult(tournament, matchId, result, confirmInvalidate?)
+getCorrectionImpact(tournament, matchId)
+getStandings(tournament, stageId?, group?)
+advanceStage(tournament, stageId)
+validateGraph(tournament)
+simulate(tournament)
+getChampion(tournament)
+```
+
+Mutating operations return a cloned document. They leave the input untouched.
+The caller owns saving, revision allocation, and UI confirmation. Draws use
+FNV-1a string hashing and Mulberry32 with Fisher-Yates shuffling, recorded as
+`fnv1a-mulberry32-v1`. This generator is for reproducible draws, not secrets.
+Match identifiers are deterministic within a stage.
+
+`formats` is a compiled registry of identifiers, versions, participant limits,
+and capabilities. It is not an executable third-party plugin loader. Adding a
+format requires implementing its algorithm, extending the schema and labels,
+and adding tests. Unknown JSON extension metadata can be retained by private
+documents; unknown format identifiers and unsupported versions fail validation.
+No imported configuration executes code.
+
+## Competition policies
+
+| Format             | Implemented policy                                                                                                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Single elimination | Next power-of-two bracket, conventional seed positions, distributed BYEs, automatic winners, optional semifinal-loser third-place match                                               |
+| Double elimination | Winner bracket plus alternating loser consolidation and winner-bracket drop rounds; one-loss entrants remain active; grand final optionally resets if the loser-bracket finalist wins |
+| Triple elimination | `progressive-three-loss-v1`: dynamic rounds, active entrants sorted by losses and seed, pair nearby loss totals before minimizing prior meetings, eliminate on the third loss         |
+| Round robin        | Circle method with a rotating idle slot for odd counts; repeated meetings reverse home/away order on alternating cycles                                                               |
+| Groups             | Snake distribution into balanced pools, optional exact manual group lists, separate round-robin standings                                                                             |
+| GSL                | Groups of exactly four: two openers, winners match, elimination match, decider; winners-match winner qualifies first and decider winner second                                        |
+| Swiss              | Score-ordered pairing with deterministic backtracking, no rematches, optional forbidden pairs, lowest-ranked eligible bye, no repeated bye                                            |
+| Gauntlet           | Lowest seeds start; each winner meets the next higher seed                                                                                                                            |
+| Ladder             | `alternating-adjacent-challenges-v1`: adjacent challenges alternate between rank pairs; a successful lower-ranked challenger swaps places with the defender                           |
+| Free-for-all       | Balanced fixed heats up to the configured capacity, repeated rounds, placement-point standings                                                                                        |
+| Time trial         | All entrants in each round, lower elapsed values win, cumulative placement points                                                                                                     |
+| Grand Prix         | All entrants in each event, repeated events, cumulative placement points                                                                                                              |
+
+The triple policy is a stated convention rather than a claim of a universal
+triple-elimination bracket. With no withdrawals, every nonchampion records three
+losses. An odd field gives the bye to an entrant with the fewest previous byes,
+then more losses, then a lower seed.
+
+The Swiss search is bounded at 150,000 search nodes. It reports an impossible
+pairing or search-limit error rather than silently inserting a rematch. Score
+proximity is a deterministic search preference, not a claim of globally optimal
+pairing or federation compliance. Withdrawn entrants are excluded from future
+rounds. No late-entry credit, federation-specific color rules, or manual pairing
+editor is supplied.
+
+Free-for-all heats do not automatically merge into a final. Add a destination
+stage and qualification rule for a final. A capacity that creates a one-entrant
+heat is rejected. Grand Prix and time trials use the configured placement-point
+table; they do not implement weighted event combinations or cumulative elapsed
+time as the primary ranking.
+
+The engine has no two-legged aggregate ties, automatic promotion/relegation,
+challenge invitations, multi-season rating database, or arbitrary tournament
+format scripting.
+
+## Stage graph and qualification
+
+A stage lists its input stages in `sources`, with a count and an optional
+per-group selection flag. Sources must exist and form a directed acyclic graph.
+The destination draw is generated after its sources complete. A duplicate
+qualifier, an excessive count, or a tie crossing the cutoff raises an error.
+The advanced document configuration can supply an explicit `manualQualifiers`
+array; it must contain distinct entrants from the source stages and match the
+required total.
+
+The UI supports choosing a source stage and taking its top entrants or the top
+entrants from each group. The domain can represent several source stages.
+Source qualification order becomes the default seed order for its destination,
+so taking two per group places groupmates in opposite bracket halves. Direct
+draws rank their entrants by the participant seed. Random seeding can override
+either ordering.
+There is no dedicated editor for wildcard normalization, arbitrary named-slot
+mapping, or winner/loser routing between stages. Cross-group overall standings
+use raw results; unequal schedules are not normalized for best-runner-up rules.
+
+Match slots reference either an entrant or a source match's winner/loser.
+Resolution waits until the source is terminal. A BYE can carry one entrant or
+no entrants; missing inputs are not treated as BYEs while their sources remain
+unfinished. The optional double-elimination reset is canceled only when the
+undefeated finalist wins the first grand final.
+
+## Scores and standings
+
+Results support high scores, low scores, time values, manual decisions, completed
+sets, forfeits, and placement tables with ties. Sets require two entrants and an
+odd best-of count. The engine rejects sets after the required wins have been
+reached. A played result's selected winner must agree with the scoring policy.
+Forfeits and other explicit rulings require a selected entrant.
+
+Standings apply configured tie-breakers in order. Head-to-head uses a mini-table
+inside the remaining tied cohort, avoiding a nontransitive pairwise comparator.
+Buchholz sums opponents' points. Median Buchholz drops one high and one low
+value when at least three opponents exist. Sonneborn-Berger weights opponents'
+points by one for a win and one-half for a draw. A Swiss bye earns win points,
+but is not counted as a played match or opponent.
+
+Placement ties split the points occupied by their tied positions. For example,
+two entrants tied first share the first- and second-place awards. Seed order is
+only a ranking criterion when selected in the rules. Otherwise it provides a
+stable display order while the shared rank remains explicitly tied.
+
+Completed elimination rankings follow elimination depth, with the champion
+first. Entrants eliminated at the same depth share a rank unless the optional
+third-place match separates them. Several independent groups do not declare one
+overall champion.
+
+## Corrections and persistence
+
+Before changing a recorded result, the engine finds dependent matches and all
+derived stages. Future dynamically paired rounds are dependent on earlier
+results, even without match-slot edges. Played, live, or contested dependents
+require `confirmInvalidate`. Confirmation keeps the previous affected state in
+`metadata.correctionRecovery`, bounded to five correction records, and clears or
+removes invalidated results. Source-derived stages return to draft.
+
+The repository keeps the last 50 revision snapshots per tournament. Ordinary
+snapshots are compressed; protected snapshots are encrypted. Snapshots are
+stored per confirmed save rather than as an event-sourced log with periodic
+checkpoints. This is a deliberate simpler implementation with a storage cost.
+Expected-revision checks reject conflicting edits from another tab.
+
+The revision hash is SHA-256 over canonical JSON, excluding its own field.
+It detects inconsistent content and anchors update packets. It does not identify
+an author or prove that the content came from a trusted organizer.
+
+## Scheduling
+
+Automatic scheduling follows match and stage dependencies, resource time
+windows, participant availability, assigned referees, and rest periods. For an
+unresolved slot it conservatively reserves every entrant who could reach it.
+That prevents possible conflicts but can produce a longer schedule than one
+based on known results. Regenerating after results resolve can reduce the
+reserved time.
+
+The duration estimator's minimum is total playing time divided by resources.
+It is a lower bound, not a promised finish time. Dependencies, rest, availability,
+and ungenerated dynamic rounds can increase the duration. Scheduling is greedy;
+there is no optimal constraint solver or drag-and-drop timeline.
+
+## Security boundaries
+
+All external packages are size-bounded and schema-validated before import.
+The public projection uses field allowlists. Referee secrets, private notes,
+rosters, arbitrary metadata, history, and correction backups are omitted.
+Only typed engine metadata needed for brackets and standings is retained.
+Hiding a control is not the boundary for private information.
+
+Protected documents use AES-256-GCM, random salts and nonces, and
+PBKDF2-SHA256 with 600,000 iterations. Decrypted documents and secrets exist in
+memory while unlocked. Browser memory cannot be guaranteed to be physically
+erased, and access to an unlocked session is access to its unlocked data.
+
+Service-worker caches hold application files. IndexedDB holds tournament
+documents. A deployment update does not reset the local database. Browser-data
+deletion remains outside the application's control.
+
+## Measured engine coverage
+
+On the Windows development machine, the following command passed the 54-test
+baseline on 2026-10-20:
+
+```sh
+npx vitest run src/engine/engine.test.ts --reporter=verbose
+```
+
+The run took 2.13 seconds, including 1.91 seconds in tests. Selected single
+elimination tests generated the draw, recorded every match, validated the graph,
+and checked the champion:
+
+| Entrants | Played matches | Observed test time |
+| -------- | -------------- | ------------------ |
+| 13       | 12             | 2 ms               |
+| 127      | 126            | 60 ms              |
+| 128      | 127            | 63 ms              |
+| 256      | 255            | 244 ms             |
+| 512      | 511            | 992 ms             |
+
+These are one-run Node test measurements, not browser rendering benchmarks or
+service guarantees. Tests cover all requested irregular knockout sizes and
+randomized double-elimination outcomes, Swiss fields, and round-robin pairings.
+The subsequent 56-test run, including default-rule hybrid simulation and BYE
+statistics, passed in 2.25 seconds.
+The general document limit is 512 participants and 20,000 matches. Standalone
+round robin is capped at 128 entrants. Large SVG layouts, long lists, and repeated
+whole-document saves need further browser performance measurement; the engine
+limit does not imply equal responsiveness on every device.
+
+The production bundle also passed `npx playwright test`: 36 cases across
+Chromium, Firefox, and WebKit in 1.5 minutes. Each browser ran 12 workflows,
+including a completed 13-entrant bracket, private and public transfers, encrypted
+recovery, correction confirmation, same-profile live presentation, Persian
+mobile layout, and offline editing after closing and reopening a cached tab.
+The vault race test delays encryption, locks the workspace before the save
+finishes, waits for the committed revision, and verifies that unlocking is still
+required.

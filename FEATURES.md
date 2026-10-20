@@ -1,0 +1,224 @@
+# TournaStudio feature status
+
+This matrix describes the code in this repository. An implemented row refers to
+the behavior named in that row, within its stated limits. It does not imply that
+every variant of a sport or competition format is supported.
+
+Status meanings:
+
+- **Implemented:** available through the application for the stated workflow.
+- **Partially implemented:** a working subset exists, with the missing parts listed.
+- **Not yet implemented:** no complete workflow is supplied.
+- **Unsupported due to static-hosting constraints:** requires a service that this
+  application deliberately does not run.
+
+Deployment and browser-test results belong in the release report. A workflow file
+or a test file alone is not evidence that deployment or a particular browser run
+succeeded.
+
+## Competition formats
+
+| Capability                      | Status                | Actual policy and limits                                                                                                                                                                          |
+| ------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Single elimination              | Implemented           | Power-of-two draws, seeded positions, automatic BYEs, winner progression and optional third-place match. Engine accepts one entrant; creation UI starts at two.                                   |
+| Irregular knockout sizes        | Implemented           | Tested with 3, 7, 13, 24, 31, 127 and other sizes through 512.                                                                                                                                    |
+| Double elimination              | Implemented           | Connected winners and losers brackets, correct winner-bracket drops, grand final and optional reset when the lower-bracket finalist wins.                                                         |
+| Three-loss elimination          | Implemented           | Named `progressive-three-loss-v1` policy. Dynamic rounds pair by losses and seed; a third loss eliminates an entrant. This is not a claim of one universal triple-elimination bracket convention. |
+| Round robin                     | Implemented           | Circle-method pairings for odd and even counts, repeated meetings, alternating slot order for home/away. Standalone format is capped at 128 entrants.                                             |
+| Groups and pools                | Implemented           | Balanced snake distribution, uneven groups, round robin within each group, group standings, configurable qualifiers per group.                                                                    |
+| GSL groups                      | Implemented           | Groups of exactly four with openers, winners match, elimination match and qualification decider. Field size must be divisible by four.                                                            |
+| Swiss                           | Implemented           | Score-ordered, deterministic backtracking; no rematches; lowest-ranked eligible BYE; no repeated BYE; configurable rounds and standings. Impossible or search-limited pairing is reported.        |
+| Swiss federation rules          | Not yet implemented   | No federation certification, color balancing, acceleration, late-entry credits or manual pairing editor.                                                                                          |
+| Free-for-all                    | Implemented           | More than two entrants per match, balanced heats, repeated rounds, placement scores and ties. A one-entrant heat is rejected.                                                                     |
+| Battle royale scoring           | Partially implemented | Placement-point heats work. No separate elimination/survival dimensions or weighted kill scoring.                                                                                                 |
+| Gauntlet                        | Implemented           | Lower seeds play first; each winner meets the next higher seed.                                                                                                                                   |
+| Challenge ladder                | Implemented           | Named alternating-adjacent-challenges policy, next-round generation and rank swaps after a successful challenge.                                                                                  |
+| Arbitrary challenge invitations | Not yet implemented   | No editor for choosing any challenger/defender pair or maintaining invitation state.                                                                                                              |
+| Time trial and race             | Implemented           | All entrants can enter each round; lower elapsed values win; standings accumulate placement points. Enter times as numbers in one agreed unit.                                                    |
+| Speedrun tooling                | Partially implemented | Time-trial scores can represent runs. No split timer, game verification, video timing or cumulative-time ranking policy.                                                                          |
+| Grand Prix                      | Implemented           | Repeated events with cumulative configurable placement-point awards.                                                                                                                              |
+| Multi-event weighted scoring    | Not yet implemented   | Events use the same scoring policy; no weighted combination of unrelated event metrics.                                                                                                           |
+| Leagues and playoffs            | Partially implemented | Round robin can feed a knockout stage. No dedicated season record, automatic promotion/relegation, penalties editor or division administration.                                                   |
+| King of the Hill                | Not yet implemented   | No separate challenger queue and incumbent policy.                                                                                                                                                |
+| Placement competitions          | Partially implemented | Multi-entrant placement points and knockout third place exist. No full placement-bracket generator.                                                                                               |
+| Two-legged and aggregate ties   | Not yet implemented   | No aggregate tie object, away-leg policy or automatic aggregate winner.                                                                                                                           |
+| Custom executable formats       | Not yet implemented   | Formats are compiled, versioned modules. Imports cannot install or run code.                                                                                                                      |
+
+The general document limit is 512 participants and 20,000 matches. The limit does
+not mean every format at that size is quick to render or fits the match cap.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for algorithms and measured engine tests.
+
+## Structure, draws and scoring
+
+| Capability                                         | Status                | Actual behavior                                                                                                                                               |
+| -------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Multi-stage competitions                           | Implemented           | Add a stage, choose a source, take top entrants overall or from every group, then generate the destination after the source finishes.                         |
+| Groups to knockout / Swiss to knockout             | Implemented           | Qualification refuses a tie crossing the cutoff rather than choosing a hidden winner.                                                                         |
+| Stage graph validation                             | Implemented           | Cycles, missing stages, invalid sources and duplicate or excessive qualifiers are rejected.                                                                   |
+| Visual stage editor                                | Partially implemented | Selectable graph, zoom, scroll, inspector, add/remove/duplicate/rename and keyboard-friendly ordering. No draggable nodes, ports or freehand connections.     |
+| Parallel and multiple source stages                | Partially implemented | The model and engine support multiple sources. The current inspector edits one source per destination.                                                        |
+| Exact cross-group slots and wildcard qualification | Partially implemented | Default qualification order separates groupmates in a seeded knockout. No named-slot editor, normalized best-runner-up comparison or best-third-place wizard. |
+| Manual qualifier overrides                         | Partially implemented | Validated document configuration supports explicit qualifier IDs. No dedicated override form.                                                                 |
+| Manual group composition / forbidden pairs         | Partially implemented | Validated engine configuration supports exact group lists and Swiss forbidden pairs. No specialized composition editor.                                       |
+| Seeded and reproducible random draws               | Implemented           | Ranked, random, snake and manual-order choices; stored seed and algorithm version.                                                                            |
+| Protected seeds                                    | Partially implemented | Standard seeded knockout positions keep leading seeds apart. No arbitrary protected-seed constraints.                                                         |
+| Pot-based and geographic draws                     | Not yet implemented   | No pot editor or geographic/organization constraint solver.                                                                                                   |
+| Draw safety                                        | Implemented           | Played/live stages cannot regenerate silently. Dependent generated stages block unsafe regeneration.                                                          |
+| Draw preview and animation                         | Partially implemented | Generated brackets and a nonmutating simulation preview are available. No dedicated animated draw ceremony or separate pending draw transaction.              |
+| Tournament simulator                               | Implemented           | Produces synthetic results in a separate preview; does not save them to the working tournament.                                                               |
+| High/low/time/manual scoring                       | Implemented           | Winner calculation follows the configured rule; explicit rulings require a selected entrant.                                                                  |
+| Best-of and set scores                             | Implemented           | Odd best-of values, validated sets and prevention of sets after the match is already won.                                                                     |
+| Draws, forfeits and no-shows                       | Implemented           | Draws where the format allows them; forfeit, walkover, no-show and disqualification rulings.                                                                  |
+| Postponed/contested/abandoned workflows            | Partially implemented | States exist in the document. The organizer UI does not provide a complete workflow for each state. Abandoned results need a final ruling before counting.    |
+| Placement ties                                     | Implemented           | Tied entrants share the points of the positions occupied by the tie.                                                                                          |
+| Judge scores and weighted dimensions               | Not yet implemented   | One numeric score per entrant, with optional sets or placements.                                                                                              |
+| Ordered standings tie-breakers                     | Implemented           | Points, wins, difference, scored, head-to-head mini-table, Buchholz, Median Buchholz, Sonneborn-Berger and optional seed.                                     |
+| Set ratios, point ratios, fair play                | Not yet implemented   | No dedicated ratio or penalty tie-break policy.                                                                                                               |
+| Safe result correction                             | Implemented           | Played downstream effects are listed before confirmation. Prior state is recoverable; invalid dependent results are reopened or removed.                      |
+| Match result reopening                             | Partially implemented | Recorded scores can be corrected. No general reopen-to-unplayed button or independent result-status editor.                                                   |
+| Undo/redo                                          | Partially implemented | Referee hand undo, score form reset and revision restore exist. No global command-stack undo/redo.                                                            |
+
+## Creation, participants and organizer tools
+
+| Capability                                   | Status                | Actual behavior                                                                                                                                                                           |
+| -------------------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Account-free creation                        | Implemented           | Three-step flow with title, sport, entrants, format and theme; generates an editable draw.                                                                                                |
+| Advanced builder                             | Partially implemented | Extra creation settings plus workspace Structure, Rules and Schedule editors. Not every engine configuration has a visual editor.                                                         |
+| Format Advisor                               | Partially implemented | Compares four formats against participant count, time, resources and minimum games. Opens the builder; does not prefill a complete recommended hybrid or model every fairness preference. |
+| Participant entry                            | Implemented           | Manual editing and bulk name paste, duplicate detection, Unicode names, seeds, organizations and participation status.                                                                    |
+| Participant file import                      | Partially implemented | TXT lines, first-column CSV and JSON names/name objects. CSV import is intentionally narrow and does not handle multiline quoted fields or full roster columns.                           |
+| XLSX import/export                           | Not yet implemented   | Use CSV or JSON.                                                                                                                                                                          |
+| Team rosters                                 | Implemented           | Players, captains, substitutes and coaches can be added and edited.                                                                                                                       |
+| Participant avatars and region editing       | Partially implemented | Safe embedded assets and region fields exist in the schema and displays. No complete participant logo/region upload editor.                                                               |
+| Check-in sheets                              | Implemented           | Check-in toggles, participant CSV and browser printing.                                                                                                                                   |
+| Registration exchange                        | Implemented           | Export a form with typed questions, fill an imported form, export a response, preview and approve it with duplicate checks.                                                               |
+| Result submission exchange                   | Implemented           | Create an unsigned score proposal, export/import, compare the original public match state, review and approve through the engine.                                                         |
+| Waiting lists and eligibility administration | Partially implemented | Custom registration answers can record eligibility. No waiting-list queue or dedicated eligibility decision workflow.                                                                     |
+| Payment-status tracking                      | Not yet implemented   | No organizer payment ledger or payment data fields in the UI.                                                                                                                             |
+| Referee/venue assignment                     | Implemented           | Per-match assignments and organizer notes.                                                                                                                                                |
+| Announcements and sponsors                   | Partially implemented | Public presentation text and sponsor names. No message inbox, sponsor asset layout system or delivery mechanism.                                                                          |
+| Participant directory across tournaments     | Not yet implemented   | Duplicate a tournament or transfer a list manually.                                                                                                                                       |
+
+## Scheduling
+
+| Capability                               | Status                | Actual behavior                                                                                                                |
+| ---------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Multiple courts/tables/rooms             | Implemented           | Named resources with availability windows.                                                                                     |
+| Automatic scheduling                     | Implemented           | Greedy dependency-aware scheduler with rest, possible future opponents, resource windows and assigned referees.                |
+| Manual scheduling                        | Implemented           | Edit start times, resources and referees in the schedule table.                                                                |
+| Conflict detection                       | Implemented           | Conflicting entrants, resources, referees, dependency timing, availability and rest are reported.                              |
+| Participant availability                 | Partially implemented | Engine reads configured availability; no participant availability editor.                                                      |
+| Duration estimator                       | Implemented           | Match/resource lower bound and saved schedule span, with assumptions displayed. It cannot forecast ungenerated dynamic rounds. |
+| Drag-and-drop timeline                   | Not yet implemented   | Use table controls.                                                                                                            |
+| Calendar and schedule exports            | Implemented           | CSV, ICS and print-friendly schedule.                                                                                          |
+| Delay propagation and optimal scheduling | Not yet implemented   | Manual adjustments and schedule regeneration are available; there is no optimal solver or live delay engine.                   |
+
+## Appearance and presentation
+
+| Capability                               | Status                | Actual behavior                                                                                                                                                                                 |
+| ---------------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SVG knockout visualizations              | Implemented           | Real source links, upper/lower bracket lanes, conditional finals, selectable matches and long-name labels.                                                                                      |
+| Other competition displays               | Implemented           | Match grids, group/overall standings and multi-entrant scores.                                                                                                                                  |
+| Bracket controls                         | Implemented           | Zoom, fit, keyboard scrolling, round/stage selection, participant highlighting, score/seed visibility and RTL orientation.                                                                      |
+| Advanced bracket layouts                 | Not yet implemented   | No centered final, top-down layout, round collapse, drag panning or separate mobile graph algorithm.                                                                                            |
+| Theme presets                            | Implemented           | 27 presets with different typography, patterns, radius, borders, shadows and color tokens.                                                                                                      |
+| Theme Studio                             | Implemented           | Live preview, colors, fonts, size, spacing, borders, corners, connectors, raster background/logo and reduced motion.                                                                            |
+| Custom theme portability                 | Implemented           | Versioned theme JSON import/export, applied to the current tournament without changing results.                                                                                                 |
+| Saved personal theme library             | Not yet implemented   | Export custom files to reuse them.                                                                                                                                                              |
+| Advanced design controls                 | Partially implemented | No gradient-stop editor, font-weight control, alignment editor, custom card/table templates or per-element animation-speed editor.                                                              |
+| Presentation playlist                    | Implemented           | Add/remove/reorder scenes, duration/title/public text, rotation, pause and manual controls.                                                                                                     |
+| Presentation scenes                      | Implemented           | 17 types: title, participants, bracket, standings, current scoreboard, upcoming match, results, schedule, statistics, countdown, break, rules, sponsors, announcement, champion, podium and QR. |
+| Dedicated introductions and celebrations | Partially implemented | Title/announcement scenes can introduce semifinals or finals. No separate animated trophy scene or team-by-team introduction workflow.                                                          |
+| Display modes                            | Partially implemented | Fullscreen, 16:9, 4:3 and portrait layouts; responsive scoreboard. No transparent broadcast overlay or dedicated overlay editor.                                                                |
+| Local live display                       | Implemented           | Confirmed saves notify same-origin tabs; displays reload saved state. Protected tabs must be unlocked separately.                                                                               |
+| OBS use                                  | Partially implemented | Capture the unlocked browser window. A separate OBS browser source has its own storage.                                                                                                         |
+| QR generation                            | Implemented           | Creates a QR for links up to the conservative 1,800-byte limit; otherwise recommends a file/code.                                                                                               |
+| QR camera scanning / multipart transfer  | Not yet implemented   | Use a device camera outside the app for standard QR links.                                                                                                                                      |
+
+Theme collection:
+
+| Category | Presets                                                                                                               |
+| -------- | --------------------------------------------------------------------------------------------------------------------- |
+| General  | Minimal Light, Minimal Dark, Modern Glass, Editorial, Professional Corporate, Championship Gold, University, Festival |
+| Sports   | Football Stadium, Basketball Arena, Volleyball Court, Tennis Championship, Racing, Boxing, Classic Sports Broadcast   |
+| Gaming   | Esports Neon, Retro Arcade, Cyber Arena, Fantasy Championship, Chess Classic, Board Game                              |
+| Persian  | Persian Heritage, Gol Ya Pooch Traditional, Gol Ya Pooch Modern, Gol Ya Pooch Night                                   |
+| Seasonal | Winter, Summer                                                                                                        |
+
+## Sports and Gol Ya Pooch
+
+| Capability                      | Status                | Actual behavior                                                                                                                                                                                                          |
+| ------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Sport presets                   | Implemented           | Generic, football, futsal, basketball, volleyball, tennis, table tennis, badminton, chess, esports, racing, board games, quiz/academics and Gol Ya Pooch.                                                                |
+| Sport-specific statistics       | Partially implemented | Rules and defaults vary; statistics use entered numeric scores. No separate fouls, kills, possession, rally or player-event model.                                                                                       |
+| Custom reusable sport presets   | Partially implemented | Edit the current tournament rules and duplicate it or share a recipe. No named preset library editor.                                                                                                                    |
+| Gol Ya Pooch teams and rosters  | Implemented           | Default three-player rule; organizer enters the actual player names and roles in Participants.                                                                                                                           |
+| Gol Ya Pooch quick scoring      | Implemented           | Enter totals and confirm the result through the normal match engine.                                                                                                                                                     |
+| Gol Ya Pooch referee mode       | Implemented           | Concealing/guessing teams, hand awards, possession switch, structured cards, hand undo, live public totals and private concealed-position field.                                                                         |
+| Gol Ya Pooch timer              | Partially implemented | Start/pause elapsed timer in the open dialog. It resets on close; no persisted match-clock or timeout policy.                                                                                                            |
+| Gol Ya Pooch rules              | Partially implemented | Target score, players per team, hand points, card name/use limit/point adjustment are configurable. The target is a setting, not an automatic match-ending rule. No executable card effects or disputed variant assumed. |
+| Gol Ya Pooch overtime/abilities | Partially implemented | Organizer makes an agreed ruling through score correction. No dedicated overtime sequence or effects beyond structured point adjustments.                                                                                |
+| Referee-secret exclusion        | Implemented           | Public projections omit private position, hand log, notes and rosters; only explicit live totals reach displays. Complete private backups intentionally retain them.                                                     |
+
+## Persistence, portability and privacy
+
+| Capability                                 | Status                                        | Actual behavior                                                                                                                         |
+| ------------------------------------------ | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| IndexedDB persistence                      | Implemented                                   | Versioned documents behind a repository interface, transactional saves and confirmed-save feedback.                                     |
+| Save failure recovery                      | Implemented                                   | Errors are shown; an unsaved copy can be exported or the saved document reloaded.                                                       |
+| Revision history                           | Implemented                                   | Last 50 snapshots per tournament; restore creates a new revision; individual revisions can be exported.                                 |
+| Event-sourced history and visual diffs     | Not yet implemented                           | Snapshots are stored per confirmed save, not periodic checkpoints over a command log.                                                   |
+| Multi-tab conflicts                        | Implemented                                   | Expected-revision checks reject stale writes; BroadcastChannel notifications follow the successful transaction.                         |
+| Trash and permanent deletion               | Implemented                                   | Restore from trash; separate confirmation before permanent deletion.                                                                    |
+| Library tools                              | Implemented                                   | Search, recent/name sorting, grid/list view, favorites, in-progress/trash filters and duplication.                                      |
+| Sport/format library filters               | Not yet implemented                           | Current filters are narrower.                                                                                                           |
+| Storage Health                             | Implemented                                   | Browser quota/usage estimates, persistence request, last save and manual-backup record.                                                 |
+| Automated backup scheduling/reminders      | Not yet implemented                           | Manual backup and local revision history are supplied.                                                                                  |
+| Protected vault                            | Implemented                                   | Encrypted current document and revision snapshots, secret required to open, explicit lock.                                              |
+| Cryptography                               | Implemented                                   | AES-256-GCM, random salts/nonces, PBKDF2-SHA256 at 600,000 iterations and authenticated contexts.                                       |
+| Password reset                             | Unsupported due to static-hosting constraints | There is no account or recovery authority. An encrypted archive needs its correct secret.                                               |
+| Snapshot link and text code                | Implemented                                   | Compressed, versioned data-bearing fragment and `TS1` code with integrity checks, Unicode and optional encryption.                      |
+| Separate-secret encrypted sharing          | Implemented                                   | Link, code or archive can require a separately supplied secret.                                                                         |
+| Embedded-key encrypted links               | Not yet implemented                           | Secrets are not placed in links.                                                                                                        |
+| `.tourney` archives                        | Implemented                                   | Validated two-entry ZIP with current document, embedded raster assets, theme and audit entries; optional encryption.                    |
+| Full revision-table export                 | Not yet implemented                           | Export revisions separately. Archives do not include the entire IndexedDB snapshot table.                                               |
+| Import preview / local copy / fork         | Implemented                                   | Preview first; preserve identity for a local copy or assign a new identity for an independent fork.                                     |
+| Replace current document                   | Implemented                                   | Explicit confirmation and a recoverable previous revision.                                                                              |
+| Compact recipe                             | Partially implemented                         | Recreates the first stage and settings with numbered entrants. It is not a complete multi-stage template.                               |
+| Incremental updates                        | Implemented                                   | Versioned `TSP1` packets with exact ID/base revision/base hash, target hash, allowed operations, preview and transactional application. |
+| Divergent update merge                     | Partially implemented                         | Unsafe bases and duplicate applications are rejected. No selective operation merge or conflict-resolution editor.                       |
+| Patch encryption                           | Not yet implemented                           | Private patches are plaintext. Use an encrypted full archive for confidential transfers.                                                |
+| Transfer advice                            | Partially implemented                         | Size estimates, long-link warnings and QR capacity advice. No separate decision wizard.                                                 |
+| Read-only viewing                          | Implemented                                   | Import preview and spectator display. This is a UI behavior, not copy protection.                                                       |
+| Remote revocation / live cross-device sync | Unsupported due to static-hosting constraints | Shared snapshots are independent and cannot be revoked; later changes require another packet or file.                                   |
+
+## Exports, records and platform
+
+| Capability                                              | Status                                        | Actual behavior                                                                                                                                                                           |
+| ------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SVG / PNG bracket export                                | Implemented                                   | Text is escaped; PNG size is bounded. SVG is preferable for large graphs.                                                                                                                 |
+| PDF                                                     | Implemented                                   | Browser print dialog offers Save as PDF where the platform supports it. No separate PDF rendering engine.                                                                                 |
+| Print-friendly HTML                                     | Partially implemented                         | Generated for the print window; no standalone HTML download control.                                                                                                                      |
+| Participant/match CSV and schedule ICS                  | Implemented                                   | Portable tabular data and calendar events, with formula/injection defenses.                                                                                                               |
+| Scoreboard images, posters and slide files              | Not yet implemented                           | No dedicated export workflow for these artifacts.                                                                                                                                         |
+| Statistics                                              | Implemented                                   | Recorded wins/losses/draws, win percentage, scores, difference, points, recent results and a points chart; BYEs do not inflate played totals.                                             |
+| Elo, rating history, prediction brackets                | Not yet implemented                           | No rating database, prediction package or local prediction leaderboard.                                                                                                                   |
+| Events and seasons                                      | Partially implemented                         | A tournament can store an event/season label. No collection workspace, shared schedule, directory, aggregate rankings or multi-tournament archive.                                        |
+| English/Persian interface                               | Partially implemented                         | Bilingual main screens, RTL direction, locale formatting, mixed-script names and bundled Inter/Vazirmatn. Some engine/import diagnostics and generated match labels remain English.       |
+| Keyboard and screen-reader support                      | Partially implemented                         | Native controls, labels, focus states, dialog semantics, keyboard match selection and stage/playlist ordering. No claim of a completed WCAG 2.2 AA audit.                                 |
+| Reduced motion                                          | Implemented                                   | Presentation respects OS preference and the theme setting.                                                                                                                                |
+| Offline PWA                                             | Implemented                                   | Manifest, local icons, app-shell precache, update prompt and offline state. Initial caching must finish before offline use. Browser test results are reported separately.                 |
+| GitHub Pages configuration                              | Implemented                                   | Static hash routes, owner/repository-derived base, production build and Pages workflow. Actual publication still depends on GitHub permissions/settings and a successful workflow run.    |
+| Runtime external dependencies                           | Implemented                                   | Core assets, fonts and libraries are bundled. No backend, required runtime CDN, remote database or analytics service.                                                                     |
+| Import hardening                                        | Implemented                                   | Schema checks, bounded JSON/decompression, archive entry/path checks, safe raster validation and no executable imported code.                                                             |
+| Data migrations                                         | Partially implemented                         | Schema version 1 is explicit; unsupported future versions fail safely. No earlier published schema exists to migrate.                                                                     |
+| Browser performance                                     | Partially implemented                         | Engine and graph geometry tested through 512 entrants, lazy editor modules and bounded exports. No list virtualization or workers; browser-wide performance benchmarks are still limited. |
+| Automated verification                                  | Implemented                                   | Engine/property, storage, sharing, cryptography, security and visual/export tests exist and are executable. Use the release report for commands and actual results.                       |
+| Central accounts, registration, payments, notifications | Unsupported due to static-hosting constraints | Manual registration/result packets and portable snapshots replace selected exchange workflows. No payment processing or remote message delivery.                                          |
+
+## Current priorities
+
+The main remaining product work is richer stage input mapping and wildcard
+qualification, complete Persian diagnostics, accessible visual regression checks,
+large-list rendering, broader visual exports, and true event/season collections.
+Format-specific additions need rules and tests before they are labeled supported.
