@@ -15,7 +15,13 @@ export function KnockoutSeparationPreview({
   participants: Map<string, Participant>;
 }) {
   const { t, locale } = useI18n();
-  if (value?.version !== 2 || !preview.ready) return null;
+  if (
+    !value ||
+    value.version === 1 ||
+    !value.separation.length ||
+    !preview.ready
+  )
+    return null;
   return (
     <div className="draw-separation-preview">
       {value.separation.map(({ field, throughRound }) => {

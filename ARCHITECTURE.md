@@ -233,9 +233,40 @@ round limits beyond the actual bracket. Version 2 uses the same node and work
 budgets as version 1 and reports unknown feasibility on exhaustion. It does not
 partially return or silently weaken a rule.
 
+Version 3 adds independent `losersSeparation` rules for double elimination.
+It reads the lower drop and winner paths from the generated match graph rather
+than assuming the winners-bracket section geometry applies to lower rounds.
+Every opening match contains either two entrants or one designated BYE
+recipient. A regular entrant can first lose in any winners round; a BYE
+recipient cannot lose in the opening round.
+
+For each pair of opening positions, the path model considers compatible first
+defeats. If their winners paths first meet in round `m`, both cannot remain
+undefeated after that meeting. Their first defeats can both be before `m`, or
+one can be before `m` and the other at or after it. When both first defeats are at or after `m`,
+one must occur at `m` and the other later. From each compatible pair of drops,
+the first shared match on their lower winner paths is a possible meeting.
+The minimum such round determines whether two equal labels can occupy those
+opening positions.
+
+This distinguishes real drop paths from phantom losers of BYE matches. It also
+allows two entrants with the same label to face each other in the winners
+bracket when only lower protection is requested. Pairing, BYE placement,
+winner sections and lower paths are solved together; no result-time rerouting
+is needed. Grand finals, resets and placement matches remain outside the rule.
+
+The `knockout-paths-fnv1a-mulberry32-v3` search tracks each entrant's remaining
+opening-match positions. Placing an entrant removes positions that violate an
+enabled field's upper or lower rule. Backtracking restores those domains.
+The version 2 empty-section symmetry shortcut is not used: positions within
+the same winners section can have different lower paths. Version 3 retains the
+100,000-node and 20,000,000-work limits, with unknown feasibility reported when
+the search budget is exhausted.
+
 The editor follows the same draft, preview, revalidation and draw-lock rules as
-group drawing, with a per-field preview of protected bracket sections.
-The optional configuration stays absent in legacy documents, and version 1
+group drawing, with a per-field preview of protected winners sections and
+verified lower-round policies. The optional configuration stays absent in
+legacy documents, and version 1 and 2
 documents retain their original draw algorithm and hashes.
 Public projections validate it explicitly, and recipes remap its pot entrant
 references instead of leaking or reusing original participant identifiers.

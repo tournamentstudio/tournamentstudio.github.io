@@ -14,8 +14,8 @@
       "sha256": "b9e7c8ec9e503a5b680e1dc6cd655384e83a198f9716e3f3ba7dc7b0c4d61416"
     },
     {
-      "path": "assets/index-DaptpfSQ.js",
-      "sha256": "7e251cb0c46af0553105122b2b4e1b8737f7831f6102bd22627819c2f656c0d6"
+      "path": "assets/index-BXguaqjV.js",
+      "sha256": "ff0e7fc0c74295a933e50f7f6ac956d1f46f6155a6939f2a752ba826ed726e54"
     },
     {
       "path": "assets/inter-cyrillic-ext-wght-normal-BOeWTOD4.woff2",
@@ -46,44 +46,44 @@
       "sha256": "5c66f9e07e90c6d4ac4922cc68d60de26c17b1858e677fb5e603fce3952b3ff2"
     },
     {
-      "path": "assets/OfflineExchange-KcCnuRGw.js",
-      "sha256": "0de08153a94a5764363b087c7684e949aea30c40d455c295210160fafd74c187"
+      "path": "assets/OfflineExchange-BwRl95FT.js",
+      "sha256": "9f0d92521956ec23815e8a217f9fd90a7fa7d7797203c4ec056a2645c82ba4f6"
+    },
+    {
+      "path": "assets/Presentation-Bay0vYRx.js",
+      "sha256": "a1d8732c69a4e76f659ad0ecf17365c19eed41345192f05614013c85d9c94fd6"
     },
     {
       "path": "assets/Presentation-Cqii9L2t.css",
       "sha256": "b201a90a239b643daa01a7a8f5b552bf0218777179ca82ef620d98006f24cbca"
     },
     {
-      "path": "assets/Presentation-D6GCLSVL.js",
-      "sha256": "9a01a467c4e8f6f08074151334d1939f4c7c0de7f74835fd4e9763f9712b1d06"
-    },
-    {
-      "path": "assets/PresentationStudio-ztLE9McC.js",
-      "sha256": "8be209ea620f82605bc0f201f403937af0b9d20a12f8fdda14737b377750b20a"
+      "path": "assets/PresentationStudio-p6lYDtmm.js",
+      "sha256": "50e798854e08acdf9c5603cf90ff5b993c18a5561cf12f390bfcfa805cc74ec4"
     },
     {
       "path": "assets/react-Cb4AM5Ez.js",
       "sha256": "aa89ca3e624d526159c8e4ae50fac425ed8297ad93729f7725764c8398fda63d"
     },
     {
-      "path": "assets/ShareCenter-b3YFlGuf.js",
-      "sha256": "899f0a676ffc92f738483fb1cce523c1aea0675641935ce6f1e1ac93a254a76e"
+      "path": "assets/ShareCenter-B6OQQtca.js",
+      "sha256": "3ff99cf0ae2dc016e423cfc389aa79d9b9a1da9e1f94c8e85fea2a0edf36d652"
     },
     {
       "path": "assets/sharing-B9ab0y5o.js",
       "sha256": "12829f9690efbfe2f71c6771428d57f43714f9224c5077e2e34460b29c0a58f0"
     },
     {
-      "path": "assets/StandingsTable-2wqW5M6J.js",
-      "sha256": "3880707328b3771d71fe3fc5c23bfaa95f1d8b5a52a80daeff2a7bda0b812129"
+      "path": "assets/StandingsTable-B5FD_Trq.js",
+      "sha256": "2dd52de3850ef10bd96865fc796ec709d863129d6605ae3d98a63d30539b89c2"
     },
     {
       "path": "assets/storage-BgQWH2U1.js",
       "sha256": "bfb327dfa951fd35754d26908336b30de9da3e9b6d22f2c19a5b74ce4493d181"
     },
     {
-      "path": "assets/ThemeStudio-CMPolsXj.js",
-      "sha256": "0124eff36cb01b6631ed0ae24986310e43fac013ae841d182fbd96a8cf75ad5a"
+      "path": "assets/ThemeStudio-DgM1xTe2.js",
+      "sha256": "246e9de3dc336964071a88a8cf5c55e3e01289fc3a98ed38d2d6a40864bfcf3e"
     },
     {
       "path": "assets/vazirmatn-arabic-wght-normal-Cafbb7Zc.woff2",
@@ -102,12 +102,12 @@
       "sha256": "cadd21be4a88598a4dec91a26a025df0a5790ff6baec54a884e401c3f5c95557"
     },
     {
-      "path": "assets/Workspace-BsPPM86G.js",
-      "sha256": "6d85fdfadd8d0f9f0bee8dc72edfd09608de60c773550245a4a06049b484fcb4"
+      "path": "assets/Workspace-D0FXg2QD.css",
+      "sha256": "76f8254e45cbdd62eec62a510d522871444f794d8f62d3f2eac48c590cd962b3"
     },
     {
-      "path": "assets/Workspace-CmbU5xzW.css",
-      "sha256": "0c7bfec1dcf02d2ceb21b2328314caa6ac75b55ee3bb452e6faae04630e0c8ee"
+      "path": "assets/Workspace-jrlQHVvy.js",
+      "sha256": "fb7a4e0c9b639353a5cb18a36c23b4b3db1ee7882640260bf1b7f30317b8e889"
     },
     {
       "path": "icon-192.png",
@@ -123,7 +123,7 @@
     },
     {
       "path": "index.html",
-      "sha256": "2645269ce83cc8d92be3a0e1440191f9e01f2fa62637db9634b8375df02ec259"
+      "sha256": "7a8f65bdc77bac5c5ae0439396f669d8b018e6677b94d9be8394d133f2517515"
     },
     {
       "path": "licenses/inter.txt",
@@ -139,7 +139,7 @@
     },
     {
       "path": "sw.js",
-      "sha256": "66788fb03cac8aa6c21f6927dde40d43ad300dc33ec46ed5d985c7d175f02dc4"
+      "sha256": "cdb01e7c4585a63c0e1a5120df1080043747409664c6af39b3a4f3a9b74636ec"
     },
     {
       "path": "workbox-2fbc6a65.js",

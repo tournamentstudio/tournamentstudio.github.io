@@ -1,6 +1,7 @@
 import type { KnockoutDrawConfig } from "../../domain/types";
 import { Field } from "../../components/ui";
 import { useI18n } from "../../i18n";
+import { withSeparationRules } from "./knockout-config";
 
 type SeparationField = "region" | "organization";
 
@@ -15,7 +16,7 @@ export function KnockoutRestrictions({
 }) {
   const { t, locale } = useI18n();
   const rounds = Math.log2(bracketSize);
-  const separation = value.version === 2 ? value.separation : [];
+  const separation = value.version === 1 ? [] : value.separation;
   function change(field: SeparationField, enabled: boolean, throughRound = 1) {
     const restrictions = enabled
       ? value.restrictions.includes(field)
@@ -30,22 +31,18 @@ export function KnockoutRestrictions({
             )
           : [...separation, { field, throughRound }]
         : separation.filter((item) => item.field !== field);
-    const base = {
-      pots: value.pots,
-      restrictions,
-      protectedSeeds: value.protectedSeeds,
-    };
     onChange(
-      next.length
-        ? { version: 2, ...base, separation: next }
-        : { version: 1, ...base },
+      withSeparationRules(
+        value,
+        next,
+        value.version === 3 ? value.losersSeparation : [],
+        restrictions,
+      ),
     );
   }
   return (
     <>
-      <h4>
-        {t("Separation through knockout rounds", "جداسازی در دورهای حذفی")}
-      </h4>
+      <h4>{t("Winners bracket separation", "جداسازی در جدول برندگان")}</h4>
       <p className="muted">
         {t(
           "Enter region and organization in Participants. Use consistent labels and fill blank values before previewing a restricted draw.",

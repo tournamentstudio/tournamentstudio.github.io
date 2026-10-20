@@ -7,20 +7,31 @@ const drawFields = {
   restrictions: z.array(z.enum(["region", "organization"])).max(2),
   protectedSeeds: z.number().int().min(0).max(512),
 };
+const separationRule = z
+  .object({
+    field: z.enum(["region", "organization"]),
+    throughRound: z.number().int().min(2).max(9),
+  })
+  .strict();
 export const knockoutDrawSchema = z.discriminatedUnion("version", [
   z.object({ version: z.literal(1), ...drawFields }).strict(),
   z
     .object({
       version: z.literal(2),
       ...drawFields,
-      separation: z
+      separation: z.array(separationRule).min(1).max(2),
+    })
+    .strict(),
+  z
+    .object({
+      version: z.literal(3),
+      ...drawFields,
+      separation: z.array(separationRule).max(2),
+      losersSeparation: z
         .array(
-          z
-            .object({
-              field: z.enum(["region", "organization"]),
-              throughRound: z.number().int().min(2).max(9),
-            })
-            .strict(),
+          separationRule.extend({
+            throughRound: z.number().int().min(1).max(16),
+          }),
         )
         .min(1)
         .max(2),
@@ -134,6 +145,30 @@ const messages: Record<string, [string, string]> = {
     "No bracket satisfies the protected rounds, pots, restrictions, fixed slots, and BYE recipients. Change these rules or the draw order.",
     "هیچ جدولی با دورهای محافظت‌شده، سیدها، محدودیت‌ها، جایگاه‌های ثابت و دریافت‌کنندگان استراحت سازگار نیست. این قوانین یا ترتیب قرعه را تغییر دهید.",
   ],
+  losersFormat: [
+    "Losers-bracket separation requires double elimination.",
+    "جداسازی در جدول بازندگان فقط برای دوحذفی است.",
+  ],
+  duplicateLosersSeparation: [
+    "Choose one protected losers round for each separation field.",
+    "برای جداسازی هر ویژگی فقط یک دور محافظت‌شده بازندگان انتخاب کنید.",
+  ],
+  losersRound: [
+    "Losers round {0} exceeds this bracket's {1} losers rounds.",
+    "دور {0} بازندگان از {1} دور جدول بازندگان این مرحله بیشتر است.",
+  ],
+  losersFixed: [
+    "Fixed positions can make entrants with the same {0} meet by losers round {1}. Change source slots, protected seeds, or the protected round.",
+    "جایگاه‌های ثابت می‌توانند شرکت‌کنندگان با {0} یکسان را تا دور {1} بازندگان روبه‌روی هم قرار دهند. جایگاه‌های مبدا، سیدهای محافظت‌شده یا دور محافظت‌شده را تغییر دهید.",
+  ],
+  losersCapacity: [
+    "{0} has {1} entrants. Protecting the losers final requires a different label for every entrant, including BYE recipients.",
+    "{0} دارای {1} شرکت‌کننده است. جداسازی تا فینال بازندگان به ویژگی متفاوت برای هر شرکت‌کننده، از جمله دریافت‌کنندگان استراحت، نیاز دارد.",
+  ],
+  losersInfeasible: [
+    "No draw protects every possible losers-bracket path while satisfying the other rules, fixed slots, and BYE recipients. Change these rules or the draw order.",
+    "هیچ قرعه‌ای تمام مسیرهای ممکن جدول بازندگان را همراه با سایر قوانین، جایگاه‌های ثابت و دریافت‌کنندگان استراحت محافظت نمی‌کند. این قوانین یا ترتیب قرعه را تغییر دهید.",
+  ],
 };
 
 export function knockoutDrawIssueText(
@@ -147,7 +182,10 @@ export function knockoutDrawIssueText(
       : "Invalid knockout draw.";
   return template.replace(/\{(\d+)\}/g, (_, index: string) => {
     let value = issue.values[Number(index)] ?? "";
-    if (locale === "fa" && issue.code === "separationFixed")
+    if (
+      locale === "fa" &&
+      ["separationFixed", "losersFixed"].includes(issue.code)
+    )
       value =
         value === "region"
           ? "منطقه"
@@ -184,7 +222,7 @@ export function knockoutDrawErrors(
   if (ids.some((id) => !participants.has(id))) add("unknownEntrant");
   if (new Set(restrictions).size !== restrictions.length)
     add("duplicateRestriction");
-  if (parsed.data.version === 2) {
+  if (parsed.data.version !== 1) {
     const { separation } = parsed.data;
     if (
       new Set(separation.map((item) => item.field)).size !== separation.length
@@ -192,6 +230,15 @@ export function knockoutDrawErrors(
       add("duplicateSeparation");
     if (separation.some((item) => !restrictions.includes(item.field)))
       add("separationField");
+  }
+  if (parsed.data.version === 3) {
+    if (stage.format !== "double-elimination") add("losersFormat");
+    const { losersSeparation } = parsed.data;
+    if (
+      new Set(losersSeparation.map((item) => item.field)).size !==
+      losersSeparation.length
+    )
+      add("duplicateLosersSeparation");
   }
   return issues;
 }

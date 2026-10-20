@@ -17,6 +17,8 @@ import { useI18n } from "../../i18n";
 import { DrawPots } from "./DrawPots";
 import { KnockoutRestrictions } from "./KnockoutRestrictions";
 import { KnockoutSeparationPreview } from "./KnockoutSeparationPreview";
+import { KnockoutLosersRestrictions } from "./KnockoutLosersRestrictions";
+import { KnockoutLosersPreview } from "./KnockoutLosersPreview";
 import "./draw.css";
 
 interface Props {
@@ -94,8 +96,8 @@ export function KnockoutDrawEditor({
           </h3>
           <p>
             {t(
-              "Separate pots in opening matches, and keep regions or organizations apart through selected winners bracket rounds.",
-              "گلدان‌ها را در دیدارهای آغازین جدا کنید و جداسازی منطقه‌ها یا سازمان‌ها را تا دور دلخواه جدول برندگان ادامه دهید.",
+              "Separate pots in opening matches, and keep regions or organizations apart through selected bracket rounds.",
+              "گلدان‌ها را در دیدارهای آغازین جدا کنید و جداسازی منطقه‌ها یا سازمان‌ها را تا دورهای دلخواه جدول ادامه دهید.",
             )}
           </p>
         </div>
@@ -148,10 +150,15 @@ export function KnockoutDrawEditor({
         ) : (
           <>
             <Notice>
-              {t(
-                "Separation applies to the winners bracket through each selected round. It does not cover the losers bracket, grand final, reset final, or placement matches. Pots restrict opening matches only. No rule is relaxed automatically.",
-                "جداسازی در جدول برندگان تا پایان دور انتخاب‌شده اعمال می‌شود؛ جدول بازندگان، فینال بزرگ، فینال تکراری و دیدارهای تعیین رتبه را پوشش نمی‌دهد. گلدان‌ها فقط دیدارهای آغازین را محدود می‌کنند. هیچ قانونی خودکار کنار گذاشته نمی‌شود.",
-              )}
+              {stage.format === "double-elimination"
+                ? t(
+                    "Choose winners and losers bracket protections independently. Grand finals, reset finals, and placement matches are excluded. Pots restrict opening matches only. No rule is relaxed automatically.",
+                    "جداسازی جدول برندگان و بازندگان را مستقل انتخاب کنید. فینال بزرگ، فینال تکراری و دیدارهای تعیین رتبه مستثنا هستند. گلدان‌ها فقط دیدارهای آغازین را محدود می‌کنند. هیچ قانونی خودکار کنار گذاشته نمی‌شود.",
+                  )
+                : t(
+                    "Separation applies through each selected winners round. Placement matches are excluded. Pots restrict opening matches only. No rule is relaxed automatically.",
+                    "جداسازی تا پایان دور انتخاب‌شده جدول برندگان اعمال می‌شود. دیدارهای تعیین رتبه مستثنا هستند. گلدان‌ها فقط دیدارهای آغازین را محدود می‌کنند. هیچ قانونی خودکار کنار گذاشته نمی‌شود.",
+                  )}
             </Notice>
             <p className="muted">
               {t(
@@ -172,6 +179,13 @@ export function KnockoutDrawEditor({
               bracketSize={bracketSize}
               onChange={onDraft}
             />
+            {stage.format === "double-elimination" && (
+              <KnockoutLosersRestrictions
+                value={value}
+                bracketSize={bracketSize}
+                onChange={onDraft}
+              />
+            )}
             <p className="muted">
               {t(
                 "Round numbers count every bracket round, including rounds with BYEs. Preview validates the current entrant labels; changing labels after a draw does not move saved matches.",
@@ -269,6 +283,7 @@ export function KnockoutDrawEditor({
             preview={currentPreview}
             participants={names}
           />
+          <KnockoutLosersPreview value={value} preview={currentPreview} />
           <div className="draw-group-grid">
             {Array.from(
               { length: currentPreview.slots.length / 2 },

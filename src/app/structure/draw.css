@@ -155,6 +155,58 @@
   color: var(--muted);
   font-size: 0.85rem;
 }
+.draw-losers-restrictions {
+  border-block-start: 1px solid var(--line);
+  padding-block-start: 12px;
+}
+.draw-losers-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 12px;
+}
+.draw-losers-fields .draw-restriction {
+  min-width: 0;
+}
+.draw-losers-fields .field {
+  margin: 0;
+}
+.draw-losers-preview {
+  margin-block: 20px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #f4f7ef;
+}
+.draw-losers-preview h4 {
+  margin-block: 0 12px;
+}
+.draw-losers-preview ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  display: grid;
+  gap: 12px;
+}
+.draw-losers-preview li {
+  display: flex;
+  gap: 10px;
+  align-items: start;
+  line-height: 1.8;
+}
+.draw-losers-preview li > svg {
+  flex-shrink: 0;
+  margin-block-start: 5px;
+}
+.draw-losers-preview li > span {
+  display: grid;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.draw-losers-preview p {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-block-end: 0;
+}
 .draw-separation-preview {
   display: grid;
   gap: 18px;

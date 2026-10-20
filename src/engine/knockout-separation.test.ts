@@ -594,7 +594,7 @@ describe("later-round knockout separation", () => {
 
 describe("later-round draw validation and portability", () => {
   it.each([
-    { version: 3, separation: [{ field: "region", throughRound: 2 }] },
+    { version: 4, separation: [{ field: "region", throughRound: 2 }] },
     { version: 2, separation: [] },
     { version: 2, separation: [{ field: "region", throughRound: 1 }] },
     { version: 2, separation: [{ field: "region", throughRound: 10 }] },

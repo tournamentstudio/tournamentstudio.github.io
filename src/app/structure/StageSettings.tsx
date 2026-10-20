@@ -108,6 +108,8 @@ export function StageSettings({
                   format.id !== "gsl") ||
                 (!!stage.config.knockoutDraw &&
                   format.id !== "single-elimination" &&
+                  format.id !== "double-elimination") ||
+                (stage.config.knockoutDraw?.version === 3 &&
                   format.id !== "double-elimination")
               }
             >
@@ -129,6 +131,14 @@ export function StageSettings({
           {t(
             "To change to another format family, choose Use standard draw in Draw studio, preview it, and apply the rules first.",
             "برای تغییر به خانواده دیگری از قالب‌ها، ابتدا «استفاده از قرعه معمول» را در استودیوی قرعه انتخاب کنید، پیش‌نمایش را ببینید و قوانین را اعمال کنید.",
+          )}
+        </p>
+      )}
+      {stage.config.knockoutDraw?.version === 3 && (
+        <p className="muted">
+          {t(
+            "To switch to single elimination, turn off both losers bracket protections, preview the draw, and apply the rules first.",
+            "برای تغییر به تک‌حذفی، ابتدا هر دو محدودیت جدول بازندگان را غیرفعال کنید، پیش‌نمایش قرعه را ببینید و قوانین را اعمال کنید.",
           )}
         </p>
       )}

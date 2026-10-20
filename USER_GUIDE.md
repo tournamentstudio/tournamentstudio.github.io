@@ -124,8 +124,9 @@ new unnamed entrants, so fill their regions and organizations before drawing.
 
 Single and double elimination support pot, region and organization restrictions.
 Pots separate entrants in the first round. Region and organization restrictions
-can extend through a chosen winners-bracket round. They do not cover the losers
-bracket, grand finals, resets or third-place matches.
+can extend through a chosen winners-bracket round. Double elimination also has
+independent losers-bracket rules. Grand finals, resets and third-place matches
+are outside both guarantees.
 See the [knockout preview](docs/screenshots/knockout-draw-preview.png) for a
 thirteen-entrant draw with three BYEs and two protected positions.
 
@@ -183,8 +184,39 @@ To return to standard drawing, choose **Use standard draw**, preview it and appl
 the change. This also allows switching to formats outside single/double
 elimination. Saved files and snapshot links retain knockout rules. Recipes
 retain the structure but require new affiliation values before restricted draws.
-Later-round rules use version 2. Recipients need an app release that supports
-that version before importing the shared tournament.
+Later winners rules use version 2; losers rules use version 3. Recipients need an
+app release that supports the saved version before importing the tournament.
+
+### Protect the losers bracket
+
+In a double-elimination stage, use **Losers bracket separation**. Set **Separate
+regions through losers round** or **Separate organizations through losers round**
+to the last round you want protected. Use **Off** to disable a field. These
+settings do not require a winners-bracket restriction for the same field.
+The [verified lower-round preview](docs/screenshots/knockout-losers.png) shows
+the protected rounds for each field before you apply the draw.
+
+Lower rounds follow the displayed bracket, including rounds containing BYEs.
+An eight-slot draw has four lower rounds. A two-entrant draw has no lower rounds.
+The preview checks the actual drop paths for every possible result, then either
+provides a valid draw or explains why it cannot supply one. It never changes the
+drop paths during play.
+
+Winners and losers restrictions can conflict. For example, in a full eight-team
+draw, two entrants who start against each other can avoid a lower-bracket meeting
+until lower round 3. Preventing that opening match as well can make protection
+through lower round 2 impossible. Try a less restrictive lower round or revise
+the agreed winners rules. Pot assignments and fixed qualifier positions also
+constrain the available draw.
+
+BYE recipients have no first-round defeat and cannot enter through that drop.
+The preview accounts for this rather than inventing an opponent. The last lower
+round can only be protected when every entrant has a different restricted label.
+Changing affiliations after generation does not rearrange saved matches.
+
+To return to single elimination, remove the losers rules, preview the change
+and apply it first. Reset an existing unplayed draw before editing its rules;
+played matches remain locked.
 
 ## Build groups followed by playoffs
 

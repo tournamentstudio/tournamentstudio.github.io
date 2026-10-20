@@ -15,10 +15,13 @@ import {
   solveKnockoutSeparation,
   type SeparationRule,
 } from "./knockout-separation";
+import { losersEncounterRounds } from "./losers-encounters";
+import { solveKnockoutPaths } from "./knockout-paths";
 
 export const KNOCKOUT_DRAW_ALGORITHM = "knockout-matching-fnv1a-mulberry32-v1";
 export const KNOCKOUT_SEPARATION_ALGORITHM =
   "knockout-subtrees-fnv1a-mulberry32-v2";
+export const KNOCKOUT_PATHS_ALGORITHM = "knockout-paths-fnv1a-mulberry32-v3";
 export const KNOCKOUT_DRAW_NODE_LIMIT = 100000;
 export const KNOCKOUT_DRAW_WORK_LIMIT = 20000000;
 
@@ -44,9 +47,11 @@ export function previewKnockoutDraw(
     issues: issueDetails.map((issue) => knockoutDrawIssueText(issue)),
     issueDetails,
     algorithm: stage?.config.knockoutDraw
-      ? stage.config.knockoutDraw.version === 2
-        ? KNOCKOUT_SEPARATION_ALGORITHM
-        : KNOCKOUT_DRAW_ALGORITHM
+      ? stage.config.knockoutDraw.version === 3
+        ? KNOCKOUT_PATHS_ALGORITHM
+        : stage.config.knockoutDraw.version === 2
+          ? KNOCKOUT_SEPARATION_ALGORITHM
+          : KNOCKOUT_DRAW_ALGORITHM
       : DRAW_ALGORITHM,
     exploredNodes,
   });
@@ -165,9 +170,36 @@ export function previewKnockoutDraw(
       if (total > playingMatches)
         add("capacity", name, String(total), String(playingMatches));
   }
+  if (draw.version === 3)
+    for (const rule of draw.losersSeparation) {
+      if (
+        !draw.restrictions.includes(rule.field) &&
+        participantIds.some(
+          (id) => !normalizeDrawLabel(participants.get(id)![rule.field] ?? ""),
+        )
+      )
+        add(rule.field === "region" ? "missingRegion" : "missingOrganization");
+      const rounds = 2 * Math.log2(size) - 2;
+      if (rule.throughRound > rounds)
+        add("losersRound", String(rule.throughRound), String(rounds));
+      if (rule.throughRound === rounds) {
+        const totals = new Map<string, { name: string; count: number }>();
+        for (const id of participantIds) {
+          const raw = participants.get(id)![rule.field] ?? "";
+          const label = normalizeDrawLabel(raw);
+          const previous = totals.get(label);
+          totals.set(label, {
+            name: previous?.name ?? raw.trim(),
+            count: (previous?.count ?? 0) + 1,
+          });
+        }
+        for (const { name, count: total } of totals.values())
+          if (total > 1) add("losersCapacity", name, String(total));
+      }
+    }
   if (issueDetails.length) return result();
   const separation: SeparationRule[] = [];
-  if (draw.version === 2) {
+  if (draw.version !== 1) {
     for (const rule of draw.separation) {
       if (rule.throughRound > Math.log2(size)) {
         add(
@@ -240,7 +272,7 @@ export function previewKnockoutDraw(
     }
   }
   if (issueDetails.length) return result();
-  if (draw.version === 2) {
+  if (draw.version !== 1) {
     for (const rule of separation) {
       const seen = new Set<string>();
       for (const [id, slot] of fixedById) {
@@ -256,6 +288,67 @@ export function previewKnockoutDraw(
       }
     }
     if (issueDetails.length) return result();
+    if (draw.version === 3) {
+      const encounters = losersEncounterRounds(stage, size);
+      const losersSeparation: SeparationRule[] = draw.losersSeparation.map(
+        (rule) => ({
+          ...rule,
+          labels: new Map(
+            participantIds.map((id) => [
+              id,
+              normalizeDrawLabel(participants.get(id)![rule.field]!),
+            ]),
+          ),
+        }),
+      );
+      const fixed = [...fixedById];
+      for (const rule of losersSeparation)
+        for (let first = 0; first < fixed.length; first++) {
+          let conflict = false;
+          for (let second = first + 1; second < fixed.length; second++) {
+            const [a, slotA] = fixed[first];
+            const [b, slotB] = fixed[second];
+            const round =
+              encounters[
+                (2 * Math.floor(slotA / 2) + Number(byes.has(a))) * size +
+                  2 * Math.floor(slotB / 2) +
+                  Number(byes.has(b))
+              ];
+            if (
+              round > 0 &&
+              round <= rule.throughRound &&
+              rule.labels.get(a) === rule.labels.get(b)
+            ) {
+              conflict = true;
+              break;
+            }
+          }
+          if (conflict) {
+            add("losersFixed", rule.field, String(rule.throughRound));
+            break;
+          }
+        }
+      if (issueDetails.length) return result();
+      const solved = solveKnockoutPaths({
+        slots,
+        participantIds,
+        byes,
+        keysById,
+        preferredSlot,
+        separation,
+        losersSeparation,
+        encounters,
+        seed: stage.config.seed,
+        nodeLimit: KNOCKOUT_DRAW_NODE_LIMIT,
+        workLimit: KNOCKOUT_DRAW_WORK_LIMIT,
+      });
+      exploredNodes = solved.exploredNodes;
+      if (!solved.slots) {
+        add(solved.exhausted ? "exhausted" : "losersInfeasible");
+        return result();
+      }
+      return result(solved.slots);
+    }
     const solved = solveKnockoutSeparation({
       slots,
       participantIds,

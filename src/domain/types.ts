@@ -141,6 +141,17 @@ export type KnockoutDrawConfig = KnockoutDrawFields &
           throughRound: number;
         }[];
       }
+    | {
+        version: 3;
+        separation: {
+          field: "region" | "organization";
+          throughRound: number;
+        }[];
+        losersSeparation: {
+          field: "region" | "organization";
+          throughRound: number;
+        }[];
+      }
   );
 export interface KnockoutDrawPreview {
   ready: boolean;
