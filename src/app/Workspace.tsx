@@ -42,6 +42,9 @@ import { Structure } from "./Structure";
 import { Rules } from "./Rules";
 import { Schedule } from "./Schedule";
 import { Statistics } from "./Statistics";
+import { UndoControls, type UndoActions } from "./UndoControls";
+import { LadderDesk } from "./LadderDesk";
+import { ladderPolicy } from "../domain/ladder";
 import { History } from "./History";
 import { Settings } from "./StorageHealth";
 import { getTheme, themeStyle } from "../themes";
@@ -97,6 +100,7 @@ export function Workspace({
   onProtect,
   onLock,
   saving,
+  undoActions,
 }: {
   tournament: Tournament;
   onChange: (t: Tournament, a: string) => void;
@@ -107,6 +111,7 @@ export function Workspace({
   onProtect: (s: string) => Promise<void>;
   onLock: () => void;
   saving: boolean;
+  undoActions: UndoActions;
 }) {
   const { t, locale } = useI18n();
   const [tab, setTab] = useState("overview");
@@ -175,7 +180,7 @@ export function Workspace({
         disabled={
           m.status === "pending" ||
           m.status === "bye" ||
-          m.status === "canceled"
+          (m.status === "canceled" && !!m.metadata.conditionalReset)
         }
       >
         <div className="match-tile-meta">
@@ -193,6 +198,12 @@ export function Workspace({
                   ? t("Ready", "آماده")
                   : m.status === "bye"
                     ? t("BYE", "استراحت")
+                    : m.status === "postponed"
+                      ? t("Postponed", "به تعویق افتاده")
+                      : m.status === "contested"
+                        ? t("Awaiting ruling", "در انتظار رأی")
+                        : m.status === "canceled"
+                          ? t("Canceled", "لغوشده")
                     : t("Waiting", "در انتظار")}
           </span>
         </div>
@@ -255,6 +266,12 @@ export function Workspace({
           {doc.subtitle && <p>{doc.subtitle}</p>}
         </div>
         <div className="button-row">
+          <UndoControls
+            {...undoActions}
+            tournament={doc}
+            secret={secret}
+            saving={saving}
+          />
           {isProtected && (
             <button className="button secondary" onClick={onLock}>
               <LockKeyhole size={16} />
@@ -461,12 +478,31 @@ export function Workspace({
                       </option>
                     ))}
                   </select>
-                  <button className="button secondary" onClick={nextRound}>
+                  <button
+                    className="button secondary"
+                    disabled={doc.stages.some(
+                      (stage) =>
+                        stage.id === stageId &&
+                        stage.format === "ladder" &&
+                        ladderPolicy(stage).mode === "invitations",
+                    )}
+                    onClick={nextRound}
+                  >
                     <Play size={16} />
                     {t("Next round", "دور بعد")}
                   </button>
                 </div>
               </div>
+              {doc.stages.some(
+                (stage) => stage.id === stageId && stage.format === "ladder",
+              ) && (
+                <LadderDesk
+                  key={stageId}
+                  tournament={doc}
+                  stageId={stageId}
+                  onChange={onChange}
+                />
+              )}
               <div className="library-toolbar">
                 <div className="segmented">
                   {[
@@ -588,7 +624,9 @@ export function Workspace({
           {tab === "schedule" && (
             <Schedule tournament={doc} onChange={onChange} />
           )}
-          {tab === "statistics" && <Statistics tournament={doc} />}
+          {tab === "statistics" && (
+            <Statistics tournament={doc} onChange={onChange} />
+          )}
           {tab === "rules" && <Rules tournament={doc} onChange={onChange} />}
           {tab === "theme" && (
             <div className="panel-content">

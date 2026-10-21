@@ -10,6 +10,7 @@ import type {
 } from "../domain/types";
 import { advancementErrors, sourceGroups } from "../domain/advancement";
 import { getStandings } from "../standings";
+import { matchResultQualifiers } from "./match-qualifiers";
 
 function metrics(row: Standing): AdvancementMetrics {
   return {
@@ -387,8 +388,17 @@ export function previewAdvancement(
         Number(stage.sources[b].selection?.kind === "wildcard"),
     );
   for (const index of order) {
+    const source = stage.sources[index];
     const preview =
-      stage.sources[index].selection?.kind === "wildcard"
+      source.selection?.kind === "match-results"
+        ? (() => {
+            const selected = matchResultQualifiers(tournament, source.stageId, source.selection.picks, source.count);
+            return {
+              index, stageId: source.stageId, candidates: [],
+              qualifierIds: selected.participantIds, issues: selected.issues,
+            } satisfies AdvancementSourcePreview;
+          })()
+        : source.selection?.kind === "wildcard"
         ? wildcardPreview(tournament, stage, index, qualified, manual)
         : directPreview(tournament, stage, index, manual);
     for (const id of preview.qualifierIds) {

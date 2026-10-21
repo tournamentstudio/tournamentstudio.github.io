@@ -83,6 +83,8 @@ function remapStages(
 
 export async function encodeStageRecipe(input: Tournament): Promise<string> {
   const tournament = publicProjection(input);
+  if (tournament.stages.some((stage) => stage.sources.some((source) => source.selection?.kind === "match-results")))
+    throw new Error("Match outcome connections need generated matches. Share a full snapshot instead of a configuration recipe.");
   if (!tournament.stages.length)
     throw new Error("Add a stage before exporting a recipe.");
   const participants = new Map(
@@ -135,6 +137,8 @@ export async function encodeStageRecipe(input: Tournament): Promise<string> {
 
 export async function decodeStageRecipe(code: string): Promise<Tournament> {
   const recipe = recipeSchema.parse(await decodeTransport("TSR2", code));
+  if (recipe.stages.some((stage) => stage.sources.some((source) => source.selection?.kind === "match-results")))
+    throw new Error("Match outcome connections need generated matches. Share a full snapshot instead of a configuration recipe.");
   if (
     new Set(recipe.stages.map((stage) => stage.id)).size !==
       recipe.stages.length ||

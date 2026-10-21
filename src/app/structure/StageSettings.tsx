@@ -124,9 +124,16 @@ export function StageSettings({
         <select
           value={stage.format}
           disabled={locked || hasDraft}
-          onChange={(event) =>
-            onEdit({ format: event.target.value as FormatId })
-          }
+          onChange={(event) => {
+            const format = event.target.value as FormatId;
+            const config = { ...stage.config };
+            if (format !== "swiss") delete config.swiss;
+            if (!["single-elimination", "double-elimination"].includes(format))
+              delete config.fullPlacement;
+            if (!["single-elimination", "double-elimination"].includes(format))
+              delete config.aggregate;
+            onEdit({ format, config });
+          }}
         >
           {formats.map((format) => (
             <option
@@ -256,7 +263,9 @@ export function StageSettings({
       <label className="check-row">
         <input
           type="checkbox"
-          disabled={locked || hasDraft || hasThirdPlace}
+          disabled={
+            locked || hasDraft || hasThirdPlace || stage.config.fullPlacement
+          }
           checked={stage.config.thirdPlace}
           onChange={(event) =>
             onEdit({
@@ -266,6 +275,126 @@ export function StageSettings({
         />
         {t("Third-place match", "دیدار رده‌بندی")}
       </label>
+      {["single-elimination", "double-elimination"].includes(stage.format) && (
+        <label className="check-row">
+          <input
+            type="checkbox"
+            disabled={locked || hasDraft}
+            checked={!!stage.config.fullPlacement}
+            onChange={(event) => {
+              const config = { ...stage.config };
+              if (event.target.checked) {
+                config.fullPlacement = true;
+                if (stage.format === "single-elimination")
+                  config.thirdPlace = true;
+              } else delete config.fullPlacement;
+              onEdit({ config });
+            }}
+          />
+          {t("Play for every final place", "بازی برای همه رتبه‌های نهایی")}
+        </label>
+      )}
+      {stage.config.fullPlacement && (
+        <p className="muted">
+          {t(
+            "Entrants eliminated in the same round play placement matches until every final position is decided. Empty slots remain byes. This adds matches to the schedule; geographic third-place rules still target only the third-place match.",
+            "شرکت‌کنندگان حذف‌شده در یک دور، دیدارهای رده‌بندی را تا تعیین همه رتبه‌ها ادامه می‌دهند. جایگاه خالی استراحت می‌ماند. این حالت دیدارهای بیشتری به برنامه می‌افزاید؛ قوانین جغرافیایی رده‌بندی سوم همچنان فقط دیدار سوم را هدف می‌گیرند.",
+          )}
+        </p>
+      )}
+      {["single-elimination", "double-elimination"].includes(stage.format) && (
+        <fieldset disabled={locked || hasDraft}>
+          <label className="check-row">
+            <input
+              type="checkbox"
+              checked={!!stage.config.aggregate}
+              onChange={(event) => {
+                const config = { ...stage.config };
+                if (event.target.checked)
+                  config.aggregate = {
+                    version: 1,
+                    legs: 2,
+                    tieBreak: "manual",
+                  };
+                else delete config.aggregate;
+                onEdit({ config });
+              }}
+            />
+            {t("Aggregate legs", "دیدارهای رفت و برگشت")}
+          </label>
+          {stage.config.aggregate && (
+            <>
+              <Field label={t("Regulation legs", "تعداد بازی‌های اصلی")}>
+                <input
+                  type="number"
+                  min={2}
+                  max={8}
+                  value={stage.config.aggregate.legs}
+                  onChange={(event) => {
+                    const legs = Number(event.target.value);
+                    if (Number.isInteger(legs) && legs >= 2 && legs <= 8)
+                      onEdit({
+                        config: {
+                          ...stage.config,
+                          aggregate: { ...stage.config.aggregate!, legs },
+                        },
+                      });
+                  }}
+                />
+              </Field>
+              <Field label={t("Aggregate tiebreak", "رفع تساوی مجموع")}>
+                <select
+                  value={stage.config.aggregate.tieBreak}
+                  onChange={(event) =>
+                    onEdit({
+                      config: {
+                        ...stage.config,
+                        aggregate: {
+                          ...stage.config.aggregate!,
+                          tieBreak: event.target.value as
+                            "manual" | "extra-leg",
+                        },
+                      },
+                    })
+                  }
+                >
+                  <option value="manual">
+                    {t("Agreed referee ruling", "رأی توافق‌شده داور")}
+                  </option>
+                  <option value="extra-leg">
+                    {t(
+                      "One extra leg, then referee ruling",
+                      "یک بازی اضافه، سپس رأی داور",
+                    )}
+                  </option>
+                </select>
+              </Field>
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={!!stage.config.aggregate.awayGoals}
+                  onChange={(event) => {
+                    const aggregate = { ...stage.config.aggregate! };
+                    if (event.target.checked) aggregate.awayGoals = true;
+                    else delete aggregate.awayGoals;
+                    onEdit({ config: { ...stage.config, aggregate } });
+                  }}
+                />
+                {t(
+                  "Use regulation away goals to break ties",
+                  "رفع تساوی با گل خارج از خانه در بازی‌های اصلی",
+                )}
+              </label>
+              <p className="muted">
+                {t(
+                  "Use highest-score or lowest-score rules. Each tie keeps 2 to 8 leg results and advances only after its final aggregate. Optional away-goal tiebreaks require highest-score rules and an even leg count, with alternating hosts. They apply before an extra leg and never count extra-leg away goals.",
+                  "از قانون بیشترین یا کمترین امتیاز استفاده کنید. هر دیدار نتیجه ۲ تا ۸ بازی را نگه می‌دارد و تنها پس از مجموع نهایی صعود می‌دهد. رفع تساوی اختیاری با گل خارج از خانه به قانون بیشترین امتیاز، تعداد زوج بازی و میزبانی یکی‌درمیان نیاز دارد. این قاعده پیش از بازی اضافه اعمال می‌شود و گل خارج از خانه در بازی اضافه را حساب نمی‌کند.",
+                )}
+              </p>
+            </>
+          )}
+        </fieldset>
+      )}
       <label className="check-row">
         <input
           type="checkbox"

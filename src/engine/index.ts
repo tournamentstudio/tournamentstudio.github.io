@@ -7,6 +7,11 @@ import type {
   Tournament,
 } from "../domain/types";
 import { validateResult } from "../scoring";
+import { hasMatchEvidence } from "./match-evidence";
+import { simulatedMetrics, weightedScores } from "../scoring/metrics";
+import { golElapsed } from "../domain/gol";
+import { aggregatePolicyErrors, aggregateScores } from "../domain/aggregate";
+import { timingSchema, updateRun } from "../timing/model";
 import { getStandings } from "../standings";
 import { advancementErrors } from "../domain/advancement";
 import { groupDrawErrors, groupDrawIssueText } from "../domain/draw";
@@ -28,6 +33,13 @@ import {
   terminal,
 } from "./formats";
 import { ladderRound, swissRound, tripleRound } from "./pairing";
+import { swissPolicyErrors } from "../domain/swiss";
+import {
+  ladderPolicy,
+  ladderPolicyErrors,
+  readInvitations,
+} from "../domain/ladder";
+import { hillRound, ladderOrder, refreshLadderState } from "./ladder-state";
 import { DRAW_ALGORITHM, shuffle } from "./random";
 
 export { formats, getStandings, previewAdvancement };
@@ -84,6 +96,13 @@ function validateConfig(stage: Stage, count: number): void {
   if (!format) throw new Error("This competition format is not supported.");
   if (stage.formatVersion !== 1)
     throw new Error("The stage requires a different format version.");
+  if (
+    stage.config.fullPlacement &&
+    !["single-elimination", "double-elimination"].includes(stage.format)
+  )
+    throw new Error(
+      "Full placement brackets require single or double elimination.",
+    );
   if (count < format.minParticipants || count > format.maxParticipants)
     throw new Error(
       `This format supports ${format.minParticipants} to ${format.maxParticipants} entrants.`,
@@ -119,11 +138,13 @@ export function generateStage(input: Tournament, stageId: string): Tournament {
   const errors = validateGraph(tournament);
   if (errors.length) throw new Error(errors.join(" "));
   const stage = requireStage(tournament, stageId);
+  if (stage.format === "ladder" && readInvitations(stage).length)
+    throw new Error(
+      "Reset the unplayed challenge stage before replacing its invitation history.",
+    );
   if (
     tournament.matches.some(
-      (match) =>
-        match.stageId === stageId &&
-        (match.status === "completed" || match.status === "live"),
+      (match) => match.stageId === stageId && hasMatchEvidence(match),
     )
   ) {
     throw new Error(
@@ -133,6 +154,19 @@ export function generateStage(input: Tournament, stageId: string): Tournament {
   const descendants = descendantStages(tournament, stageId);
   if (tournament.matches.some((match) => descendants.has(match.stageId)))
     throw new Error("Reset dependent stages before regenerating this draw.");
+  if (
+    tournament.matches.some((match) => match.stageId === stageId) &&
+    tournament.stages.some((item) =>
+      item.sources.some(
+        (source) =>
+          source.stageId === stageId &&
+          source.selection?.kind === "match-results",
+      ),
+    )
+  )
+    throw new Error(
+      "Remove match outcome connections before regenerating their source draw.",
+    );
   stage.participantIds = resolveEntrants(tournament, stage);
   let ids = [...stage.participantIds].filter(
     (id) =>
@@ -227,9 +261,22 @@ export function generateStage(input: Tournament, stageId: string): Tournament {
     matches = tripleRound(tournament, stage, 1);
   }
   if (stage.format === "ladder") {
-    stage.metadata.policy = "alternating-adjacent-challenges-v1";
+    const mode = ladderPolicy(stage).mode;
+    stage.metadata.policy =
+      mode === "adjacent"
+        ? "alternating-adjacent-challenges-v1"
+        : mode === "invitations"
+          ? "approved-rank-swap-challenges-v1"
+          : "incumbent-stays-loser-requeues-v1";
     stage.metadata.ladderOrder = ids;
-    matches = ladderRound(stage, 1);
+    delete stage.metadata.challengeClosed;
+    delete stage.metadata.challenges;
+    matches =
+      mode === "king-of-hill"
+        ? hillRound(tournament, stage, 1)
+        : mode === "invitations"
+          ? []
+          : ladderRound(stage, 1);
   }
   if (["free-for-all", "time-trial", "grand-prix"].includes(stage.format)) {
     const capacity =
@@ -349,7 +396,10 @@ function clearDownstream(
     if (!affected.has(match.id)) continue;
     delete match.result;
     delete match.liveScores;
+    delete match.aggregateProgress;
+    delete match.metadata.timing;
     delete match.hands;
+    delete match.golState;
     delete match.private;
     match.status = "pending";
     for (const slot of match.slots) if (slot.source) delete slot.participantId;
@@ -382,12 +432,7 @@ export function recordResult(
   const stage = requireStage(tournament, match.stageId);
   const normalized = validateResult(match, stage, tournament.rules, result);
   const impact = match.result ? getCorrectionImpact(tournament, matchId) : [];
-  const played = impact.filter(
-    (item) =>
-      item.status === "completed" ||
-      item.status === "live" ||
-      item.status === "contested",
-  );
+  const played = impact.filter(hasMatchEvidence);
   if (played.length && !confirmInvalidate)
     throw new CorrectionRequiredError(played);
   if (match.result) {
@@ -404,7 +449,20 @@ export function recordResult(
     clearDownstream(tournament, match, impact);
   }
   match.result = normalized;
+  if (normalized.legs && match.legSchedule)
+    match.legSchedule = match.legSchedule.filter(
+      (entry) => entry.leg <= normalized.legs!.length,
+    );
+  delete match.metadata.awaitingRuling;
+  if (match.golState) {
+    match.golState.elapsedMs = golElapsed(
+      match.golState,
+      Date.parse(normalized.recordedAt),
+    );
+    delete match.golState.runningSince;
+  }
   delete match.liveScores;
+  delete match.aggregateProgress;
   match.status = "completed";
   tournament.history.push({
     id: `result:${match.id}:${tournament.history.length}`,
@@ -412,7 +470,98 @@ export function recordResult(
     revision: tournament.revision,
     action: `${input.matches.find((item) => item.id === matchId)?.result ? "Corrected" : "Recorded"} ${match.label}${played.length ? `; reopened ${played.length} affected matches` : ""}`,
   });
+  tournament.history = tournament.history.slice(-500);
   refresh(tournament);
+  return tournament;
+}
+
+export function changeMatchState(
+  input: Tournament,
+  matchId: string,
+  state:
+    "ready" | "live" | "postponed" | "contested" | "abandoned" | "canceled",
+  confirmInvalidate = false,
+): Tournament {
+  const tournament = structuredClone(input);
+  const match = tournament.matches.find((item) => item.id === matchId);
+  if (
+    !match ||
+    match.status === "bye" ||
+    match.status === "pending" ||
+    (match.status === "canceled" && !!match.metadata.conditionalReset)
+  )
+    throw new Error("Only a resolved match can change its operating status.");
+  const stage = requireStage(tournament, match.stageId);
+  if (
+    state === "canceled" &&
+    (![
+      "round-robin",
+      "groups",
+      "league",
+      "free-for-all",
+      "time-trial",
+      "grand-prix",
+    ].includes(stage.format) ||
+      tournament.matches.some((item) =>
+        item.slots.some((slot) => slot.source?.matchId === matchId),
+      ) ||
+      tournament.stages.some((item) =>
+        item.sources.some((source) => source.stageId === stage.id),
+      ))
+  )
+    throw new Error(
+      "This match feeds progression and needs a decisive ruling instead of cancellation.",
+    );
+  const impact = match.result ? getCorrectionImpact(tournament, matchId) : [];
+  if (match.result && !confirmInvalidate)
+    throw new CorrectionRequiredError([
+      match,
+      ...impact.filter(hasMatchEvidence),
+    ]);
+  if (match.result) {
+    const recovery = Array.isArray(tournament.metadata.correctionRecovery)
+      ? tournament.metadata.correctionRecovery
+      : [];
+    recovery.push({
+      at: new Date().toISOString(),
+      revision: tournament.revision,
+      matchId,
+      matches: JSON.parse(JSON.stringify([match, ...impact])) as JsonValue,
+    });
+    tournament.metadata.correctionRecovery = recovery.slice(-5);
+    clearDownstream(tournament, match, impact);
+    delete match.result;
+    delete match.liveScores;
+    delete match.aggregateProgress;
+    delete match.metadata.timing;
+    delete match.hands;
+    delete match.golState;
+    delete match.private;
+  }
+  if (match.golState?.runningSince) {
+    match.golState.elapsedMs = golElapsed(match.golState, Date.now());
+    delete match.golState.runningSince;
+  }
+  if (state !== "live" && match.metadata.timing !== undefined) {
+    const timers = timingSchema.parse(match.metadata.timing);
+    match.metadata.timing = Object.fromEntries(
+      Object.entries(timers).map(([id, run]) => [
+        id,
+        run.startedAt ? updateRun(run, "pause") : run,
+      ]),
+    );
+  }
+  if (state === "abandoned") match.metadata.awaitingRuling = "abandoned";
+  else delete match.metadata.awaitingRuling;
+  match.status = state === "abandoned" ? "contested" : state;
+  refresh(tournament);
+  tournament.history.push({
+    id: `status:${match.id}:${tournament.history.length}`,
+    at: new Date().toISOString(),
+    revision: tournament.revision,
+    action: `Changed ${match.label} to ${state}`,
+  });
+  tournament.history = tournament.history.slice(-500);
   return tournament;
 }
 
@@ -426,16 +575,23 @@ function resolveMatches(tournament: Tournament): void {
       if (
         match.status === "completed" ||
         match.status === "live" ||
-        match.status === "contested"
+        match.status === "contested" ||
+        (match.status === "canceled" && !match.metadata.conditionalReset)
       )
         continue;
       let waiting = false;
       for (const slot of match.slots) {
         if (!slot.source) continue;
+        const previousEntrant = slot.participantId;
         const source = matches.get(slot.source.matchId);
         if (!source || !terminal(source)) {
           waiting = true;
           delete slot.participantId;
+          if (previousEntrant) {
+            delete match.metadata.timing;
+            delete match.aggregateProgress;
+            delete match.liveScores;
+          }
           continue;
         }
         const winners = source.result?.winnerIds ?? [];
@@ -448,6 +604,11 @@ function resolveMatches(tournament: Tournament): void {
               )?.participantId;
         if (resolved) slot.participantId = resolved;
         else delete slot.participantId;
+        if (previousEntrant !== slot.participantId) {
+          delete match.metadata.timing;
+          delete match.aggregateProgress;
+          delete match.liveScores;
+        }
       }
       if (match.metadata.conditionalReset) {
         const final = matches.get(String(match.metadata.conditionalReset))!;
@@ -509,24 +670,7 @@ function refresh(tournament: Tournament): void {
         complete &&
         Math.max(...matches.map((match) => match.round)) >= stage.config.rounds;
     if (stage.format === "ladder") {
-      const order = [
-        ...((stage.metadata.drawOrder ?? stage.participantIds) as string[]),
-      ];
-      for (const match of [...matches].sort(
-        (a, b) => a.round - b.round || a.index - b.index,
-      )) {
-        if (match.status !== "completed" || !match.result) continue;
-        const winner = match.result.winnerIds[0];
-        const loser = match.slots.find(
-          (slot) => slot.participantId && slot.participantId !== winner,
-        )?.participantId;
-        if (loser && order.indexOf(winner) > order.indexOf(loser)) {
-          const first = order.indexOf(winner);
-          const second = order.indexOf(loser);
-          [order[first], order[second]] = [order[second], order[first]];
-        }
-      }
-      stage.metadata.ladderOrder = order;
+      complete = refreshLadderState(tournament, stage, matches);
     }
     if (stage.format === "triple-elimination") {
       const losses = new Map(stage.participantIds.map((id) => [id, 0]));
@@ -575,6 +719,14 @@ function refresh(tournament: Tournament): void {
     )
   )
     tournament.status = "in-progress";
+  else if (tournament.status === "completed")
+    tournament.status = tournament.matches.length ? "ready" : "draft";
+}
+
+export function refreshTournament(input: Tournament): Tournament {
+  const tournament = structuredClone(input);
+  refresh(tournament);
+  return tournament;
 }
 
 export function advanceStage(input: Tournament, stageId: string): Tournament {
@@ -583,6 +735,8 @@ export function advanceStage(input: Tournament, stageId: string): Tournament {
   const matches = tournament.matches.filter(
     (match) => match.stageId === stageId,
   );
+  if (stage.format === "ladder" && ladderPolicy(stage).mode === "invitations")
+    throw new Error("Approve a challenge invitation to create the next match.");
   if (!matches.length) return generateStage(tournament, stageId);
   refresh(tournament);
   if (!dynamic.has(stage.format) || stage.status === "completed")
@@ -597,7 +751,9 @@ export function advanceStage(input: Tournament, stageId: string): Tournament {
       ? swissRound(tournament, stage, round)
       : stage.format === "triple-elimination"
         ? tripleRound(tournament, stage, round)
-        : ladderRound(stage, round);
+        : ladderPolicy(stage).mode === "king-of-hill"
+          ? hillRound(tournament, stage, round)
+          : ladderRound(stage, round);
   if (!next.length)
     throw new Error("There are no valid matches for the next round.");
   if (next.length + tournament.matches.length > 20000)
@@ -622,6 +778,9 @@ export function validateGraph(tournament: Tournament): string[] {
     errors.push("Match identifiers must be unique.");
   for (const stage of tournament.stages) {
     errors.push(...advancementErrors(tournament, stage));
+    errors.push(...swissPolicyErrors(tournament, stage));
+    errors.push(...aggregatePolicyErrors(tournament, stage));
+    errors.push(...ladderPolicyErrors(tournament, stage));
     errors.push(
       ...groupDrawErrors(tournament, stage).map((issue) =>
         groupDrawIssueText(issue),
@@ -756,6 +915,8 @@ export function simulate(input: Tournament): Tournament {
     if (match) {
       const stage = requireStage(tournament, match.stageId);
       const low =
+        (tournament.rules.scoring === "weighted" &&
+          tournament.rules.weightedDirection === "low") ||
         tournament.rules.scoring === "low" ||
         tournament.rules.scoring === "time" ||
         stage.format === "time-trial";
@@ -793,6 +954,35 @@ export function simulate(input: Tournament): Tournament {
             }
           : {}),
       };
+      const aggregate = tournament.stages.find(
+        (stage) => stage.id === match.stageId,
+      )?.config.aggregate;
+      if (aggregate) {
+        result.legs = Array.from({ length: aggregate.legs }, () => [...scores]);
+        result.scores = aggregateScores(result.legs);
+      }
+      if (tournament.rules.scoring === "weighted") {
+        result.metrics = simulatedMetrics(
+          tournament.rules.metricDefinitions ?? [],
+          match.slots.map(
+            (slot) =>
+              rankedIds.indexOf(slot.participantId!) /
+              Math.max(1, rankedIds.length - 1),
+          ),
+          low,
+        );
+        result.scores = weightedScores(
+          tournament.rules.metricDefinitions ?? [],
+          result.metrics,
+          match.slots.length,
+        );
+        const best = low
+          ? Math.min(...result.scores)
+          : Math.max(...result.scores);
+        result.winnerIds = match.slots
+          .filter((_, index) => result.scores[index] === best)
+          .map((slot) => slot.participantId!);
+      }
       tournament = recordResult(tournament, match.id, result);
       continue;
     }
@@ -800,6 +990,32 @@ export function simulate(input: Tournament): Tournament {
       (stage) => stage.status === "active" && dynamic.has(stage.format),
     );
     if (active) {
+      if (
+        active.format === "ladder" &&
+        ladderPolicy(active).mode === "invitations"
+      ) {
+        const order = ladderOrder(tournament, active).filter(
+          (id) =>
+            tournament.participants.find((participant) => participant.id === id)
+              ?.status === "active",
+        );
+        if (order.length < 2)
+          throw new Error("Challenge simulation needs two active entrants.");
+        const round =
+          Math.max(
+            0,
+            ...tournament.matches
+              .filter((match) => match.stageId === active.id)
+              .map((match) => match.round),
+          ) + 1;
+        tournament.matches.push(
+          newMatch(active, round, 0, [entrant(order[0]), entrant(order[1])], {
+            status: "ready",
+            metadata: { ladderChallenge: true },
+          }),
+        );
+        continue;
+      }
       tournament = advanceStage(tournament, active.id);
       continue;
     }

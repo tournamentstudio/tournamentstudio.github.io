@@ -1,4 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { SponsorWall } from "./SponsorWall";
+import { scheduleOccurrences } from "../scheduling/legs";
+import { tabbableControls } from "../components/focus";
+import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 import type {
   Locale,
@@ -347,13 +350,17 @@ function SceneContent({
     case "schedule":
       return (
         <div className="presentation-result-list">
-          {tournament.matches
+          {scheduleOccurrences({ ...tournament, locale })
             .filter((m) => m.scheduledAt)
             .slice()
             .sort((a, b) => a.scheduledAt!.localeCompare(b.scheduledAt!))
             .map((m) => (
               <div key={m.id}>
-                <span>{matchNames(tournament, m, locale).join(" / ")}</span>
+                <span>
+                  {m.label}
+                  <br />
+                  {matchNames(tournament, m, locale).join(" / ")}
+                </span>
                 <strong>
                   {new Date(m.scheduledAt!).toLocaleTimeString(locale, {
                     hour: "2-digit",
@@ -432,20 +439,11 @@ function SceneContent({
       );
     case "sponsors":
       return (
-        <div className="presentation-sponsors">
-          {tournament.presentation.sponsors.length ? (
-            tournament.presentation.sponsors.map((s, i) => (
-              <span key={i}>{s}</span>
-            ))
-          ) : (
-            <p>
-              {t(
-                "Add sponsor names in Presentation Studio.",
-                "نام حامیان را در استودیوی نمایش اضافه کنید.",
-              )}
-            </p>
-          )}
-        </div>
+        <SponsorWall
+          settings={tournament.presentation}
+          locale={locale}
+          elapsed={elapsed}
+        />
       );
     case "champion": {
       const first = podiumPlaces(tournament).find((p) => p.rank === 1);
@@ -547,6 +545,7 @@ export function Presentation({
 }) {
   // Spectator components receive a separate document with referee data removed.
   const safe = useMemo(() => publicProjection(tournament), [tournament]);
+  const shell = useRef<HTMLDivElement>(null);
   const scenes = safe.presentation.scenes;
   const fallback: Scene = {
     id: "default",
@@ -567,6 +566,16 @@ export function Presentation({
     );
     setElapsed(0);
   };
+  useEffect(() => {
+    const opener =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : undefined;
+    shell.current?.focus();
+    return () => {
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
+    };
+  }, []);
   useEffect(() => {
     const timer = setInterval(() => setElapsed((value) => value + 1), 1000);
     return () => clearInterval(timer);
@@ -610,6 +619,33 @@ export function Presentation({
   }, [onExit, scenes.length]);
   return (
     <div
+      ref={shell}
+      role="dialog"
+      aria-modal="true"
+      aria-label={t("Tournament presentation", "نمایش مسابقات")}
+      tabIndex={-1}
+      onKeyDown={(event) => {
+        if (event.key !== "Tab") return;
+        const controls = tabbableControls(event.currentTarget);
+        const first = controls[0],
+          last = controls.at(-1),
+          active = document.activeElement;
+        if (
+          event.shiftKey &&
+          (active === first || active === shell.current) &&
+          last
+        ) {
+          event.preventDefault();
+          last.focus();
+        } else if (
+          !event.shiftKey &&
+          (active === last || active === shell.current) &&
+          first
+        ) {
+          event.preventDefault();
+          first.focus();
+        }
+      }}
       className={`presentation-shell themed ${safe.presentation.overlay?.enabled ? "broadcast-shell" : ""} ${safe.theme.reducedMotion ? "motion-reduced" : ""}`}
       style={themeStyle(safe.theme)}
       data-pattern={getTheme(safe.theme.preset).pattern}
@@ -631,14 +667,14 @@ export function Presentation({
               {safe.revision}
             </span>
           </div>
-          {safe.theme.design?.sponsorPosition === "top" &&
-            safe.presentation.sponsors.some(Boolean) && (
-              <div className="presentation-sponsor-band">
-                {safe.presentation.sponsors.filter(Boolean).map((name, i) => (
-                  <bdi key={i}>{name}</bdi>
-                ))}
-              </div>
-            )}
+          {safe.theme.design?.sponsorPosition === "top" && (
+            <SponsorWall
+              settings={safe.presentation}
+              locale={locale}
+              elapsed={elapsed}
+              band
+            />
+          )}
           <main
             className={`presentation-scene ${safe.presentation.transition === "fade" ? "scene-fade" : ""}`}
             style={{ aspectRatio: safe.presentation.aspect.replace(":", "/") }}
@@ -666,14 +702,14 @@ export function Presentation({
               elapsed={elapsed}
             />
           </main>
-          {safe.theme.design?.sponsorPosition !== "top" &&
-            safe.presentation.sponsors.some(Boolean) && (
-              <div className="presentation-sponsor-band">
-                {safe.presentation.sponsors.filter(Boolean).map((name, i) => (
-                  <bdi key={i}>{name}</bdi>
-                ))}
-              </div>
-            )}
+          {safe.theme.design?.sponsorPosition !== "top" && (
+            <SponsorWall
+              settings={safe.presentation}
+              locale={locale}
+              elapsed={elapsed}
+              band
+            />
+          )}
         </>
       )}
       <nav

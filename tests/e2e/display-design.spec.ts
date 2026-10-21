@@ -60,6 +60,111 @@ async function openStudio(page: Page, section: string) {
   return t;
 }
 
+test("collapses selected rounds and pans by pointer or keyboard without opening matches", async ({
+  page,
+}) => {
+  await openStudio(page, "Brackets");
+  const svg = page.getByTestId("bracket-svg");
+  await expect(svg.locator("g.bracket-node")).toHaveCount(7);
+  await page.getByText("Expand or collapse rounds", { exact: true }).click();
+  await page
+    .getByRole("button", { name: "Collapse round 1 (4)", exact: true })
+    .click();
+  await expect(svg.locator("g.bracket-node")).toHaveCount(3);
+  await page
+    .getByRole("button", { name: "Expand all rounds", exact: true })
+    .click();
+  await expect(svg.locator("g.bracket-node")).toHaveCount(7);
+  for (let index = 0; index < 5; index++)
+    await page.getByRole("button", { name: "Zoom in", exact: true }).click();
+  await page.getByRole("button", { name: "Drag to pan", exact: true }).click();
+  const canvas = page.locator(".bracket-scroll");
+  await canvas.scrollIntoViewIfNeeded();
+  const box = (await canvas.boundingBox())!;
+  await page.mouse.move(box.x + 280, box.y + 100);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 90, box.y + 40, { steps: 10 });
+  await page.mouse.up();
+  expect(
+    await canvas.evaluate((element) => element.scrollLeft),
+  ).toBeGreaterThan(100);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await canvas.focus();
+  const before = await canvas.evaluate((element) => element.scrollLeft);
+  await canvas.press("ArrowRight");
+  expect(
+    await canvas.evaluate((element) => element.scrollLeft),
+  ).toBeGreaterThan(before);
+});
+
+test("uploads public sponsor raster art and presents the selected layout", async ({
+  page,
+  browserName,
+}) => {
+  await openStudio(page, "Presentation");
+  await page
+    .getByRole("button", { name: "Add sponsor card", exact: true })
+    .click();
+  await page
+    .getByLabel("Sponsor name", { exact: true })
+    .fill("حامی آفتاب / Sun Partners");
+  await page.getByLabel("Sponsor tier", { exact: true }).selectOption("main");
+  await page
+    .getByLabel("Sponsor layout", { exact: true })
+    .selectOption("spotlight");
+  const image = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 300;
+    canvas.height = 100;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#195d42";
+    ctx.fillRect(0, 0, 300, 100);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 40px sans-serif";
+    ctx.fillText("SUN", 100, 65);
+    return canvas.toDataURL("image/png").split(",")[1];
+  });
+  await page.getByLabel("Sponsor logo", { exact: true }).setInputFiles({
+    name: "sponsor.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(image, "base64"),
+  });
+  await expect(page.locator(".sponsor-editor-logo")).toBeVisible();
+  await page
+    .getByRole("button", { name: "Save sponsor cards", exact: true })
+    .click();
+  await expect(page.locator(".save-status")).toHaveText("Saved locally");
+  await page.getByLabel("Scene type", { exact: true }).selectOption("sponsors");
+  await page.getByRole("button", { name: "Add scene", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Preview presentation", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Next scene", exact: true }).click();
+  await page.getByRole("button", { name: "Next scene", exact: true }).click();
+  await expect(
+    page.locator(".sponsor-wall.sponsor-spotlight img"),
+  ).toBeVisible();
+  await expect(page.locator(".sponsor-wall figcaption")).toHaveText(
+    "حامی آفتاب / Sun Partners",
+  );
+  expect(await page.locator(".presentation-shell").textContent()).not.toContain(
+    "HIDDEN-REFEREE-ONLY",
+  );
+  if (browserName === "chromium")
+    await page.screenshot({
+      path: ".local/sponsor-display.png",
+      fullPage: true,
+      animations: "disabled",
+    });
+  await page.keyboard.press("Escape");
+  await page.reload();
+  await page
+    .getByRole("navigation", { name: "Tournament sections" })
+    .getByRole("button", { name: "Presentation", exact: true })
+    .click();
+  await expect(page.locator(".sponsor-editor-logo")).toBeVisible();
+});
+
 test("saves and restores a reusable custom theme without changing results", async ({
   page,
 }) => {

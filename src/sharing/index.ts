@@ -1,3 +1,8 @@
+import {
+  fieldDefinitions,
+  publicFieldMetadata,
+  publicFieldDefinitions,
+} from "../domain/custom-fields";
 import { Unzip, UnzipInflate, strToU8, zipSync } from "fflate";
 import { z } from "zod";
 import { createParticipant, createTournament } from "../domain/types";
@@ -51,6 +56,7 @@ function publicMetadata(
     groups: z.array(z.array(z.string().max(160)).max(512)).max(512),
     championId: z.string().max(160),
     ladderOrder: z.array(z.string().max(160)).max(512),
+    challengeClosed: z.boolean(),
     policy: z.string().max(200),
     drawAlgorithm: z.string().max(200),
     drawSeed: z.string().max(240),
@@ -68,6 +74,10 @@ function publicMetadata(
     undefeatedFinalist: z.string().max(160),
     pairingBye: z.boolean(),
     ladderChallenge: z.boolean(),
+    hillChallenge: z.boolean(),
+    placementStart: z.number().int().min(1).max(512),
+    placementEnd: z.number().int().min(1).max(512),
+    placementLossRank: z.number().int().min(1).max(512),
   };
   for (const [key, schema] of Object.entries(
     kind === "stage" ? stageSchemas : matchSchemas,
@@ -106,8 +116,21 @@ function publicStageConfig(
   }
   if (stage.config.draw !== undefined)
     config.draw = groupDrawSchema.parse(stage.config.draw);
+  if (
+    stage.config.timeRanking === "cumulative" ||
+    stage.config.timeRanking === "placement"
+  )
+    config.timeRanking = stage.config.timeRanking;
   if (stage.config.knockoutDraw !== undefined)
     config.knockoutDraw = knockoutDrawSchema.parse(stage.config.knockoutDraw);
+  if (stage.config.swiss !== undefined)
+    config.swiss = structuredClone(stage.config.swiss);
+  if (stage.config.ladder !== undefined)
+    config.ladder = structuredClone(stage.config.ladder);
+  if (stage.config.fullPlacement !== undefined)
+    config.fullPlacement = stage.config.fullPlacement;
+  if (stage.config.aggregate !== undefined)
+    config.aggregate = structuredClone(stage.config.aggregate);
   return config;
 }
 
@@ -124,10 +147,19 @@ function publicParticipantMetadata(
 
 export function publicProjection(tournament: Tournament): Tournament {
   const source = validateTournament(tournament);
+  const customDefinitions = fieldDefinitions(source);
   return {
     ...source,
     description: "",
-    metadata: {},
+    metadata: {
+      ...publicFieldDefinitions(source, customDefinitions),
+      ...publicFieldMetadata(
+        source,
+        "tournament",
+        source.metadata,
+        customDefinitions,
+      ),
+    },
     history: [],
     revisionHash: "",
     participants: source.participants.map((participant) => ({
@@ -143,7 +175,15 @@ export function publicProjection(tournament: Tournament): Tournament {
       roster: [],
       tags: [],
       checkedIn: false,
-      metadata: publicParticipantMetadata(participant.metadata),
+      metadata: {
+        ...publicParticipantMetadata(participant.metadata),
+        ...publicFieldMetadata(
+          source,
+          participant.kind === "team" ? "team" : "participant",
+          participant.metadata,
+          customDefinitions,
+        ),
+      },
     })),
     stages: source.stages.map((stage, index) => ({
       ...stage,
@@ -162,10 +202,24 @@ export function publicProjection(tournament: Tournament): Tournament {
       status: match.status,
       result: match.result ? structuredClone(match.result) : undefined,
       liveScores: match.liveScores ? [...match.liveScores] : undefined,
+      aggregateProgress: match.aggregateProgress
+        ? structuredClone(match.aggregateProgress)
+        : undefined,
+      legSchedule: match.legSchedule
+        ? structuredClone(match.legSchedule)
+        : undefined,
       scheduledAt: match.scheduledAt,
       resourceId: match.resourceId,
       durationMinutes: match.durationMinutes,
-      metadata: publicMetadata(match.metadata, "match"),
+      metadata: {
+        ...publicMetadata(match.metadata, "match"),
+        ...publicFieldMetadata(
+          source,
+          "match",
+          match.metadata,
+          customDefinitions,
+        ),
+      },
     })),
     schedule: {
       ...source.schedule,
@@ -673,6 +727,21 @@ export function remapRecipeReferences(
       ...pot,
       participantIds: pot.participantIds.map(resolve),
     }));
+  if (config.knockoutDraw?.fixedSlots)
+    config.knockoutDraw.fixedSlots = config.knockoutDraw.fixedSlots.map(
+      (slot) => ({ ...slot, participantId: resolve(slot.participantId) }),
+    );
+  if (config.swiss)
+    config.swiss = {
+      ...config.swiss,
+      preferences: Object.fromEntries(
+        Object.entries(config.swiss.preferences).map(([id, side]) => [
+          resolve(id),
+          side,
+        ]),
+      ),
+      lateEntries: [],
+    };
   return config;
 }
 

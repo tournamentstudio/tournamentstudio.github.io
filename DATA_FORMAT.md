@@ -6,7 +6,7 @@ TournaStudio stores and transfers versioned JSON documents. The domain contract 
 
 The first public schema is version `1`. A document has a stable `id`, integer `revision`, `revisionHash`, creation and modification timestamps, locale, timezone, sport, status, participants, stages, matches, scoring rules, theme, presentation, schedule, metadata, and audit history.
 
-Entrants can be individuals or teams with rosters. Match slots contain an entrant ID, a winner or loser reference to an earlier match, or an empty place awaiting qualification. A match can contain more than two entrants. Results contain scores, winner IDs, an outcome, a timestamp, and optional sets and placements. Optional `liveScores` publish current totals without disclosing the private hand log; their length must match the slot count.
+Entrants can be individuals or teams with rosters. Match slots contain an entrant ID, a winner or loser reference to an earlier match, or an empty place awaiting qualification. A match can contain more than two entrants. Results contain scores, winner IDs, an outcome, a timestamp, and optional sets, placements, metric evidence, fair-play sanctions and aggregate legs. Optional `liveScores` publish current totals without disclosing the private hand log; their length must match the slot count.
 
 An optional participant `location` contains only finite numeric `latitude`
 (-90 to 90) and `longitude` (-180 to 180), in decimal degrees. Both are required
@@ -20,7 +20,7 @@ coordinate schema. Venue coordinates are omitted from public projections and
 recipes. Resource IDs, names and availability remain public. Private packages
 preserve the complete resource object.
 
-Stage configuration and metadata can preserve safe JSON extensions. Extensions cannot contain executable values. Unknown top-level properties are rejected, rather than silently discarded. Unknown schema versions fail with an instruction to keep the source file and update the application. There is no earlier published schema to migrate.
+Stage configuration and metadata can preserve safe JSON extensions. Extensions cannot contain executable values. Unknown top-level properties are rejected, rather than silently discarded. Unknown schema versions fail with an instruction to keep the source file and update the application. Fixed schema-1 fixtures and legacy untagged revisions are tested without rewriting their serialized data. There is no earlier published document schema to fabricate a migration for.
 
 Validation checks duplicate entity IDs, entrant references, winner identities, match sources, and cycles in stage and match dependencies. Scoring legality and pairing rules are checked separately by the competition engine.
 
@@ -93,6 +93,61 @@ and unresolved-tie behavior are described in [ARCHITECTURE.md](ARCHITECTURE.md).
 Selections and slot mappings survive public snapshots, archives and patches.
 Older app builds that do not recognize these fields reject the document safely;
 update the app before importing it.
+
+## Additional stage and result policies
+
+Outcome connections use `selection: {kind: "match-results", picks: [{matchId,
+outcome: "winners" | "losers"}]}` with the expected output `count`. References
+must belong to the named source stage. Snapshots retain these actual match IDs;
+recipes cannot reconstruct them from settings alone.
+
+Optional `config.swiss` contains `version:1`, `colorPolicy` (`alternating` or
+`balanced`), `allowLateEntrants`, entrant side `preferences`, and `lateEntries`
+with entrant ID, joined round and explicit points. Credits cannot exceed a win
+per missed round. Manual re-pairing changes the latest unplayed matches only.
+
+Optional `config.ladder` contains `version:1`, mode (`adjacent`, `invitations` or
+`king-of-hill`) and `maxRankGap` (1 to 511). Private `metadata.challenges` retains
+up to 1,000 typed invitations with status, identities, timestamps, optional match
+ID and note. Public queue/rank state is retained separately. The default mode for
+older documents remains adjacent challenges.
+
+Optional `config.aggregate` contains `version:1`, regulation `legs` (2 to 8) and
+`tieBreak` (`manual` or `extra-leg`) and optional `awayGoals`. The away-goal
+rule requires high scoring, even regulation legs and nonnegative scores. Slot 0
+hosts odd legs; slot 1 hosts even legs. Regulation away totals break a tied sum
+before an extra leg, whose goals never enter the away calculation. It is valid for single/double elimination
+with high/low scoring. Match result `legs` holds ordered two-score arrays;
+`aggregateTiebreakWinnerId` is allowed only for a tied aggregate. Partial leg
+scores are separate progress. `legSchedule` records one-based leg, ISO start,
+optional resource and duration, up to nine distinct bookings including the
+provisional extra leg. Scheduling expands these reservations into separate jobs.
+
+Full single/double-elimination classification and explicit fixed entrant slots are
+validated stage policies. Each fixed slot carries entrant ID and one-based slot;
+it cannot conflict with a protected seed, qualifier assignment or BYE rule.
+`config.timeRanking` chooses `placement` or `cumulative` for time trials.
+
+`rules.metricDefinitions` contains up to 20 strict definitions. Kinds are number,
+judges and placement; each includes ID, label, unit, limits and summary policy.
+Optional weights are bounded to +/-1,000. Judge panels have at most 20 values,
+using sum, mean or trimmed mean. Placement definitions contain up to 512 awards.
+`result.metrics` maps definition IDs to entrant-ordered values or judge arrays;
+null means absent descriptive evidence. Weighted results require complete
+measurements and stored totals matching six-decimal calculations. Tied raw
+placement ranks average occupied awards. All metrics and `result.fairPlay`
+sanctions are public data, unlike private referee notes.
+
+Optional `rules.gol.policy` defines ending, margin, clock duration, overtime and
+possession rules. Card abilities contain role eligibility, match/period limit,
+multiplier, possession effect and clock pause. `match.golState` stores elapsed
+milliseconds, running timestamp, period, overtime and concealing team; hand
+records preserve actual effect context. Public projection excludes both.
+
+Private `match.metadata.timing` maps entrant IDs to version-1 run records:
+elapsed milliseconds, nullable running timestamp, at most 256 labeled splits,
+an HTTP(S) evidence reference and pending/accepted/rejected review. Elapsed time
+is capped at seven days. Device timestamps do not establish certified timing.
 
 ## Group draw rules
 
@@ -438,9 +493,9 @@ The public projection removes organizer notes, referee identities, concealed pos
 
 The following structural metadata is retained through a typed allowlist because it affects standings or progression:
 
-- Stages: `drawOrder`, `groups`, `championId`, `ladderOrder`, `policy`, `drawAlgorithm`, `drawSeed`, and bounded `canvasPosition`.
-- Matches: `championship`, `qualifier`, `conditionalReset`, `undefeatedFinalist`, `pairingBye`, `ladderChallenge`.
-- Stage configuration extensions: `groups`, `forbiddenPairs`, `manualQualifiers`, and validated `draw` and `knockoutDraw` rules.
+- Stages: typed draw/group/champion/ladder state, challenge closure, policy and bounded canvas positions. Private invitation records are excluded.
+- Matches: typed championship, qualifier, conditional reset, pairing BYE, ladder/King-of-the-Hill and classification routing fields. Private timers and hand records are excluded.
+- Stage configuration extensions: group/pair restrictions, manual qualifiers, Swiss/ladder/aggregate/classification/time-ranking policies, and validated draw rules. Swiss credits stay public because they affect standings.
 - Participants: a bounded finite numeric `pointsAdjustment`, because it changes public standings and qualification. Other participant metadata stays private.
 
 Presentation scene text is deliberately public. Do not put private information in an announcement, rules slide, or other published scene.
@@ -492,13 +547,13 @@ Encryption uses browser Web Crypto. The envelope fields are:
 
 The authentication tag is 128 bits. The additional authenticated data is `TournaStudio:1:<context>`. Context is `tournament`, `package`, or `revision`. Each encryption generates a new salt and nonce. The password is never included in the envelope.
 
-Secrets must contain 8 to 1024 characters. A longer random secret is preferable to a short password. `createRecoverySecret()` generates 24 random bytes, encoded as 32 URL-safe characters. The current sharing interface supports a separately supplied secret. It does not embed the decryption secret in a link.
+Secrets must contain 8 to 1024 characters. A longer random secret is preferable to a short password. `createRecoverySecret()` generates 24 random bytes, encoded as 32 URL-safe characters. Separate-secret packages ask for that secret on import. The optional TSK1 wrapper, specified below, instead carries a newly generated sharing secret inside the link.
 
 ## Compact recipes
 
 `TSR1` uses the same compression and checksum framing as snapshot codes. A recipe contains the first stage's format and settings, entrant count, sport, scoring rules, theme settings, and presentation defaults. It omits participant names, matches, results, uploaded logos, backgrounds, sponsors, and scene text.
 
-Import creates new IDs and numbered entrants. Assigned groups, pairing restrictions, and manual qualifiers use `slot-1`, `slot-2`, and later participant positions, marked by `participantReferences: "positions"`. Import remaps these positions to the new entrant IDs. It rejects unknown positions. Older recipes without participant assignments remain supported. The legacy import interface generates the first stage from these settings. New exports use `TSR2`: all stages, stage dependencies, exact positions, wildcards, fixed slots and required venue placeholders are included. Stage and entrant identifiers are replaced with positional references, then new IDs on import. Names, uploaded images, results, private metadata and coordinates are excluded. Venue rules need replacement coordinates before a new constrained draw.
+Import creates new IDs and numbered entrants. Assigned groups, pairing restrictions, and manual qualifiers use `slot-1`, `slot-2`, and later participant positions, marked by `participantReferences: "positions"`. Import remaps these positions to the new entrant IDs. It rejects unknown positions. Older recipes without participant assignments remain supported. The legacy import interface generates the first stage from these settings. Single-stage recipes can use `TSR1`; multi-stage exports use `TSR2`, including all stages, stage dependencies, exact positions, wildcards, fixed slots and required venue placeholders. Stage and entrant identifiers are replaced with positional references, then new IDs on import. Names, uploaded images, results, private metadata and coordinates are excluded. Venue rules need replacement coordinates before a new constrained draw. Recipe scene participant references are remapped and match targets removed. Sponsor cards/names, Swiss late-entry credits and private challenge history are discarded. Match-result stage connections cannot survive without their generated source matches, so recipe export/import rejects those connections and recommends a full snapshot.
 
 ## Update packets
 
@@ -526,7 +581,7 @@ Use a public projection at both ends when generating spectator updates. Private 
 
 Registration fields support text, numbers, booleans, and fixed choices. Required fields and choice values are validated. Response approval checks tournament identity, duplicate packet IDs, duplicate entrant names, and duplicate entrant IDs.
 
-A result proposal contains a tournament ID, match ID, original public match hash, base revision, proposed result, timestamp, and notes. The hash excludes private notes and referee data so a proposal created from a public snapshot can be checked against the organizer's private copy. Validation rejects proposals after the public match state changes. Approval must still pass through the competition engine to validate scoring and downstream effects.
+A result proposal contains a tournament ID, match ID, original public match hash, base revision, proposed result, timestamp, and notes. The hash excludes private notes and referee data so a proposal created from a public snapshot can be checked against the organizer's private copy. Validation rejects proposals after the public match state changes. Scoring, including weighted evidence and fair-play values, is validated before preview. Approval still passes through the competition engine for downstream effects, and success is shown only after the confirmed document contains the applied packet record.
 
 These packet APIs are independent of transport. They do not prove a registrant's or scorekeeper's identity. See `FEATURES.md` for interface availability.
 
@@ -537,12 +592,51 @@ Dexie manages the `TournaStudio` IndexedDB database with schema version `1`:
 | Store         | Content                                                                |
 | :------------ | :--------------------------------------------------------------------- |
 | `documents`   | Current tournament or encrypted envelope, revision, and library fields |
-| `snapshots`   | Up to 50 recoverable revisions per tournament                          |
-| `preferences` | Reserved key/value application preferences                             |
+| `snapshots` | Up to 50 logical revisions, represented by commands and checkpoints |
+| `preferences` | Versioned event, personal theme/sport and application preferences |
 
-Standard snapshots are compressed. Protected snapshots contain encrypted envelopes. A document update and its revision snapshot commit in the same transaction. Writes compare the expected revision with the current saved revision. A stale writer receives a conflict instead of overwriting another tab.
+Revision records have an optional `encoding` of `checkpoint-v1` or `command-v1`, plus `baseRevision` for commands. A checkpoint is a full compressed document; a command is a validated update packet. Protected records encrypt either representation using the revision context. Untagged legacy records remain full snapshots. The current document, command/checkpoint and history pruning commit atomically.
+
+A checkpoint is written at creation, every tenth consecutive revision, after a revision gap or creation-identity change, and whenever the compressed command is at least 80 percent of the full document size. Before trimming history, the first retained command is rebuilt as a checkpoint. Reconstruction verifies base/target hashes, document identity and chain bounds; unsupported encodings, missing bases or corruption fail without writes. Archives reconstruct each retained revision as a complete document, independent of the local encoding. Normal and reviewed-restoration writes compare expected revision/hash; stale previews cannot overwrite another tab.
 
 Restoring a snapshot creates a new revision. Trash is a reversible library flag. Permanent deletion requires a tournament to be in trash and removes both document and snapshots.
+
+## Typed custom fields
+
+Private `metadata.fieldDefinitions` stores `{version:1, fields}` with at most 50
+definitions. IDs are bounded safe strings; scope is tournament, participant, team
+or match. Types are text, finite number, boolean, fixed choice and ISO date.
+Definitions specify required/public flags, numeric bounds, text length or choices.
+`metadata.fieldValues` on the corresponding entity stores only string, number or
+boolean values keyed by known definitions. Required fields are enforced on an
+explicit values save, while incomplete drafts can be retained and reported.
+Deleting a definition removes its values after confirmation; prior revisions
+remain recoverable. Public projection includes only explicitly public definitions
+and their applicable values. No field accepts expressions, markup or code.
+
+The nonsecret localStorage preference `tournastudio-vault-inactivity-v1` stores one
+of 0, 1, 5, 15, 30 or 60 minutes. Zero disables inactivity locking; invalid values
+use 15. It is browser-local and is not part of a portable tournament document.
+
+## Local ratings and prediction packets
+
+`TSH1` uses the bounded checksummed transport for a strict version-1 result
+source: tournament ID/title/revision, entrants and completed two-entrant
+played/drawn matches. At most 4,096 matches and 512 entrants occur in one source.
+An organizer maps every imported entrant to an explicit local identity. Rating
+storage supports 16 sources and 2,048 identities. Starting rating and K remain
+configuration, so the same evidence can be recalculated without rewriting it.
+
+`TSB1` carries a strict version-1 prediction with ID, tournament/stage IDs,
+display name, claimed `frozenAt`, base revision, draw hash and match/winner picks.
+The hash uses source-slot structure instead of later resolved entrants. The local
+single-elimination workflow freezes a complete set before play; imported timing
+and identity claims remain unverified. At most 100 predictions are retained.
+
+Both packets accept text or text-file input capped at 2 MB and require preview.
+Local records live in private `tournament.metadata.records`, inherit vault/history
+protection, and are excluded from public snapshots. Their explicit packet exports
+do contain the selected names/outcomes or picks. Checksums are not signatures.
 
 ## Participant tables
 

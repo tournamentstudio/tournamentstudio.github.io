@@ -1,3 +1,4 @@
+import { scheduleOccurrences } from "../scheduling/legs";
 import type { Tournament } from "../domain/types";
 import type { EventCollection } from "./model";
 
@@ -45,7 +46,7 @@ export function eventSchedule(
       memo.set(id, ids);
       return ids;
     };
-    for (const match of tournament.matches) {
+    for (const match of scheduleOccurrences(tournament)) {
       if (!match.scheduledAt || ["bye", "canceled"].includes(match.status))
         continue;
       const starts = Date.parse(match.scheduledAt);
@@ -69,7 +70,9 @@ export function eventSchedule(
             .toLocaleLowerCase() ?? "",
         referee:
           match.referee?.trim().normalize("NFKC").toLocaleLowerCase() ?? "",
-        entrants: [...entrants(match.id)],
+        entrants: [
+          ...entrants(String(match.metadata.scheduleOrigin ?? match.id)),
+        ],
       });
     }
   }

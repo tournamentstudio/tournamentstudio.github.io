@@ -27,6 +27,7 @@ export function withSeparationRules(
     pots: value.pots,
     restrictions,
     protectedSeeds: value.protectedSeeds,
+    ...(value.fixedSlots ? { fixedSlots: value.fixedSlots } : {}),
   };
   if (venueRules.length)
     return {

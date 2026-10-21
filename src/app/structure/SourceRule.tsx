@@ -9,6 +9,7 @@ import type {
 import { Field } from "../../components/ui";
 import { useI18n } from "../../i18n";
 import { sourceGroups } from "./helpers";
+import { MatchOutcomeSource } from "./MatchOutcomeSource";
 
 interface Props {
   tournament: Tournament;
@@ -51,6 +52,7 @@ export function SourceRule({
     source.selection?.kind === "wildcard" ? source.selection : undefined;
   const positions =
     source.selection?.kind === "positions" ? source.selection : undefined;
+  const matchResults = source.selection?.kind === "match-results";
   const canPlace =
     destination.format === "single-elimination" ||
     destination.format === "double-elimination";
@@ -124,7 +126,12 @@ export function SourceRule({
                     tieBreakers: ["points", "differential", "scored"],
                   },
                 });
-              else onChange({ ...base, count: 1, perGroup: groups.length > 0 });
+              else if (kind === "match-results") {
+                const match = tournament.matches.find((item) => item.stageId === source.stageId);
+                onChange({ ...base, count: 1, perGroup: false, selection: {
+                  kind, picks: match ? [{ matchId: match.id, outcome: "winners" }] : [],
+                } });
+              } else onChange({ ...base, count: 1, perGroup: groups.length > 0 });
             }}
           >
             <option value="top">{t("Top finishers", "برترین رتبه‌ها")}</option>
@@ -133,6 +140,9 @@ export function SourceRule({
             </option>
             <option value="wildcard" disabled={previous?.format !== "groups"}>
               {t("Wildcard across groups", "سهمیه آزاد میان گروه‌ها")}
+            </option>
+            <option value="match-results" disabled={!tournament.matches.some((match) => match.stageId === source.stageId)}>
+              {t("Winners / losers of matches", "برندگان / بازندگان دیدارها")}
             </option>
           </select>
         </Field>
@@ -152,7 +162,7 @@ export function SourceRule({
               }
             />
           </Field>
-          {!wildcard && (
+          {!wildcard && !matchResults && (
             <label className="check-row">
               <input
                 type="checkbox"
@@ -186,6 +196,7 @@ export function SourceRule({
           )}
         </div>
       )}
+      {matchResults && <MatchOutcomeSource tournament={tournament} source={source} index={index} onChange={onChange} />}
       {positions && (
         <div className="structure-position-list">
           {positions.picks.map((pick, pickIndex) => (

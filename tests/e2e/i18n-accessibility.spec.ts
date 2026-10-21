@@ -55,6 +55,28 @@ test("Persian score errors and match labels survive keyboard control and reload"
     "برنده انتخاب‌شده با امتیازهای واردشده سازگار نیست.",
   );
   await noViolations(page, "Persian match error dialog");
+  const lifecycle = dialog
+    .locator("summary")
+    .filter({ hasText: "بازگشایی یا تغییر وضعیت دیدار" });
+  const close = dialog.getByRole("button", { name: "بستن پنجره", exact: true });
+  await lifecycle.focus();
+  await page.keyboard.press("Tab");
+  await expect(close).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(lifecycle).toBeFocused();
+  await lifecycle.press("Enter");
+  const applyState = dialog.getByRole("button", {
+    name: "اعمال وضعیت دیدار",
+    exact: true,
+  });
+  await expect(applyState).toBeVisible();
+  await applyState.focus();
+  await page.keyboard.press("Tab");
+  await expect(close).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(applyState).toBeFocused();
+  await lifecycle.focus();
+  await lifecycle.press("Enter");
   for (let index = 0; index < 20; index++) {
     await page.keyboard.press("Tab");
     expect(

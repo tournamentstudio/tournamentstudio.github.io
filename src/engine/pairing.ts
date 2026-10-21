@@ -1,6 +1,8 @@
 import type { Match, Stage, Tournament } from "../domain/types";
 import { getStandings } from "../standings";
 import { entrant, newMatch } from "./formats";
+import { swissPolicy } from "../domain/swiss";
+import { orientSwissPair } from "./swiss-colors";
 
 export class PairingError extends Error {
   constructor(message: string) {
@@ -42,8 +44,9 @@ export function swissRound(
       .filter((participant) => participant.status === "active")
       .map((participant) => participant.id),
   );
+  const joined = new Map(swissPolicy(stage).lateEntries.map((entry) => [entry.participantId, entry.joinedRound]));
   const standings = getStandings(tournament, stage.id).filter((row) =>
-    active.has(row.participantId),
+    active.has(row.participantId) && (joined.get(row.participantId) ?? 1) <= round,
   );
   if (standings.length < 2)
     throw new PairingError(
@@ -113,7 +116,7 @@ export function swissRound(
         stage,
         round,
         index,
-        (round % 2 ? pair : [...pair].reverse()).map(entrant),
+        orientSwissPair(pair, history, stage, round).map(entrant),
       ),
     );
     if (bye)

@@ -22,6 +22,14 @@ import {
 } from "../sharing/packets";
 import { CorrectionRequiredError, recordResult } from "../engine";
 import { validateResult } from "../scoring";
+import {
+  validateMetrics,
+  weightedScores,
+  type MetricValues,
+} from "../scoring/metrics";
+import { MatchMetricsEditor } from "../scoring/MatchMetricsEditor";
+import { aggregateAwayWinner, aggregateScores } from "../domain/aggregate";
+import { AggregateProposalEditor } from "./AggregateProposalEditor";
 import { Field, Notice, ErrorText, Confirm, download } from "../components/ui";
 import { useI18n } from "../i18n";
 import { matchNames } from "../components/Bracket";
@@ -33,6 +41,7 @@ export function OfflineExchange({ tournament: doc, onChange }: EditorProps) {
   const [packet, setPacket] = useState<OfflinePacket>();
   const [error, setError] = useState<unknown>();
   const [message, setMessage] = useState("");
+  const [approvedProposalId, setApprovedProposalId] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [names, setNames] = useState("");
   const [answers, setAnswers] = useState<
@@ -44,6 +53,10 @@ export function OfflineExchange({ tournament: doc, onChange }: EditorProps) {
   const [winner, setWinner] = useState("");
   const [notes, setNotes] = useState("");
   const [outcome, setOutcome] = useState<Outcome>("played");
+  const [metrics, setMetrics] = useState<MetricValues>({});
+  const [recordFairPlay, setRecordFairPlay] = useState(false);
+  const [fairPlay, setFairPlay] = useState<string[]>([]);
+  const [legs, setLegs] = useState<string[][]>([]);
   const [impact, setImpact] = useState<{
     proposal: ResultProposal;
     matches: string[];
@@ -57,6 +70,46 @@ export function OfflineExchange({ tournament: doc, onChange }: EditorProps) {
     return parsed.success ? [parsed.data] : [];
   });
   const match = doc.matches.find((m) => m.id === matchId);
+  const approvalSaved =
+    approvedProposalId &&
+    Array.isArray(doc.metadata.acceptedResultProposals) &&
+    doc.metadata.acceptedResultProposals.includes(approvedProposalId);
+  const feedback = approvedProposalId
+    ? approvalSaved
+      ? t(
+          "Result proposal approved and recorded.",
+          "پیشنهاد نتیجه تأیید و ثبت شد.",
+        )
+      : t(
+          "Saving the approved result. Wait for the save confirmation before closing.",
+          "در حال ذخیره نتیجه تأییدشده. پیش از بستن، منتظر تأیید ذخیره بمانید.",
+        )
+    : message;
+  const weightedResult =
+    doc.rules.scoring === "weighted" && ["played", "draw"].includes(outcome);
+  const proposedStage = doc.stages.find((stage) => stage.id === match?.stageId);
+  const aggregate = ["played", "draw"].includes(outcome)
+    ? proposedStage?.config.aggregate
+    : undefined;
+  const calculated = weightedResult || !!aggregate;
+  let calculatedScores: number[] = [];
+  if (match && calculated) {
+    try {
+      calculatedScores = aggregate
+        ? aggregateScores(
+            legs.map((row) =>
+              row.map((value) => (value.trim() ? Number(value) : NaN)),
+            ),
+          )
+        : weightedScores(
+            doc.rules.metricDefinitions ?? [],
+            metrics,
+            match.slots.length,
+          );
+    } catch {
+      /* Incomplete inputs are explained when the proposal is validated. */
+    }
+  }
   const exportPacket = (value: OfflinePacket) =>
     download(
       JSON.stringify(value, null, 2),
@@ -66,6 +119,7 @@ export function OfflineExchange({ tournament: doc, onChange }: EditorProps) {
   async function work(action: () => void | Promise<void>) {
     setError(undefined);
     setMessage("");
+    setApprovedProposalId(undefined);
     setBusy(true);
     try {
       await action();
@@ -127,9 +181,9 @@ export function OfflineExchange({ tournament: doc, onChange }: EditorProps) {
             "بسته باید کمتر از ۲ مگابایت باشد.",
           ),
         );
-      const imported = parseOfflinePacket(await file.text());
+      let imported = parseOfflinePacket(await file.text());
       if (imported.format === "tournastudio-result-proposal")
-        await validateResultProposal(doc, imported);
+        imported = await validateResultProposal(doc, imported);
       if (
         imported.format === "tournastudio-registration-response" &&
         imported.tournamentId !== doc.id
@@ -259,11 +313,27 @@ export function OfflineExchange({ tournament: doc, onChange }: EditorProps) {
     );
     setWinner(selected?.result?.winnerIds[0] ?? "");
     setOutcome(selected?.result?.outcome ?? "played");
+    const policy = doc.stages.find((stage) => stage.id === selected?.stageId)
+      ?.config.aggregate;
+    setLegs(
+      selected?.result?.legs?.map((row) => row.map(String)) ??
+        Array.from({ length: policy?.legs ?? 0 }, () => ["0", "0"]),
+    );
+    setMetrics(structuredClone(selected?.result?.metrics ?? {}));
+    setRecordFairPlay(
+      !!selected?.result?.fairPlay ||
+        doc.rules.tieBreakers.includes("fair-play"),
+    );
+    setFairPlay(
+      selected?.slots.map((_, i) =>
+        String(selected.result?.fairPlay?.[i] ?? 0),
+      ) ?? [],
+    );
     setNotes("");
   }
   async function propose() {
     if (!match) throw new Error(t("Select a match.", "یک مسابقه انتخاب کنید."));
-    if (scores.some((score) => score.trim() === ""))
+    if (!calculated && scores.some((score) => score.trim() === ""))
       throw new Error(
         t(
           "Enter a score for every entrant.",
@@ -272,11 +342,50 @@ export function OfflineExchange({ tournament: doc, onChange }: EditorProps) {
       );
     const stage = doc.stages.find((s) => s.id === match.stageId)!;
     const result: MatchResult = {
-      scores: scores.map(Number),
+      scores: aggregate
+        ? aggregateScores(
+            legs.map((row) =>
+              row.map((value) => (value.trim() ? Number(value) : NaN)),
+            ),
+          )
+        : weightedResult
+          ? weightedScores(
+              doc.rules.metricDefinitions ?? [],
+              metrics,
+              match.slots.length,
+            )
+          : scores.map(Number),
       winnerIds: winner ? [winner] : [],
       outcome,
       recordedAt: new Date().toISOString(),
     };
+    if (aggregate) {
+      result.legs = legs.map((row) => row.map(Number));
+      const awayWinner = aggregateAwayWinner(
+        aggregate,
+        match.slots.map((slot) => slot.participantId!),
+        result.legs,
+      );
+      if (awayWinner) result.winnerIds = [awayWinner];
+      else if (result.scores[0] === result.scores[1] && winner)
+        result.aggregateTiebreakWinnerId = winner;
+    }
+    if (Object.keys(metrics).length)
+      result.metrics = validateMetrics(
+        doc.rules.metricDefinitions ?? [],
+        metrics,
+        match.slots.length,
+      );
+    if (recordFairPlay) {
+      if (fairPlay.some((value) => !value.trim()))
+        throw new Error(
+          t(
+            "Enter fair-play penalties for every entrant, including zero when none were issued.",
+            "جریمه بازی جوانمردانه همه شرکت‌کنندگان را وارد کنید؛ اگر جریمه‌ای نیست صفر بگذارید.",
+          ),
+        );
+      result.fairPlay = fairPlay.map(Number);
+    }
     if (doc.rules.scoring === "sets")
       result.sets = sets
         .split("\n")
@@ -323,6 +432,7 @@ export function OfflineExchange({ tournament: doc, onChange }: EditorProps) {
           notes: proposal.notes,
         },
       ];
+      setApprovedProposalId(proposal.id);
       onChange(next, t("Approve result proposal", "تأیید پیشنهاد نتیجه"));
       setPacket(undefined);
       setMessage(
@@ -366,9 +476,9 @@ export function OfflineExchange({ tournament: doc, onChange }: EditorProps) {
         )}
       </Notice>
       <ErrorText error={error} />
-      {message && (
+      {feedback && (
         <p role="status" className="notice">
-          {message}
+          {feedback}
         </p>
       )}
       <section className="panel">
@@ -568,6 +678,41 @@ export function OfflineExchange({ tournament: doc, onChange }: EditorProps) {
               {packet.notes && (
                 <p style={{ whiteSpace: "pre-wrap" }}>{packet.notes}</p>
               )}
+              {!!packet.result.metrics && (
+                <fieldset disabled>
+                  <MatchMetricsEditor
+                    definitions={doc.rules.metricDefinitions ?? []}
+                    values={packet.result.metrics}
+                    onChange={() => {}}
+                    names={matchNames(
+                      doc,
+                      doc.matches.find((item) => item.id === packet.matchId)!,
+                      locale,
+                    )}
+                    locale={locale}
+                  />
+                </fieldset>
+              )}
+              {packet.result.fairPlay && (
+                <p>
+                  {t("Fair-play penalties", "جریمه بازی جوانمردانه")}:{" "}
+                  {packet.result.fairPlay
+                    .map((value) => value.toLocaleString(locale))
+                    .join(" / ")}
+                </p>
+              )}
+              {packet.result.legs && (
+                <ol>
+                  {packet.result.legs.map((row, index) => (
+                    <li key={index}>
+                      {t("Leg", "بازی")} {(index + 1).toLocaleString(locale)}:{" "}
+                      {row
+                        .map((value) => value.toLocaleString(locale))
+                        .join(" / ")}
+                    </li>
+                  ))}
+                </ol>
+              )}
               <button
                 className="button primary"
                 disabled={busy}
@@ -764,7 +909,12 @@ export function OfflineExchange({ tournament: doc, onChange }: EditorProps) {
                   <input
                     type="number"
                     step="any"
-                    value={scores[i] ?? "0"}
+                    value={
+                      calculated
+                        ? (calculatedScores[i] ?? "")
+                        : (scores[i] ?? "0")
+                    }
+                    readOnly={calculated}
                     onChange={(e) =>
                       setScores(
                         scores.map((s, j) => (j === i ? e.target.value : s)),
@@ -773,6 +923,55 @@ export function OfflineExchange({ tournament: doc, onChange }: EditorProps) {
                   />
                 </Field>
               ))}
+              {aggregate && (
+                <AggregateProposalEditor
+                  policy={aggregate}
+                  legs={legs}
+                  onChange={setLegs}
+                  names={matchNames(doc, match, locale)}
+                  locale={locale}
+                />
+              )}
+              <MatchMetricsEditor
+                definitions={doc.rules.metricDefinitions ?? []}
+                values={metrics}
+                onChange={setMetrics}
+                names={matchNames(doc, match, locale)}
+                locale={locale}
+              />
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={recordFairPlay}
+                  onChange={(event) => setRecordFairPlay(event.target.checked)}
+                />
+                {t("Record fair-play penalties", "ثبت جریمه بازی جوانمردانه")}
+              </label>
+              {recordFairPlay && (
+                <div className="two-columns">
+                  {matchNames(doc, match, locale).map((name, index) => (
+                    <Field
+                      key={index}
+                      label={`${t("Fair-play penalties", "جریمه بازی جوانمردانه")}: ${name}`}
+                    >
+                      <input
+                        type="number"
+                        min={0}
+                        max={1000000}
+                        step="any"
+                        value={fairPlay[index] ?? ""}
+                        onChange={(event) =>
+                          setFairPlay(
+                            fairPlay.map((value, i) =>
+                              i === index ? event.target.value : value,
+                            ),
+                          )
+                        }
+                      />
+                    </Field>
+                  ))}
+                </div>
+              )}
               {doc.rules.scoring === "sets" && (
                 <Field
                   label={t(

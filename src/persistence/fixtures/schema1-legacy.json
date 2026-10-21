@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "id": "legacy-schema1-event",
+  "revision": 1,
+  "revisionHash": "",
+  "title": "Legacy tournament",
+  "subtitle": "جام قدیمی",
+  "description": "Stored before optional display and scoring settings existed",
+  "slug": "legacy-tournament",
+  "createdAt": "2026-01-01T10:00:00.000Z",
+  "updatedAt": "2026-01-01T10:00:00.000Z",
+  "locale": "fa",
+  "timezone": "Asia/Tehran",
+  "sport": "generic",
+  "status": "draft",
+  "participants": [
+    {
+      "id": "legacy-a",
+      "name": "تهران",
+      "seed": 1,
+      "kind": "team",
+      "status": "active",
+      "roster": [],
+      "tags": [],
+      "checkedIn": false,
+      "metadata": {
+        "extension.example": { "version": 1, "value": "keep this" }
+      }
+    },
+    {
+      "id": "legacy-b",
+      "name": "Team B",
+      "seed": 2,
+      "kind": "team",
+      "status": "active",
+      "roster": [],
+      "tags": [],
+      "checkedIn": false,
+      "metadata": {}
+    }
+  ],
+  "stages": [
+    {
+      "id": "legacy-stage",
+      "name": "Main stage",
+      "order": 0,
+      "format": "single-elimination",
+      "formatVersion": 1,
+      "config": {
+        "groupCount": 4,
+        "meetings": 1,
+        "rounds": 5,
+        "advanceCount": 2,
+        "capacity": 8,
+        "thirdPlace": false,
+        "grandFinalReset": true,
+        "seed": "legacy",
+        "seeding": "ranked"
+      },
+      "participantIds": ["legacy-a", "legacy-b"],
+      "sources": [],
+      "status": "draft",
+      "metadata": {}
+    }
+  ],
+  "matches": [],
+  "rules": {
+    "scoring": "high",
+    "bestOf": 1,
+    "allowDraws": false,
+    "pointsWin": 3,
+    "pointsDraw": 1,
+    "pointsLoss": 0,
+    "tieBreakers": ["points", "wins", "differential", "scored"],
+    "placementPoints": [25, 18, 15],
+    "targetScore": 6,
+    "gol": { "playersPerTeam": 3, "handPoints": 1, "cards": [] }
+  },
+  "theme": { "preset": "minimal-light", "reducedMotion": false },
+  "presentation": {
+    "scenes": [
+      {
+        "id": "legacy-scene",
+        "type": "title",
+        "title": "",
+        "duration": 12,
+        "text": ""
+      }
+    ],
+    "aspect": "16:9",
+    "autoRotate": false,
+    "showScores": true,
+    "transition": "fade",
+    "sponsors": []
+  },
+  "schedule": {
+    "startAt": "2026-01-01T10:00",
+    "matchMinutes": 20,
+    "restMinutes": 10,
+    "resources": [{ "id": "legacy-resource", "name": "Court 1" }]
+  },
+  "metadata": {
+    "extension.unknown": { "version": 7, "settings": { "keep": true } }
+  },
+  "history": [
+    {
+      "id": "legacy-created",
+      "at": "2026-01-01T10:00:00.000Z",
+      "revision": 1,
+      "action": "Created tournament"
+    }
+  ]
+}

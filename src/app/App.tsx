@@ -46,6 +46,8 @@ import type { AdvisorPlan } from "./advisor-plans";
 import { StorageHealth, resetIdentity } from "./StorageHealth";
 import { ImportCenter } from "./ImportCenter";
 import { BackupReminderNotice } from "./BackupReminders";
+import { useUndoSession } from "./undo-session";
+import { useVaultInactivity } from "./VaultInactivity";
 const Collections = lazy(() =>
   import("../collections/Collections").then((m) => ({
     default: m.Collections,
@@ -115,6 +117,7 @@ function Studio({
   const refreshSequence = useRef(0);
   const routeRef = useRef(route);
   const session = useRef<{ doc?: Tournament; secret?: string }>({});
+  const undoSession = useUndoSession();
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     offlineReady: [offlineReady],
@@ -125,7 +128,12 @@ function Studio({
     const list = await repository.list();
     if (sequence === refreshSequence.current) setEntries(list);
   }, []);
-  function openDocument(value?: Tournament, unlockedSecret?: string) {
+  function openDocument(
+    value?: Tournament,
+    unlockedSecret?: string,
+    preserveUndo = false,
+  ) {
+    if (!preserveUndo) undoSession.clear();
     session.current = { doc: value, secret: unlockedSecret };
     setDoc(value);
     setSecret(unlockedSecret);
@@ -166,6 +174,7 @@ function Studio({
   const presentation = route.startsWith("/present/");
   const isProtected =
     entries.find((e) => e.id === doc?.id)?.protected ?? !!secret;
+  useVaultInactivity(isProtected && doc ? doc.id : undefined, lock);
   useEffect(() => {
     const changed = () => navigate(getRoute());
     window.addEventListener("hashchange", changed);
@@ -368,13 +377,61 @@ function Studio({
       );
       await refresh();
       if (epoch === sessionEpoch.current) {
-        openDocument(saved, current.secret);
+        undoSession.record(current.doc!, saved, action);
+        openDocument(saved, current.secret, true);
         setUnsaved(undefined);
       }
     } catch (e) {
       if (epoch === sessionEpoch.current) {
         setSaveError(e);
         setUnsaved(value);
+      }
+    } finally {
+      if (epoch === sessionEpoch.current) {
+        savingRef.current = false;
+        setSaving(false);
+      }
+    }
+  }
+  async function restoreCommand(
+    direction: "undo" | "redo",
+    hash: string,
+    confirmPlayed: boolean,
+  ) {
+    const current = session.current,
+      epoch = sessionEpoch.current;
+    const command = undoSession.state[direction].at(-1);
+    if (
+      !current.doc ||
+      !command ||
+      undoSession.state.id !== current.doc.id ||
+      undoSession.state.hash !== hash ||
+      savingRef.current
+    )
+      throw new Error(
+        t(
+          "The undo session changed. Review the saved history instead.",
+          "نشست واگرد تغییر کرده است. تاریخچه ذخیره‌شده را بررسی کنید.",
+        ),
+      );
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      const saved = await repository.restoreReviewed(
+        current.doc.id,
+        direction === "undo" ? command.before : command.after,
+        current.doc.revision,
+        hash,
+        confirmPlayed,
+        `${direction === "undo" ? t("Undo", "واگرد") : t("Redo", "انجام دوباره")}: ${command.action}`,
+        current.secret,
+      );
+      await refresh();
+      if (epoch === sessionEpoch.current) {
+        undoSession.accept(direction, saved);
+        openDocument(saved, current.secret, true);
+        setUnsaved(undefined);
+        setSaveError(undefined);
       }
     } finally {
       if (epoch === sessionEpoch.current) {
@@ -828,6 +885,10 @@ function Studio({
                 onProtect={protect}
                 onLock={lock}
                 saving={saving}
+                undoActions={{
+                  state: undoSession.state,
+                  onRestore: restoreCommand,
+                }}
               />
             ) : route === "/create" ? (
               <CreateFlow

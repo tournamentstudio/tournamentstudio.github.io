@@ -3,6 +3,11 @@ import type {
   OverlaySettings,
   ThemeDesign,
 } from "./display-options";
+import type { GolAbility, GolHandState, GolPolicy, GolState } from "./gol";
+import type { MetricDefinition, MetricValues } from "../scoring/metrics";
+import type { LadderPolicy } from "./ladder";
+import type { SwissPolicy } from "./swiss";
+import type { AggregatePolicy, LegSchedule } from "./aggregate";
 export type Locale = "en" | "fa";
 export type TournamentStatus =
   | "draft"
@@ -73,6 +78,10 @@ export interface Slot {
   source?: { matchId: string; result: "winner" | "loser"; position?: number };
 }
 export interface MatchResult {
+  legs?: number[][];
+  aggregateTiebreakWinnerId?: string;
+  fairPlay?: number[];
+  metrics?: MetricValues;
   scores: number[];
   winnerIds: string[];
   placements?: number[];
@@ -81,6 +90,7 @@ export interface MatchResult {
   recordedAt: string;
 }
 export interface Hand {
+  gol?: GolHandState;
   id: string;
   at: string;
   guessingTeamId: string;
@@ -91,6 +101,9 @@ export interface Hand {
   cardId?: string;
 }
 export interface Match {
+  aggregateProgress?: number[][];
+  legSchedule?: LegSchedule;
+  golState?: GolState;
   id: string;
   stageId: string;
   round: number;
@@ -136,6 +149,7 @@ type KnockoutDrawFields = {
   pots: { id: string; name: string; participantIds: string[] }[];
   restrictions: ("region" | "organization")[];
   protectedSeeds: number;
+  fixedSlots?: { participantId: string; slot: number }[];
 };
 export type KnockoutFinalTarget = "grand-final" | "reset" | "third-place";
 export type KnockoutFinalRule = {
@@ -233,23 +247,31 @@ export interface KnockoutDrawPreview {
   exploredNodes: number;
 }
 export type StageConfig = {
+  ladder?: LadderPolicy;
   groupCount: number;
   meetings: number;
   rounds: number;
   advanceCount: number;
   capacity: number;
   thirdPlace: boolean;
+  fullPlacement?: boolean;
+  aggregate?: AggregatePolicy;
   grandFinalReset: boolean;
   seed: string;
   seeding: "ranked" | "random" | "snake" | "manual";
   draw?: GroupDrawConfig;
   knockoutDraw?: KnockoutDrawConfig;
+  swiss?: SwissPolicy;
 } & { [key: string]: JsonValue };
 export interface Advancement {
   stageId: string;
   count: number;
   perGroup: boolean;
   selection?:
+    | {
+        kind: "match-results";
+        picks: { matchId: string; outcome: "winners" | "losers" }[];
+      }
     | {
         kind: "positions";
         picks: { group?: string; rank: number }[];
@@ -311,6 +333,9 @@ export interface Stage {
   metadata: Record<string, JsonValue>;
 }
 export type TieBreaker =
+  | "set-ratio"
+  | "point-ratio"
+  | "fair-play"
   | "points"
   | "wins"
   | "differential"
@@ -321,7 +346,10 @@ export type TieBreaker =
   | "sonneborn-berger"
   | "seed";
 export interface Rules {
-  scoring: "high" | "low" | "sets" | "manual" | "placement" | "time";
+  scoring:
+    "high" | "low" | "sets" | "manual" | "placement" | "time" | "weighted";
+  metricDefinitions?: MetricDefinition[];
+  weightedDirection?: "high" | "low";
   bestOf: number;
   allowDraws: boolean;
   pointsWin: number;
@@ -331,9 +359,16 @@ export interface Rules {
   placementPoints: number[];
   targetScore: number;
   gol: {
+    policy?: GolPolicy;
     playersPerTeam: number;
     handPoints: number;
-    cards: { id: string; name: string; limit: number; points: number }[];
+    cards: {
+      id: string;
+      name: string;
+      limit: number;
+      points: number;
+      ability?: GolAbility;
+    }[];
   };
 }
 export interface ThemeSettings {
@@ -381,6 +416,8 @@ export interface Scene {
   text: string;
 }
 export interface PresentationSettings {
+  sponsorCards?: SponsorCard[];
+  sponsorLayout?: "grid" | "strip" | "spotlight";
   overlay?: OverlaySettings;
   scenes: Scene[];
   aspect: "16:9" | "4:3" | "9:16";
@@ -388,6 +425,12 @@ export interface PresentationSettings {
   showScores: boolean;
   transition: "fade" | "none";
   sponsors: string[];
+}
+export interface SponsorCard {
+  id: string;
+  name: string;
+  logo?: string;
+  tier: "main" | "partner" | "supporter";
 }
 export interface Resource {
   id: string;
@@ -434,6 +477,11 @@ export interface Tournament {
   history: AuditEntry[];
 }
 export interface Standing {
+  setsWon: number;
+  setsLost: number;
+  setRatio: number | null;
+  pointRatio: number | null;
+  fairPlay: number | null;
   participantId: string;
   rank: number;
   played: number;

@@ -1,24 +1,38 @@
-import { useEffect, useState } from "react";
-import {
-  Check,
-  RotateCcw,
-  ShieldCheck,
-  Play,
-  Pause,
-  Plus,
-  ArrowLeftRight,
-  Timer,
-} from "lucide-react";
+import { useState } from "react";
+import { Check, RotateCcw, ShieldCheck } from "lucide-react";
 import type { Match, Tournament, Outcome, MatchResult } from "../domain/types";
-import { uid } from "../domain/types";
+import { RefereeMode } from "./gol/RefereeMode";
+import { RunTimer } from "../timing/RunTimer";
+import { MatchMetricsEditor } from "../scoring/MatchMetricsEditor";
+import {
+  validateMetrics,
+  weightedScores,
+  type MetricValues,
+} from "../scoring/metrics";
 import { getCorrectionImpact, recordResult } from "../engine";
+import { hasMatchEvidence } from "../engine/match-evidence";
 import { Field, Notice, ErrorText, Modal } from "../components/ui";
 import { useI18n, generatedMatchLabel, groupLabel } from "../i18n";
 import { getTheme, themeStyle } from "../themes";
 import { GameIdentity, ThemeMotif } from "../themes/ThemeMotif";
 import "./game-experience.css";
+import {
+  AggregateMatchControl,
+  type MatchControlProps,
+} from "./AggregateMatchControl";
+import { MatchLifecycle } from "./MatchLifecycle";
 
-export function MatchControl({
+export function MatchControl(props: MatchControlProps) {
+  return props.tournament.stages.find(
+    (stage) => stage.id === props.match.stageId,
+  )?.config.aggregate ? (
+    <AggregateMatchControl {...props} />
+  ) : (
+    <StandardMatchControl {...props} />
+  );
+}
+
+function StandardMatchControl({
   tournament: doc,
   match,
   onChange,
@@ -50,13 +64,42 @@ export function MatchControl({
   const [error, setError] = useState<unknown>();
   const [pending, setPending] = useState<MatchResult>();
   const [detailed, setDetailed] = useState(false);
+  const [recordFairPlay, setRecordFairPlay] = useState(
+    Boolean(match.result?.fairPlay) ||
+      doc.rules.tieBreakers.includes("fair-play"),
+  );
+  const [fairPlay, setFairPlay] = useState(
+    match.result?.fairPlay ?? match.slots.map(() => 0),
+  );
+  const [metrics, setMetrics] = useState<MetricValues>(
+    match.result?.metrics ?? {},
+  );
+  const manualOutcome = [
+    "forfeit",
+    "walkover",
+    "no-show",
+    "disqualified",
+  ].includes(outcome);
+  const calculated = doc.rules.scoring === "weighted" && !manualOutcome;
+  let displayScores = scores;
+  if (calculated) {
+    try {
+      displayScores = weightedScores(
+        doc.rules.metricDefinitions ?? [],
+        metrics,
+        entrants.length,
+      );
+    } catch {
+      displayScores = [];
+    }
+  }
   const lowScore =
+    (doc.rules.scoring === "weighted" &&
+      doc.rules.weightedDirection === "low") ||
     doc.rules.scoring === "low" ||
     doc.rules.scoring === "time" ||
     doc.stages.find((s) => s.id === match.stageId)?.format === "time-trial";
-  const impact = getCorrectionImpact(doc, match.id).filter(
-    (m) => m.result || m.status === "live",
-  );
+  const impact = getCorrectionImpact(doc, match.id).filter(hasMatchEvidence);
   function commit(result: MatchResult, confirmed = false) {
     try {
       const next = recordResult(doc, match.id, result, confirmed);
@@ -71,6 +114,18 @@ export function MatchControl({
   }
   function save() {
     try {
+      const values = validateMetrics(
+        doc.rules.metricDefinitions ?? [],
+        metrics,
+        entrants.length,
+      );
+      const officialScores = calculated
+        ? weightedScores(
+            doc.rules.metricDefinitions ?? [],
+            values,
+            entrants.length,
+          )
+        : scores;
       const setScores = sets.trim()
         ? sets
             .trim()
@@ -107,9 +162,11 @@ export function MatchControl({
             .filter((_, i) => totals[i] === best)
             .map((p) => p!.id);
         } else {
-          const best = lowScore ? Math.min(...scores) : Math.max(...scores);
+          const best = lowScore
+            ? Math.min(...officialScores)
+            : Math.max(...officialScores);
           winnerIds = entrants
-            .filter((_, i) => scores[i] === best)
+            .filter((_, i) => officialScores[i] === best)
             .map((p) => p!.id);
         }
       }
@@ -122,16 +179,20 @@ export function MatchControl({
           ),
         );
       const result: MatchResult = {
-        scores,
+        scores: officialScores,
+        ...(recordFairPlay ? { fairPlay } : {}),
+        ...(Object.keys(values).length ? { metrics: values } : {}),
         winnerIds,
         outcome,
         sets: setScores,
         recordedAt: new Date().toISOString(),
       };
       if (isMulti) {
-        result.placements = scores.map(
+        result.placements = officialScores.map(
           (score) =>
-            1 + scores.filter((s) => (lowScore ? s < score : s > score)).length,
+            1 +
+            officialScores.filter((s) => (lowScore ? s < score : s > score))
+              .length,
         );
       }
       if (match.result && impact.length) setPending(result);
@@ -199,6 +260,15 @@ export function MatchControl({
             onScores={setScores}
           />
         ) : null}
+        {doc.stages.find((s) => s.id === match.stageId)?.format ===
+          "time-trial" && (
+          <RunTimer
+            tournament={doc}
+            match={match}
+            onChange={onChange}
+            onScores={setScores}
+          />
+        )}
         <div
           className={`score-entry ${entrants.length > 2 ? "score-entry-multi" : ""}`}
         >
@@ -215,10 +285,11 @@ export function MatchControl({
               <input
                 aria-label={`${t("Score", "امتیاز")} ${p?.name ?? i + 1}`}
                 type="number"
-                min={0}
-                max={1000000}
+                min={-1000000000}
+                max={1000000000}
                 step="any"
-                value={scores[i] ?? 0}
+                value={displayScores[i] ?? ""}
+                readOnly={calculated}
                 onChange={(e) =>
                   setScores(
                     scores.map((s, j) =>
@@ -245,6 +316,25 @@ export function MatchControl({
             </div>
           ))}
         </div>
+        {calculated && (
+          <Notice>
+            {t(
+              "Scores are calculated from the weighted inputs below. Missing inputs leave the score empty. Manual rulings may use a declared winner and awarded score.",
+              "امتیازها از داده‌های وزن‌دار زیر محاسبه می‌شوند. با داده ناقص امتیاز خالی می‌ماند. حکم دستی می‌تواند برنده و امتیاز تعیین شده داشته باشد.",
+            )}
+          </Notice>
+        )}
+        {!!doc.rules.metricDefinitions?.length && (
+          <MatchMetricsEditor
+            definitions={doc.rules.metricDefinitions}
+            values={metrics}
+            onChange={setMetrics}
+            names={entrants.map(
+              (p) => p?.name ?? t("Awaiting qualifier", "در انتظار صعود"),
+            )}
+            locale={locale}
+          />
+        )}
         <div className="two-columns">
           <Field label={t("Result type", "نوع نتیجه")}>
             <select
@@ -288,6 +378,47 @@ export function MatchControl({
             )}
           </summary>
           <div className="form-stack">
+            <label className="check-row">
+              <input
+                type="checkbox"
+                checked={recordFairPlay}
+                onChange={(event) => setRecordFairPlay(event.target.checked)}
+              />
+              {t("Record fair-play penalties", "ثبت جریمه بازی جوانمردانه")}
+            </label>
+            {recordFairPlay && (
+              <>
+                <p>
+                  {t(
+                    "Enter the agreed penalty points for each entrant. Zero confirms no penalty. Values are public and lower totals rank first when this tiebreaker is enabled.",
+                    "امتیاز جریمه توافق شده هر شرکت‌کننده را وارد کنید. صفر، نبود جریمه را تأیید می‌کند. مقدارها عمومی هستند و با فعال بودن این معیار، مجموع کمتر رتبه بهتری دارد.",
+                  )}
+                </p>
+                <div className="two-columns">
+                  {entrants.map((participant, index) => (
+                    <Field
+                      key={index}
+                      label={`${t("Fair-play penalties", "جریمه بازی جوانمردانه")}: ${participant?.name ?? index + 1}`}
+                    >
+                      <input
+                        type="number"
+                        min={0}
+                        max={1000000}
+                        step="any"
+                        value={fairPlay[index]}
+                        onChange={(event) =>
+                          setFairPlay(
+                            fairPlay.map((value, i) =>
+                              i === index ? event.target.valueAsNumber : value,
+                            ),
+                          )
+                        }
+                      />
+                    </Field>
+                  ))}
+                </div>
+              </>
+            )}
             <Field
               label={t(
                 "Set scores (one set per line)",
@@ -366,6 +497,12 @@ export function MatchControl({
               onClick={() => {
                 setScores(match.result?.scores ?? match.slots.map(() => 0));
                 setWinner(match.result?.winnerIds[0] ?? "");
+                setMetrics(match.result?.metrics ?? {});
+                setFairPlay(match.result?.fairPlay ?? match.slots.map(() => 0));
+                setRecordFairPlay(
+                  Boolean(match.result?.fairPlay) ||
+                    doc.rules.tieBreakers.includes("fair-play"),
+                );
               }}
             >
               <RotateCcw size={16} />
@@ -373,7 +510,11 @@ export function MatchControl({
             </button>
             <button
               className="button primary"
-              disabled={entrants.some((p) => !p) || match.status === "bye"}
+              disabled={
+                entrants.some((p) => !p) ||
+                match.status === "bye" ||
+                match.status === "canceled"
+              }
               onClick={save}
             >
               <Check size={17} />
@@ -381,254 +522,13 @@ export function MatchControl({
             </button>
           </div>
         )}
+        <MatchLifecycle
+          tournament={doc}
+          match={match}
+          onChange={onChange}
+          onClose={onClose}
+        />
       </fieldset>
     </Modal>
-  );
-}
-
-function RefereeMode({
-  tournament: doc,
-  match,
-  onChange,
-  onScores,
-}: {
-  tournament: Tournament;
-  match: Match;
-  onChange: (t: Tournament, a: string) => void;
-  onScores: (s: number[]) => void;
-}) {
-  const { t, locale } = useI18n();
-  const ids = match.slots.map((s) => s.participantId!).filter(Boolean);
-  const [concealing, setConcealing] = useState(ids[0] ?? "");
-  const [secret, setSecret] = useState(match.private?.concealedPosition ?? "");
-  const [running, setRunning] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
-  const [awarded, setAwarded] = useState(ids[0] ?? "");
-  const [points, setPoints] = useState(doc.rules.gol.handPoints);
-  const [card, setCard] = useState("");
-  const [error, setError] = useState<unknown>();
-  useEffect(() => {
-    if (!running) return;
-    const interval = window.setInterval(() => setElapsed((x) => x + 1), 1000);
-    return () => clearInterval(interval);
-  }, [running]);
-  function hand() {
-    try {
-      if (
-        ids.length !== 2 ||
-        !ids.includes(concealing) ||
-        !ids.includes(awarded)
-      )
-        throw new Error(
-          t(
-            "Assign two teams before recording a hand.",
-            "پیش از ثبت دست، دو تیم را تعیین کنید.",
-          ),
-        );
-      if (!Number.isFinite(points) || points < 0 || points > 100)
-        throw new Error(
-          t(
-            "Hand points must be between 0 and 100.",
-            "امتیاز دست باید بین ۰ و ۱۰۰ باشد.",
-          ),
-        );
-      const definition = doc.rules.gol.cards.find((c) => c.id === card);
-      if (
-        definition &&
-        (match.hands ?? []).filter(
-          (h) => h.cardId === card && h.awardedToId === awarded,
-        ).length >= definition.limit
-      )
-        throw new Error(
-          t(
-            "This team has reached the card use limit.",
-            "این تیم به سقف استفاده از کارت رسیده است.",
-          ),
-        );
-      const next = structuredClone(doc);
-      const m = next.matches.find((m) => m.id === match.id)!;
-      if (m.result)
-        throw new Error(
-          t(
-            "The hand log is locked after confirmation. Correct official scores through quick scorekeeping.",
-            "گزارش دست‌ها پس از تأیید قفل می‌شود. امتیاز رسمی را از امتیازدهی سریع اصلاح کنید.",
-          ),
-        );
-      m.private = { ...m.private, concealedPosition: secret };
-      m.status = "live";
-      next.status = "in-progress";
-      m.hands = [
-        ...(m.hands ?? []),
-        {
-          id: uid(),
-          at: new Date().toISOString(),
-          concealingTeamId: concealing,
-          guessingTeamId: ids.find((id) => id !== concealing) ?? "",
-          awardedToId: awarded,
-          points: points + (definition?.points ?? 0),
-          action: definition?.name ?? t("Hand result", "نتیجه دست"),
-          cardId: card || undefined,
-        },
-      ];
-      m.liveScores = ids.map((id) =>
-        m
-          .hands!.filter((h) => h.awardedToId === id)
-          .reduce((sum, h) => sum + h.points, 0),
-      );
-      onScores(m.liveScores);
-      onChange(next, t("Record referee hand", "ثبت دست توسط داور"));
-      setError(undefined);
-    } catch (e) {
-      setError(e);
-    }
-  }
-  return (
-    <div className="referee-panel">
-      <div className="section-heading">
-        <span className="badge">
-          <ShieldCheck size={14} />
-          {t("REFEREE ONLY", "فقط داور")}
-        </span>
-        <div className="referee-timer">
-          <Timer size={16} />
-          <b>
-            {Math.floor(elapsed / 60)
-              .toString()
-              .padStart(2, "0")}
-            :{(elapsed % 60).toString().padStart(2, "0")}
-          </b>
-          <button
-            className="icon-button"
-            onClick={() => setRunning(!running)}
-            aria-label={
-              running
-                ? t("Pause timer", "توقف زمان")
-                : t("Start timer", "شروع زمان")
-            }
-          >
-            {running ? <Pause size={16} /> : <Play size={16} />}
-          </button>
-        </div>
-      </div>
-      <Notice>
-        {t(
-          "The concealed position and hand log are excluded from spectator projections. The local timer resets when this dialog closes.",
-          "مکان گل و گزارش دست‌ها از نمای تماشاگر حذف می‌شوند. زمان‌سنج محلی با بستن پنجره بازنشانی می‌شود.",
-        )}
-      </Notice>
-      <ErrorText error={error} />
-      <div className="two-columns">
-        <Field label={t("Concealing team", "تیم پنهان‌کننده")}>
-          <select
-            value={concealing}
-            onChange={(e) => setConcealing(e.target.value)}
-          >
-            {ids.map((id) => (
-              <option key={id} value={id}>
-                {doc.participants.find((p) => p.id === id)?.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label={t("Concealed position (private)", "مکان گل (خصوصی)")}>
-          <input
-            type="password"
-            autoComplete="off"
-            maxLength={100}
-            value={secret}
-            onChange={(e) => setSecret(e.target.value)}
-          />
-        </Field>
-      </div>
-      <div className="two-columns">
-        <Field label={t("Award points to", "امتیاز برای")}>
-          <select value={awarded} onChange={(e) => setAwarded(e.target.value)}>
-            {ids.map((id) => (
-              <option key={id} value={id}>
-                {doc.participants.find((p) => p.id === id)?.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label={t("Hand points", "امتیاز دست")}>
-          <input
-            type="number"
-            min={0}
-            max={100}
-            value={points}
-            onChange={(e) => setPoints(Number(e.target.value))}
-          />
-        </Field>
-      </div>
-      {doc.rules.gol.cards.length > 0 && (
-        <Field label={t("Special card", "کارت ویژه")}>
-          <select value={card} onChange={(e) => setCard(e.target.value)}>
-            <option value="">{t("No card", "بدون کارت")}</option>
-            {doc.rules.gol.cards.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} ({c.limit})
-              </option>
-            ))}
-          </select>
-        </Field>
-      )}
-      <div className="button-row">
-        <button
-          className="button secondary"
-          onClick={() =>
-            setConcealing(ids.find((id) => id !== concealing) ?? concealing)
-          }
-        >
-          <ArrowLeftRight size={15} />
-          {t("Switch possession", "تعویض مالکیت")}
-        </button>
-        <button
-          className="button primary"
-          disabled={Boolean(match.result)}
-          onClick={hand}
-        >
-          <Plus size={15} />
-          {t("Record hand", "ثبت دست")}
-        </button>
-      </div>
-      {!!match.hands?.length && (
-        <ol className="hand-log">
-          {match.hands.map((h, i) => (
-            <li key={h.id}>
-              <span>
-                {t("Hand", "دست")} {i + 1}
-              </span>
-              <bdi>
-                {doc.participants.find((p) => p.id === h.awardedToId)?.name}
-              </bdi>
-              <strong>+{h.points}</strong>
-              <button
-                className="text-button"
-                aria-label={`${t("Undo hand", "واگرد دست")} ${(i + 1).toLocaleString(locale)}`}
-                disabled={Boolean(match.result)}
-                onClick={() => {
-                  const next = structuredClone(doc);
-                  const m = next.matches.find((x) => x.id === match.id)!;
-                  if (m.result) return;
-                  m.hands = m.hands?.filter((x) => x.id !== h.id);
-                  m.liveScores = ids.map((id) =>
-                    (m.hands ?? [])
-                      .filter((x) => x.awardedToId === id)
-                      .reduce((s, x) => s + x.points, 0),
-                  );
-                  onScores(m.liveScores);
-                  onChange(
-                    next,
-                    t("Correct referee hand", "اصلاح دست توسط داور"),
-                  );
-                }}
-              >
-                {t("Undo", "واگرد")}
-              </button>
-            </li>
-          ))}
-        </ol>
-      )}
-    </div>
   );
 }

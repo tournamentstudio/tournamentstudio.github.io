@@ -5,7 +5,8 @@ import {
   type AutomaticVenuePreview,
   type AutomaticVenueRequest,
 } from "../engine/automatic-venues";
-import { autoSchedule } from "./index";
+import { hypotheticalSchedule } from "./index";
+import { scheduleOccurrences } from "./legs";
 
 export interface ScheduledVenuePreview extends AutomaticVenuePreview {
   availabilityChecked: boolean;
@@ -37,8 +38,10 @@ export function previewScheduledKnockoutVenues(
                 draft.stages.find(
                   (stage) => stage.id === stageId,
                 )!.config.knockoutDraw = draw;
-                const scheduled = autoSchedule(generateStage(draft, stageId));
-                const matches = scheduled.matches.filter(
+                const scheduled = hypotheticalSchedule(
+                  generateStage(draft, stageId),
+                );
+                const matches = scheduleOccurrences(scheduled).filter(
                   (match) => match.stageId === stageId && match.scheduledAt,
                 );
                 if (!matches.length) return false;

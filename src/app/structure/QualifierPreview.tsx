@@ -5,7 +5,8 @@ import type {
   WildcardTieBreaker,
 } from "../../domain/types";
 import { Notice } from "../../components/ui";
-import { useI18n, localizedDiagnostic, groupLabel } from "../../i18n";
+import { useI18n, localizedDiagnostic, groupLabel, generatedMatchLabel } from "../../i18n";
+import { matchResultQualifiers } from "../../engine/match-qualifiers";
 
 export function QualifierPreview({
   tournament,
@@ -83,7 +84,15 @@ export function QualifierPreview({
                 ))}
               </ul>
             )}
-            {source.candidates.length ? (
+            {rule.selection?.kind === "match-results" ? (
+              <ul>
+                {matchResultQualifiers(tournament, rule.stageId, rule.selection.picks, rule.count).outcomes.map((pick, index) => <li key={index}>
+                  {generatedMatchLabel({ label: tournament.matches.find((match) => match.id === pick.matchId)?.label ?? pick.matchId }, locale)}:
+                  {" "}{pick.outcome === "winners" ? t("Winners", "برندگان") : t("Losers", "بازندگان")}
+                  {" "}<bdi>{pick.participantIds.map(name).join(", ")}</bdi>
+                </li>)}
+              </ul>
+            ) : source.candidates.length ? (
               <div className="structure-table-scroll">
                 <table>
                   <caption>

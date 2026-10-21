@@ -76,14 +76,56 @@ starts, keep the current draw or duplicate the tournament to redesign it.
 | Swiss                  | Complete the current round, then choose **Advance / next round**. The engine avoids repeat opponents and repeated BYEs. A pairing failure is reported, not replaced with a hidden rematch. |
 | Free-for-all           | Enter scores for every entrant in each heat. Placement points accumulate over configured rounds.                                                                                           |
 | Gauntlet               | Lower seeds start; a winner meets the next higher seed.                                                                                                                                    |
-| Challenge ladder       | Complete adjacent challenges and advance to the next round. Successful challengers move in the ladder.                                                                                     |
-| Time trial             | Use one consistent numeric time unit for all entrants; lower scores win. Standings use configured placement points.                                                                        |
+| Challenge ladder | Select adjacent challenges, reviewed invitations or King of the Hill before play; complete results to update ranks or queue. |
+| Time trial | Enter times in one unit; lower wins. Choose placement points or complete cumulative elapsed totals. Private timer/split tools can supply seconds. |
 | Grand Prix             | Record each event and accumulate placement points across the configured rounds.                                                                                                            |
 
 The normal creation range is 2 to 512 entrants. Standalone round robin supports
 up to 128. GSL needs a multiple of four. More entrants and more repeated meetings
 can reach the 20,000-match document limit. These are capacity limits, not a
 promise of the same rendering speed on every device.
+
+## Review Swiss rounds, challenges and timed runs
+
+For Swiss, finish the current round before generating another. Use the latest
+unplayed-round editor to review all pairings together; each eligible entrant must
+appear once, repeated/forbidden opponents are refused, and a BYE must be fresh.
+Confirm clearing that round's saved schedule after changing pairs. Balanced side
+preferences are soft rules. Enable late entrants before play if required; add a
+new name with explicit points for missed rounds. Those credits do not create
+opponent records or prove compliance with a federation's rulebook.
+
+For a ladder, choose its policy in Structure before initialization. **Invitations**
+lets an active lower rank challenge a higher rank within your maximum gap. The
+Matches challenge desk creates, approves, declines and cancels invitations.
+Only one approved match may run at a time; approve again if the rank or eligibility
+changes. A winning challenger swaps positions with the defender. Notes remain
+private. Cancellation is available before play, and canceled matches do not use
+the completed-challenge limit. Close early only with a result and no open challenge.
+
+**King of the Hill** begins with the top seed as incumbent. The next active entrant
+challenges them, the winner stays and the loser goes to the queue tail. Waiting
+order below the incumbent is not a performance ranking. Results, queue and
+invitation decisions survive reload. Correcting an earlier result can invalidate
+later challenges and requires the usual recovery review.
+
+For a time trial, choose placement points or cumulative time in Structure. A
+cumulative ranking requires a played run in every event; missing/forfeited runs
+stay below completed totals. In a match, open **Run timer, splits and evidence**.
+Start/pause the entrant timer, record labeled splits and optionally save a private
+evidence URL with your review decision. Transfer elapsed seconds to the score
+form, then confirm the result separately. Keep one time unit throughout. Timers
+use the device clock and do not verify a video or game.
+
+For knockout classification or aggregate play, configure the stage before its
+draw. Full classification places every single/double-elimination entrant, including
+an irregular field. Double elimination separates second-loss cohorts while
+preserving championship/drop/reset paths. Aggregate policy chooses 2 to 8 legs and a tied-total policy.
+Record partial legs as progress; confirm the match only after all required legs
+and any required extra leg. A tied final sum needs your agreed ruling unless the configured away-goal
+tiebreak resolves regulation play. That option requires high scoring and even
+regulation legs: the first slot hosts odd legs and the second slot hosts even
+legs. Only regulation away goals count; extra-leg away goals do not.
 
 ## Draw groups from pots
 
@@ -249,8 +291,8 @@ checks both rules together with pots, fixed positions and BYE recipients.
 
 With three entrants, a semifinal BYE has no loser and the third-place match has
 only one entrant. The editor explains that no pair can meet there. A two-entrant
-stage has no third-place match to protect. Other placement brackets are not
-available.
+stage has no third-place match to protect. Full classification is available for
+single elimination, but this affiliation control still targets third place only.
 
 Remove a target, preview and apply before disabling its match setting or changing
 to an incompatible format. Removing all final targets keeps any winners/losers
@@ -501,10 +543,18 @@ current result or explicitly confirm the correction and reset those dependents.
 The previous saved revision remains in **History**. Corrections can also return
 derived stages to draft or remove later dynamically paired rounds.
 
-**Reset form** discards the score-form changes; it is not a tournament-wide undo.
-To recover an earlier saved document, use **History**, choose a revision, and
-confirm **Restore**. Restoration creates a new revision. The latest fifty local
-snapshots are retained, so export important older revisions.
+**Reset form** discards score-form changes. Workspace **Undo** and **Redo** review
+up to 20 confirmed edits from the current session. Read the changed areas and
+acknowledge any affected played match before applying. Ctrl/Command+Z opens
+Undo outside text controls; Shift+Z or Ctrl+Y opens Redo. Normal text editing keeps
+its own native undo. Another tab's save invalidates an open restoration preview.
+
+To recover an older saved document, use **History**, compare a revision, then
+choose **Restore**. Both flows create a new revision rather than rewriting the
+past. The latest 50 logical revisions are retained; export important older ones.
+Reload, navigation, locking and another tab's edits clear the session Undo stack,
+but saved History remains. Reopen, postpone, contest or abandon a match through
+its status controls; a disputed or abandoned result waits for your final ruling.
 
 ## Configure rules and understand standings
 
@@ -513,7 +563,8 @@ placement-point table and standings criteria. A numeric score is not always
 a goal total: it can be points, set wins or an agreed elapsed-time unit.
 
 Available tie-breakers include points, wins, score difference, scored,
-head-to-head, Buchholz, Median Buchholz, Sonneborn-Berger and optional seed.
+head-to-head, Buchholz, Median Buchholz, Sonneborn-Berger, set ratio, point ratio,
+fair play and optional seed.
 An asterisk in standings marks an unresolved tie. Equal ranks are preserved when
 the selected sporting criteria cannot separate entrants.
 
@@ -522,7 +573,21 @@ winners remain recorded decisions. Review any effect on later qualification.
 
 The statistics screen uses recorded results and excludes BYEs from played-match
 totals. It does not estimate missing scores or create player statistics that were
-never entered.
+never entered. Set/point ratios require actual set scores. Enter fair-play sanctions
+explicitly, including zero when there was none; absent evidence is not counted as
+zero. A criterion with missing evidence is skipped for the tied group.
+
+For measurements or judged events, add typed dimensions in **Rules** before play.
+Choose numeric, judge-panel or placement input, its range and statistics summary.
+Weighted scoring combines the defined weights; the result form calculates the
+total and rejects inconsistent imports. Judge panels can sum, average or drop
+one high/low score before averaging. Placement dimensions convert finishing
+ranks to your awards, sharing occupied awards for ties. These values are public.
+Keep private explanations in the separate notes field.
+
+Use the named sport preset library to save rules, entrant kind, duration and theme
+for later tournaments. Imported presets are previewed; applying new rules after
+play is blocked. Presets exclude entrant names, results and uploaded artwork.
 
 ## Run Gol Ya Pooch
 
@@ -531,23 +596,29 @@ never entered.
 2. In **Participants**, enter the team names and their player rosters. Three
    players per team is the default rule; actual roster names are entered manually.
 3. In **Rules**, agree on the target score, hand points, team size and any special
-   cards before play. A card has a name, use limit and point adjustment. The app
-   does not assume one disputed rule variant.
+   cards before play. Select manual, target/margin or timed-period completion.
+   Cards define eligible team roles, match/period limits, point multiplier and
+   adjustment, possession effect and optional clock pause. Agree these rules
+   with the teams; the app does not assume one disputed variant.
 4. Open a match. Use **Quick scorekeeping** for totals or **Referee mode** for
    hand-by-hand recording.
 5. In referee mode, choose the concealing team and the team receiving points.
    An optional concealed-position value is private. Choose **Record hand** to
    save the hand and publish only its updated score totals.
 6. Use **Switch possession** when the game changes hands. Use the card selector
-   when an agreed card applies. Card limits are checked per awarded team.
+   when an agreed card applies. Select the actual card user; role and use limits
+   are checked for that team and period.
 7. Correct a hand with **Undo** before the official result is confirmed.
    Finish with **Confirm result** to advance the winner.
 
-The referee timer starts and pauses in the open dialog and resets when the dialog
-closes. The target score is a configurable reference; it does not automatically
-end a match. The organizer makes overtime and other special rulings according to
-the agreed rules. After result confirmation, the hand log is locked; correct the
-official score through quick scorekeeping.
+The referee clock survives closing the dialog and reloading. Pause it explicitly
+when play pauses; closing the browser does not stop its running timestamp. It
+uses the device clock and is not certified timing. A target/margin or sudden-death
+winning hand finalizes through the normal engine. For timed periods, confirm the
+expired clock and use the configured manual, sudden-death or extra-time policy.
+The legacy default is manual result confirmation. Latest-hand Undo reverses
+ordered effects before finalization; after a confirmed result, use the ordinary
+reviewed correction flow.
 
 Public links, presentation views and generated public graphics exclude the
 concealed position, hand log and private notes. A **complete private backup**
@@ -555,7 +626,7 @@ intentionally contains referee information. Never distribute one as a spectator
 package. **Theme Studio** offers Traditional, Modern, Night, Saffron, Courtyard,
 Velvet and Ink House, along with Persian Heritage. The selection changes the
 workspace, scorecards and event screen. The quick scorekeeper shows progress
-toward the configured target without automatically ending a match. Decorative
+toward the configured target. Decorative
 emblems are identical for both sides and never indicate the concealed position.
 
 ![Gol Ya Pooch scorekeeper with the Night theme](docs/screenshots/gol-scorekeeper.png)
@@ -568,12 +639,35 @@ timezone; the tournament has a separate display timezone in Settings.
 
 Choose **Generate schedule**. Unknown future opponents are reserved
 conservatively, so a schedule can be longer than the simple playing-time estimate.
-After results resolve entrants, regenerating may free unnecessary reservations.
+Schedule regeneration is disabled after a played result, live/contested match or
+recorded aggregate leg. Edit unplayed bookings individually or review a delay
+instead; recorded playing times are preserved.
 
 Edit match times, resource assignments and referees directly in the table.
 Review conflict notices after manual changes. Use **CSV** or **Calendar file**
 to export. Dynamic rounds must exist before they can be scheduled; a duration
 estimate does not predict all later Swiss or ladder matches.
+
+Open the timeline to drag a scheduled block, or use the equivalent time/resource
+controls. Review the proposed move and conflicts before applying. Delay controls
+preview which later matches must move. Started or scored work is not silently
+rescheduled. For a small schedule, optimization can search up to 10 jobs and four
+venues; the result says whether optimality was proved or the search stopped with
+its best valid candidate.
+
+Aggregate matches have separate bookings for each regulation leg, plus an optional
+provisional extra-leg booking. Set each leg's time, venue and duration in the leg
+editor. Next matches wait for the final reserved leg and required rest. A scored
+leg cannot be moved. CSV, calendar, print and event schedules list the individual
+legs; the optimizer counts each leg as a job. Reserving an extra leg conservatively
+holds time even when regulation play may make it unnecessary. An ordinary final
+result releases an unused extra-leg booking.
+
+For venue travel planning, select up to 12 scheduled unplayed matches with known
+entrants and base/venue coordinates. Enter your assumed route factor, speed and
+cost per kilometer. Preview a venue allocation with conflict checks and a stated
+search outcome. It estimates repeated base-to-venue journeys, not road routes or
+the actual itinerary between successive matches. Edit aggregate venues per leg.
 
 ## Change the appearance
 
@@ -596,15 +690,21 @@ not accepted.
 
 **Export custom theme** saves a versioned JSON file you can import into another
 tournament. **Reset customizations** restores the chosen preset; **Remove
-images** removes the uploaded logo and background. There is no separate custom
-theme library, so keep exported theme files for reuse.
+images** removes the uploaded logo and background. Save a named personal design
+to reuse, duplicate or rename in the local library. Images are excluded unless
+you explicitly include them. The library is separate from tournament vaults.
+Design controls cover gradients, cards, tables, typography, shadows, winner
+emphasis, animation and bracket layout. Collapse individual bracket rounds or
+enable pointer panning; arrow-key scrolling remains available.
 
 ## Present on a projector or a second screen
 
 In **Presentation**, build a playlist of scenes. Add a scene, edit its duration
 and public text, and use the up/down buttons to reorder it. Choose 16:9, 4:3 or
 portrait, automatic rotation and fade or no transition. Sponsor names and every
-scene's text are public content.
+scene's text are public content. Add up to 24 sponsor cards with local raster
+logos and tiers. Grid, strip and spotlight layouts show eight cards per page and
+rotate every five seconds; the exported slides paginate them too.
 
 Choose **Preview presentation** to check the result. During playback:
 
@@ -628,7 +728,10 @@ when a result supplies it.
 
 For OBS, capture the browser window. An OBS browser source is a different browser
 environment and does not automatically share this browser's IndexedDB. There is
-no transparent overlay editor or cross-device live synchronization.
+no cross-device live synchronization. The overlay editor offers strip, stacked
+and compact layouts with transparent, chroma or themed backgrounds. Export
+transparent SVG/PNG images, or use chroma for window capture. A captured browser
+window may itself be opaque.
 
 ## Export graphics and backups
 
@@ -645,8 +748,10 @@ Open **Share Center**:
 - **Download private backup** exports the complete current `.tourney` archive.
 
 A private backup includes the current document, embedded images, theme and audit
-entries. It does not contain all fifty historical snapshots. Export an individual
-older snapshot from **History** when you need to retain it.
+entries. **Include saved revisions (up to 50)** also carries retained recovery
+points. One secret encrypts all included history in a protected backup. Repeated
+images in history can exceed the archive limit; export individual revisions or
+uncheck history for a current-only backup.
 
 For a protected local tournament, the backup uses its vault secret unless you
 explicitly select a separate sharing secret. Keep that secret outside the file
@@ -714,6 +819,23 @@ full snapshot.
 Private update packets may contain referee information. Select update encryption
 and share its secret separately when the transfer needs confidentiality.
 
+## Keep rating history and local predictions
+
+In **Statistics > Elo ratings**, choose a starting rating and K. Only completed
+two-entrant played/drawn results contribute; BYEs and forfeits do not. Export a
+TSH1 result code/file and preview another tournament's packet before importing.
+Map each entrant explicitly to an existing identity or a new one. Equal names do
+not establish identity. Confirm replacement when updating a source; its previous
+state remains recoverable in History.
+
+Before any match in a generated single-elimination stage starts, build a prediction
+for every played bracket path and freeze it. Export its TSB1 packet for manual
+collection. Imported entries require acknowledgement that identity and claimed
+freeze time are unverified. The local leaderboard gives one point per correctly
+predicted completed winner and shared ranks for equal points. Draw changes retain
+old entries but exclude incompatible ones. These records are private tournament
+metadata; explicit records exports contain the selected names and predictions.
+
 ## Exchange registrations without a server
 
 In the organizer's **Offline exchange** tab:
@@ -754,6 +876,16 @@ needs a separate impact confirmation.
 This is a manual approval workflow. A proposal is not a signed referee identity
 and is not sent automatically.
 
+## Add custom organizer fields
+
+Open **Rules > Custom fields** to define a field for the tournament, all entrants, teams
+only or matches. Choose text, number, checkbox, fixed choices or date, then set
+limits and whether a value is required. Fields are private unless you explicitly
+mark them public. The editor reports missing required values; saving an entity's
+values enforces its required fields. Confirm deleting a field and its saved values;
+History retains a recovery point. A public label or value is included in public
+packages, so keep sensitive information in private fields.
+
 ## Protect, lock and recover a tournament
 
 Enable the vault during creation, or open **Settings** and choose
@@ -772,6 +904,14 @@ and the app cannot recover a forgotten secret.
 Standard local mode favors convenience: anyone using the same browser profile
 can open those tournaments. See [PRIVACY_AND_SECURITY.md](PRIVACY_AND_SECURITY.md)
 for the exact boundary.
+
+Protected tournament and event tabs lock after 15 minutes without user activity.
+Change **Lock after inactivity** in vault settings or Storage Health. Keyboard,
+pointer, touch and direct input reset only the current tab; incoming results do
+not keep a display unlocked. Auto-lock discards unconfirmed forms and decrypted
+previews while keeping confirmed encrypted saves. A suspended browser checks
+expiry when it resumes. Select **Off** deliberately for an unattended protected
+display, and use the explicit lock when leaving a shared device.
 
 ## Storage, updates and offline use
 
@@ -805,7 +945,8 @@ The bracket's scroll region can be panned with arrow keys. Stage ordering and
 playlist ordering have buttons, so dragging is not required. The presentation
 respects reduced-motion settings.
 
-Outside text inputs, Ctrl+S or Command+S downloads a tournament backup. Normal
+Outside text inputs, Ctrl+S or Command+S downloads a tournament backup. Ctrl or
+Command+Z opens the session Undo review; Shift+Z or Ctrl+Y opens Redo. Normal
 editing already saves through the local repository.
 
 For the exact supported subset and remaining gaps, consult
@@ -825,7 +966,7 @@ Open **Participants** and choose **Edit**. Add a local logo, set availability, o
 
 In **Share Center**, leave **Include saved revisions (up to 50)** enabled to carry recovery points inside a `.tourney` backup. Large images repeated through history may exceed the archive limit; export fewer separate recovery files or uncheck history for a current-only backup. A protected backup uses one secret for all included revisions.
 
-Recipes now include the entire stage graph, with fresh numbered entrants. Generate each stage when its inputs are ready. Private names, results and coordinates are left out.
+Multi-stage recipes include configuration and fresh numbered entrants. Generate each stage when its inputs are ready. Private names, results, sponsor content and coordinates are left out. A connection to an actual recorded winner/loser match requires a full snapshot because a recipe has no source result to preserve.
 
 For private update packets, select encryption and enter a separate secret. On a divergent local copy, review each operation against the saved base, local state and incoming value. Select the changes to retain, preview the resulting bracket, then confirm. Corrections that affect played matches need a further impact confirmation. Blocked structural edits can be saved as the sender's separate fork. A merge creates a new local revision, so later sender packets may also need review.
 
@@ -833,7 +974,7 @@ For private update packets, select encryption and enter a separate secret. On a 
 
 Open Events & seasons and create an event. Add a secret if it will include protected competitions. Link tournaments from the local library and select the final stage used for ranking. A group stage alone is not a final event ranking; select its playoff stage when available.
 
-Under Competition links, map recurring participants to the same directory member. Equal names are kept separate until you make this choice. Set competition weights and placement awards to combine different games. Points adjustments require a reason. Promotion/relegation preview waits for every linked final stage and refuses a tie at a cutoff. It produces a plan without moving tournament entrants.
+Under Competition links, map recurring participants to the same directory member. Equal names are kept separate until you make this choice. Set competition weights and placement awards to combine different games. Points adjustments require a reason. Promotion/relegation preview waits for every linked final stage and refuses a tie at a cutoff. Select destination divisions, review every move, then create the new season. It creates independent round-robin divisions of 2 to 128 entrants using the source sport/rules. Original competitions, results and season membership remain unchanged.
 
 Use shared venue names for physical resources used by several competitions. The shared schedule checks venue, referee and mapped-entrant rest conflicts, including possible entrants in later matches. Edit the source tournament to resolve a conflict. The table shows up to 1,000 conflicts per pass; fix the listed problems and check again.
 

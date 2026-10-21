@@ -3,9 +3,10 @@ import { History as HistoryIcon, RotateCcw, Download } from "lucide-react";
 import type { Tournament } from "../domain/types";
 import { repository, type RevisionEntry } from "../persistence";
 import { exportArchive, downloadFile } from "../sharing";
-import { Notice, ErrorText, Confirm } from "../components/ui";
+import { Notice, ErrorText } from "../components/ui";
 import { useI18n } from "../i18n";
 import { HistoryComparison } from "./HistoryComparison";
+import { RestorationReview } from "./RestorationReview";
 export function History({
   tournament: doc,
   secret,
@@ -22,13 +23,6 @@ export function History({
   useEffect(() => {
     void repository.revisions(doc.id).then(setRevisions).catch(setError);
   }, [doc.id, doc.revision]);
-  async function restore(r: RevisionEntry) {
-    try {
-      onRestore(await repository.restoreRevision(doc.id, r.revision, secret));
-    } catch (e) {
-      setError(e);
-    }
-  }
   async function backup(r: RevisionEntry) {
     try {
       const snapshot = await repository.loadRevision(
@@ -108,10 +102,24 @@ export function History({
         ))}
       </div>
       {selected && (
-        <Confirm
+        <RestorationReview
+          tournament={doc}
+          revision={selected.revision}
+          secret={secret}
           title={t("Restore revision", "بازیابی نسخه")}
-          message={`${t("Restore revision", "بازیابی نسخه")} ${selected.revision}? ${t("The current saved copy stays in History.", "نسخه فعلی در تاریخچه می‌ماند.")}`}
-          onConfirm={() => restore(selected)}
+          onApply={async (hash, confirmed) =>
+            onRestore(
+              await repository.restoreReviewed(
+                doc.id,
+                selected.revision,
+                doc.revision,
+                hash,
+                confirmed,
+                `Restored revision ${selected.revision}`,
+                secret,
+              ),
+            )
+          }
           onClose={() => setSelected(undefined)}
         />
       )}

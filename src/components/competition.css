@@ -2,6 +2,22 @@
   display: grid;
   gap: 12px;
 }
+.bracket-pan-enabled,
+.bracket-pan-enabled .bracket-node {
+  cursor: grab;
+  user-select: none;
+}
+.bracket-pan-enabled:active,
+.bracket-pan-enabled:active .bracket-node {
+  cursor: grabbing;
+}
+.bracket-round-options .button-row {
+  padding-top: 12px;
+}
+.presentation .bracket-round-options,
+.presentation-shell .bracket-round-options {
+  display: none;
+}
 .bracket-controls {
   display: flex;
   flex-wrap: wrap;

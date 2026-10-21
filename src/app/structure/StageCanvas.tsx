@@ -297,6 +297,8 @@ export function StageCanvas({
                       {source.perGroup ? t(" / group", " / گروه") : ""}
                       {source.selection?.kind === "wildcard"
                         ? t(" wildcard", " سهمیه آزاد")
+                         : source.selection?.kind === "match-results"
+                           ? t(" outcomes", " نتایج")
                         : ""}
                     </text>
                   </g>

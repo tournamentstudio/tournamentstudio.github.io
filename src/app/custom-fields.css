@@ -1,0 +1,45 @@
+.custom-fields-studio {
+  min-width: 0;
+}
+.custom-field-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.custom-field-list > li {
+  padding: 14px;
+  border: 1px solid #dce2d7;
+  border-radius: 10px;
+  background: #f8faf5;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.custom-field-name {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+.custom-field-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.custom-fields-studio fieldset {
+  min-width: 0;
+}
+.custom-fields-studio fieldset > label:has(input[type="checkbox"]) {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-block: 12px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.custom-fields-studio fieldset > label input[type="checkbox"] {
+  flex-shrink: 0;
+  margin-top: 6px;
+}

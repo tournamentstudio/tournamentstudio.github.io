@@ -16,14 +16,42 @@ export function StandingsTable({
 }) {
   const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
   const standings = getStandings(tournament, stageId, group);
+  const cumulative =
+    tournament.stages.find((s) => s.id === stageId)?.config.timeRanking ===
+    "cumulative";
+  const extraColumns = [
+    {
+      key: "setRatio" as const,
+      policy: "set-ratio",
+      en: "Set ratio",
+      fa: "نسبت ست",
+    },
+    {
+      key: "pointRatio" as const,
+      policy: "point-ratio",
+      en: "Point ratio",
+      fa: "نسبت امتیاز",
+    },
+    {
+      key: "fairPlay" as const,
+      policy: "fair-play",
+      en: "Fair-play penalties",
+      fa: "جریمه جوانمردانه",
+    },
+  ].filter((column) =>
+    tournament.rules.tieBreakers.some((policy) => policy === column.policy),
+  );
   const participantMap = new Map(tournament.participants.map((p) => [p.id, p]));
   const n = (v: number) =>
     v.toLocaleString(locale === "fa" ? "fa-IR" : "en-US", {
-      maximumFractionDigits: 2,
+      maximumFractionDigits: cumulative ? 3 : 2,
     });
   return (
     <div
       className="standings-scroll themed"
+      role="region"
+      tabIndex={0}
+      aria-label={t("Scrollable standings", "جدول قابل پیمایش")}
       style={themeStyle(tournament.theme)}
       data-pattern={getTheme(tournament.theme.preset).pattern}
       dir={locale === "fa" ? "rtl" : "ltr"}
@@ -32,6 +60,9 @@ export function StandingsTable({
         <caption>
           {t("Standings", "جدول رده‌بندی")}
           {group ? ` · ${group}` : ""}
+          {cumulative
+            ? ` · ${t("Lowest completed total time", "کمترین زمان مجموع کامل")}`
+            : ""}
         </caption>
         <thead>
           <tr>
@@ -42,13 +73,18 @@ export function StandingsTable({
               ["Won", "برد"],
               ["Drawn", "مساوی"],
               ["Lost", "باخت"],
-              ["For", "زده"],
+              cumulative ? ["Recorded time", "زمان ثبت‌شده"] : ["For", "زده"],
               ["Against", "خورده"],
               ["Diff.", "تفاضل"],
               ["Points", "امتیاز"],
             ].map(([en, fa]) => (
               <th key={en} scope="col">
                 {t(en, fa)}
+              </th>
+            ))}
+            {extraColumns.map((column) => (
+              <th scope="col" key={column.key}>
+                {t(column.en, column.fa)}
               </th>
             ))}
           </tr>
@@ -82,6 +118,17 @@ export function StandingsTable({
               <td>
                 <strong>{n(s.points)}</strong>
               </td>
+              {extraColumns.map((column) => (
+                <td key={column.key}>
+                  {s[column.key] === null ? (
+                    <span aria-label={t("Incomplete evidence", "داده ناقص")}>
+                      ·
+                    </span>
+                  ) : (
+                    n(s[column.key]!)
+                  )}
+                </td>
+              ))}
             </tr>
           ))}
         </tbody>

@@ -1,12 +1,14 @@
 import { strToU8, zipSync } from "fflate";
 import QRCode from "qrcode";
 import type { Locale, Scene, Tournament } from "../domain/types";
+import { scheduleOccurrences } from "../scheduling/legs";
 import { matchNames } from "../components/Bracket";
 import { podiumPlaces, sceneLabel } from "../presentation/Presentation";
 import { encodeCode, publicProjection } from "../sharing";
 import { bracketSVG, escapeXML } from "./index";
 import { embedSVGFonts } from "./files";
 import { advancedSlidePages } from "./advanced-slides";
+import { sponsorVisualPages } from "./sponsors";
 import type { AdvancedScene } from "../presentation/advanced-scenes";
 import {
   championPosterSVG,
@@ -104,12 +106,12 @@ async function scenePages(
       return tableVisualPages(
         t,
         title,
-        t.matches
+        scheduleOccurrences({ ...t, locale })
           .filter((m) => m.scheduledAt)
           .sort((a, b) => a.scheduledAt!.localeCompare(b.scheduledAt!))
           .map(
             (m) =>
-              `${new Date(m.scheduledAt!).toLocaleString(locale, { timeZone: t.timezone })} · ${matchNames(t, m, locale).join(" / ")} · ${t.schedule.resources.find((r) => r.id === m.resourceId)?.name ?? ""}`,
+              `${new Date(m.scheduledAt!).toLocaleString(locale, { timeZone: t.timezone })} · ${m.label} · ${matchNames(t, m, locale).join(" / ")} · ${t.schedule.resources.find((r) => r.id === m.resourceId)?.name ?? ""}`,
           ),
         locale,
       );
@@ -164,7 +166,7 @@ async function scenePages(
         locale,
       );
     case "sponsors":
-      return tableVisualPages(t, title, t.presentation.sponsors, locale);
+      return sponsorVisualPages(t, title, locale);
     case "countdown":
       return messagePage(
         t,

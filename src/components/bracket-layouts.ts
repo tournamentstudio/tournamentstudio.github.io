@@ -25,6 +25,14 @@ function championshipTree(graph: BracketGeometry) {
   const final = graph.nodes.find((n) => n.match.metadata.championship);
   if (!final) return undefined;
   const nodes = new Map(graph.nodes.map((n) => [n.match.id, n]));
+  if (
+    graph.nodes.some((node) =>
+      node.match.slots.some(
+        (slot) => slot.source && !nodes.has(slot.source.matchId),
+      ),
+    )
+  )
+    return undefined;
   const ancestors = (
     id: string | undefined,
     seen = new Set<string>(),
@@ -53,6 +61,17 @@ function championshipTree(graph: BracketGeometry) {
 
 export function supportsCenteredBracket(graph: BracketGeometry) {
   return Boolean(championshipTree(graph));
+}
+export function compressVisibleDepths(graph: BracketGeometry): BracketGeometry {
+  const depths = [...new Set(graph.nodes.map((node) => node.depth))].sort(
+    (a, b) => a - b,
+  );
+  return extent(
+    graph.nodes.map((node) => {
+      const depth = depths.indexOf(node.depth);
+      return { ...node, depth, x: 16 + depth * 300 };
+    }),
+  );
 }
 
 /** Geometry changes only; match identities, source slots and results stay intact. */

@@ -1,4 +1,6 @@
 import type { Match, MatchResult, Rules, Stage } from "../domain/types";
+import { validateMetrics, weightedScores } from "./metrics";
+import { validateAggregateResult } from "../domain/aggregate";
 
 const elimination = new Set([
   "single-elimination",
@@ -44,14 +46,65 @@ export function validateResult(
       "An abandoned match needs a final ruling before it can count.",
     );
   const result = structuredClone(input);
+  if (
+    input.fairPlay &&
+    (input.fairPlay.length !== ids.length ||
+      input.fairPlay.some(
+        (value) => !Number.isFinite(value) || value < 0 || value > 1000000,
+      ))
+  )
+    throw new Error(
+      "Fair-play penalties require one value per entrant between 0 and 1000000.",
+    );
   const manualOutcome = [
     "forfeit",
     "walkover",
     "no-show",
     "disqualified",
   ].includes(input.outcome);
+  if (stage.config.aggregate && !["high", "low"].includes(rules.scoring))
+    throw new Error("Aggregate legs require highest-score or lowest-score rules.");
+  if (stage.config.aggregate?.awayGoals && (rules.scoring !== "high" || stage.config.aggregate.legs % 2 !== 0))
+    throw new Error("Away-goal tiebreaks need highest-score rules and an even number of regulation legs.");
+  const aggregateWinner = validateAggregateResult(stage, ids, input);
+  if (input.metrics)
+    result.metrics = validateMetrics(
+      rules.metricDefinitions ?? [],
+      input.metrics,
+      ids.length,
+    );
+  if (rules.scoring === "weighted" && !manualOutcome) {
+    const calculated = weightedScores(
+      rules.metricDefinitions ?? [],
+      input.metrics,
+      ids.length,
+    );
+    if (calculated.some((score, index) => score !== input.scores[index]))
+      throw new Error(
+        "Recorded scores must agree with the weighted metric calculation.",
+      );
+    if (input.placements) {
+      const low =
+        rules.weightedDirection === "low" || stage.format === "time-trial";
+      const expected = calculated.map(
+        (score) =>
+          1 +
+          calculated.filter((value) => (low ? value < score : value > score))
+            .length,
+      );
+      if (
+        expected.length !== input.placements.length ||
+        expected.some((rank, index) => rank !== input.placements![index])
+      )
+        throw new Error(
+          "Placements must agree with the weighted metric calculation.",
+        );
+    }
+  }
   let winners: string[];
-  if (manualOutcome || rules.scoring === "manual") {
+  if (aggregateWinner) {
+    winners = [aggregateWinner];
+  } else if (manualOutcome || rules.scoring === "manual") {
     if (input.winnerIds.length !== 1)
       throw new Error("Select exactly one winner for this ruling.");
     winners = [...input.winnerIds];
@@ -104,6 +157,7 @@ export function validateResult(
     winners = ids.filter((_, index) => input.placements![index] === 1);
   } else {
     const lowest =
+      (rules.scoring === "weighted" && rules.weightedDirection === "low") ||
       rules.scoring === "low" ||
       rules.scoring === "time" ||
       stage.format === "time-trial";

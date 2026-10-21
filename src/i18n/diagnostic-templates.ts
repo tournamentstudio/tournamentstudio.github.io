@@ -1,4 +1,7 @@
 export const diagnosticTemplates: Record<string, string> = {
+  "Enter {0} between {1} and {2}.": "مقدار {0} را بین {1} و {2} وارد کنید.",
+  "Enter {0} valid judge scores for {1}.": "برای {1} تعداد {0} امتیاز معتبر داور وارد کنید.",
+  "Enter {0} for every entrant before calculating scores.": "پیش از محاسبه امتیاز، مقدار {0} را برای همه شرکت‌کنندگان وارد کنید.",
   "No available resource or participant time window can fit {0}.":
     "هیچ بازه دسترسی منبع و شرکت‌کنندگان برای {0} مناسب نیست.",
   "{0} must use the venue assigned by its draw rule ({1}).":

@@ -22,6 +22,7 @@ import { KnockoutDistancePreview } from "./KnockoutDistancePreview";
 import { KnockoutVenueRestrictions } from "./KnockoutVenueRestrictions";
 import { KnockoutVenuePreview } from "./KnockoutVenuePreview";
 import { AutomaticVenueAssistant } from "./AutomaticVenueAssistant";
+import { ProtectedSlotsEditor } from "./ProtectedSlotsEditor";
 import { greatCircleDistanceKm } from "../../engine/geographic-distance";
 import "./draw.css";
 
@@ -243,6 +244,9 @@ export function KnockoutDrawEditor({
                 "جایگاه استاندارد N شرکت‌کننده نخست در ترتیب سیدبندی انتخاب‌شده را حفظ کنید. دیگران ممکن است برای رعایت محدودیت‌ها جابه‌جا شوند. جایگاه‌های ثابت اتصال‌های مراحل همیشه حفظ می‌شوند.",
               )}
             </p>
+            {entrants.length > 1 && (
+              <ProtectedSlotsEditor value={value} entrants={entrants} size={bracketSize} onChange={onDraft} />
+            )}
             {entrants.length > 1 && (
               <Notice>
                 {t("Automatic BYEs", "استراحت‌های خودکار")}:{" "}

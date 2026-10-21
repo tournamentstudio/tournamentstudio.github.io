@@ -1,0 +1,101 @@
+.sponsor-wall {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
+  gap: clamp(12px, 2vw, 30px);
+  width: 100%;
+}
+.sponsor-tile {
+  margin: 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid
+    color-mix(in srgb, var(--theme-fg, #24302a) 18%, transparent);
+  border-radius: var(--theme-radius, 12px);
+  background: var(--theme-card, #fff);
+  color: var(--theme-fg, #24302a);
+}
+.sponsor-tile img {
+  max-width: 100%;
+  width: 180px;
+  height: clamp(52px, 9vw, 130px);
+  object-fit: contain;
+}
+.sponsor-wall .sponsor-tile:only-of-type {
+  grid-column: 1 / -1;
+  min-height: clamp(220px, 30vh, 400px);
+}
+.sponsor-wall .sponsor-tile:only-of-type img {
+  width: min(420px, 80%);
+  height: clamp(120px, 18vh, 200px);
+}
+.sponsor-tile figcaption {
+  font-size: clamp(14px, 1.7vw, 26px);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.sponsor-spotlight .sponsor-tier-main {
+  grid-column: span 2;
+  border-width: 2px;
+  border-color: var(--theme-accent, #446c4a);
+}
+.sponsor-strip {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.sponsor-strip .sponsor-tile {
+  flex-direction: row;
+}
+.sponsor-strip .sponsor-tile img {
+  width: 100px;
+  height: 60px;
+}
+.sponsor-page-number {
+  grid-column: 1/-1;
+  text-align: center;
+}
+.sponsor-band .sponsor-tile {
+  flex-direction: row;
+  gap: 7px;
+  padding: 3px 12px;
+  border: 0;
+  background: transparent;
+}
+.sponsor-band .sponsor-tile img {
+  width: 54px;
+  height: 32px;
+}
+.sponsor-band .sponsor-tile figcaption {
+  font-size: 13px;
+}
+.sponsor-editor {
+  margin-block: 24px;
+}
+.sponsor-editor-logo {
+  display: block;
+  max-width: 120px;
+  max-height: 70px;
+  object-fit: contain;
+  margin-block: 12px;
+}
+.sponsor-preview {
+  margin-top: 20px;
+}
+@media (max-width: 700px) {
+  .sponsor-wall {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sponsor-strip {
+    grid-template-columns: 1fr;
+  }
+  .sponsor-tile {
+    padding: 10px;
+  }
+  .sponsor-band .sponsor-tile figcaption {
+    font-size: 11px;
+  }
+}

@@ -12,7 +12,11 @@ React, IndexedDB, themes, or network connections.
 | `src/engine`       | Draws, match dependencies, progression, stage validation, simulation          |
 | `src/scoring`      | Result validation and winner calculation                                      |
 | `src/standings`    | Recomputed standings and ordered tie-break policies                           |
-| `src/scheduling`   | Resource scheduling, availability, rest, conflict detection                   |
+| `src/scheduling` | Resource/leg scheduling, timeline edits, delays, bounded optimization and travel estimates |
+| `src/collections` | Event directories, divisions, weighted standings and season movement |
+| `src/records` | Explicitly mapped Elo history and frozen prediction packages |
+| `src/timing` | Private persisted run timers, splits and evidence review |
+| `src/workers` | Cancelable bounded draw searches |
 | `src/persistence`  | Dexie repository, revisions, trash, local change notifications                |
 | `src/security`     | Bounded codecs, safe JSON, raster validation, authenticated encryption        |
 | `src/sharing`      | Public projections, portable transports, update and submission packets        |
@@ -24,7 +28,7 @@ React, IndexedDB, themes, or network connections.
 
 An organizer action first produces a candidate document. Domain and engine
 validation run before persistence. The repository checks the expected revision,
-writes the document and revision snapshot in one IndexedDB transaction, and only
+writes the document and revision command or checkpoint in one IndexedDB transaction, and only
 then publishes a BroadcastChannel notification. Other local tabs load the saved
 revision. A notification never contains the tournament document or an unlocking
 secret.
@@ -66,17 +70,17 @@ No imported configuration executes code.
 
 | Format             | Implemented policy                                                                                                                                                                    |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Single elimination | Next power-of-two bracket, conventional seed positions, distributed BYEs, automatic winners, optional semifinal-loser third-place match                                               |
-| Double elimination | Winner bracket plus alternating loser consolidation and winner-bracket drop rounds; one-loss entrants remain active; grand final optionally resets if the loser-bracket finalist wins |
+| Single elimination | Conventional positions, BYEs, automatic winners, third place or full classification; optional aggregate legs |
+| Double elimination | Connected loser drops and consolidation rounds, optional grand-final reset and aggregate legs |
 | Triple elimination | `progressive-three-loss-v1`: dynamic rounds, active entrants sorted by losses and seed, pair nearby loss totals before minimizing prior meetings, eliminate on the third loss         |
 | Round robin        | Circle method with a rotating idle slot for odd counts; repeated meetings reverse home/away order on alternating cycles                                                               |
 | Groups             | Snake distribution into balanced pools, optional exact manual group lists, separate round-robin standings                                                                             |
 | GSL                | Groups of exactly four: two openers, winners match, elimination match, decider; winners-match winner qualifies first and decider winner second                                        |
 | Swiss              | Score-ordered pairing with deterministic backtracking, no rematches, optional forbidden pairs, lowest-ranked eligible bye, no repeated bye                                            |
 | Gauntlet           | Lowest seeds start; each winner meets the next higher seed                                                                                                                            |
-| Ladder             | `alternating-adjacent-challenges-v1`: adjacent challenges alternate between rank pairs; a successful lower-ranked challenger swaps places with the defender                           |
+| Ladder | Adjacent rank challenges, reviewed invitations or incumbent-stays-loser-requeues King of the Hill |
 | Free-for-all       | Balanced fixed heats up to the configured capacity, repeated rounds, placement-point standings                                                                                        |
-| Time trial         | All entrants in each round, lower elapsed values win, cumulative placement points                                                                                                     |
+| Time trial | Lower elapsed values win; placement points or cumulative time across complete valid runs |
 | Grand Prix         | All entrants in each event, repeated events, cumulative placement points                                                                                                              |
 
 The triple policy is a stated convention rather than a claim of a universal
@@ -88,25 +92,53 @@ The Swiss search is bounded at 150,000 search nodes. It reports an impossible
 pairing or search-limit error rather than silently inserting a rematch. Score
 proximity is a deterministic search preference, not a claim of globally optimal
 pairing or federation compliance. Withdrawn entrants are excluded from future
-rounds. No late-entry credit, federation-specific color rules, or manual pairing
-editor is supplied.
+rounds. Optional balanced side preferences are soft constraints. A validated editor
+can replace only the latest unplayed round, covering every eligible entrant
+exactly once, respecting rematch/forbidden-pair rules and one fresh BYE. It clears
+that round's schedule after confirmation. Standalone Swiss stages can admit new
+names with explicit missed-round point credits capped at one win per missed
+round. Credits do not invent opponent results or Buchholz evidence. Federation
+color rules, acceleration and certification are not supplied.
 
 Free-for-all heats do not automatically merge into a final. Add a destination
 stage and qualification rule for a final. A capacity that creates a one-entrant
-heat is rejected. Grand Prix and time trials use the configured placement-point
-table; they do not implement weighted event combinations or cumulative elapsed
-time as the primary ranking.
+heat is rejected. Grand Prix uses configurable placement points. Time trials
+can instead rank cumulative elapsed time, requiring a valid played run in every
+scheduled event. Missing or forfeited runs stay below complete totals, and equal
+times remain tied. Event collections combine weighted placement awards across
+different activities without assuming their raw scores share a unit.
 
-The engine has no two-legged aggregate ties, automatic promotion/relegation,
-challenge invitations, multi-season rating database, or arbitrary tournament
-format scripting.
+Single elimination optionally creates a full classification tree. BYEs compact
+the final ranks for irregular fields. Double elimination adds classification within each second-loss cohort without
+changing winner/loser drop paths or the grand-final/reset championship. Single/double elimination may use 2 to 8 regulation legs under
+high/low scoring. Their sum decides the winner; a tied total uses the selected
+manual ruling or one extra leg followed by an agreed ruling if still tied. There
+is an optional regulation away-goal tiebreak for high scoring with even
+regulation legs. Slot 0 hosts odd legs and slot 1 hosts even legs. Scores must
+be nonnegative; only regulation away totals count, before any extra leg. Partial legs are progress, not a completed match.
+
+Ladders have three explicit policies. The legacy adjacent policy alternates
+rank pairs. Invitation ladders persist pending/approved/declined/canceled/
+resolved decisions, admit one active approved match, and swap challenger and
+defender ranks after a successful challenge. Approval rechecks the rank gap and
+eligibility. Cancellation is available only before play. A correction invalidates
+later invitations and uses the same reviewed recovery path as other matches.
+The King of the Hill policy keeps the winner at the front, sends the loser to
+the queue tail and skips inactive entrants in future challenges. Queue positions
+below the incumbent are waiting order, not sporting rank. Completed challenges
+count toward the round limit; early closure requires a result and no active or
+pending challenge. Invitation records are capped at 1,000 and remain private.
+
+Formats are compiled code. Arbitrary executable tournament scripts are refused.
 
 ## Stage graph and qualification
 
 A stage lists its input stages in `sources`. Each connection selects top entrants,
 top entrants per group, exact finishing positions, or wildcards from a chosen
-finishing position across round-robin groups. Sources must exist and form a
-directed acyclic graph. Qualification waits for all sources to complete.
+finishing position across round-robin groups, or actual match winners/losers.
+Sources must exist and form a directed acyclic graph. Standings selections wait
+for their source stage to finish; match-outcome selections wait for their
+referenced recorded results and validate the expected entrant count.
 Duplicate qualifiers, impossible counts and unresolved cutoff ties block a draw.
 
 `previewAdvancement` is a pure calculation. It returns each candidate's source
@@ -143,8 +175,10 @@ The editor keeps connection drafts separate until Apply validates the complete
 graph. The canvas supports node movement, ports, panning and zoom, with keyboard
 controls and a form alternative. Bounded node coordinates persist as
 `stage.metadata.canvasPosition`. Editing inputs of a stage with an existing draw
-or drawn descendants is blocked. Winner/loser routing between separate stages
-still needs dedicated rules and controls.
+or drawn descendants is blocked. Match-outcome connections retain generated
+match IDs, so source regeneration is locked while those references exist. Full
+snapshots, archives and patches preserve them. Recipes reject these connections
+because a fresh recipe has no recorded matches to reference.
 
 Match slots reference either an entrant or a source match's winner/loser.
 Resolution waits until the source is terminal. A BYE can carry one entrant or
@@ -284,7 +318,7 @@ remain active in the same search. A third-place rule can conflict with a winners
 rule that requires matching affiliations to occupy opposite halves. The same
 node/work budgets apply; exhaustion returns unknown feasibility and no slots.
 Final policies require their actual stage format and enabled match settings.
-There is no generator for other placement matches and no final-time reseeding.
+The version 4 draw restriction targets third place only. The separate full-classification generator does not extend this restriction to every placement match. There is no final-time reseeding.
 
 Version 5 adds an inclusive distance interval and independent match targets.
 Participant `location` fields are optional strict latitude/longitude objects.
@@ -437,9 +471,23 @@ only a ranking criterion when selected in the rules. Otherwise it provides a
 stable display order while the shared rank remains explicitly tied.
 
 Completed elimination rankings follow elimination depth, with the champion
-first. Entrants eliminated at the same depth share a rank unless the optional
-third-place match separates them. Several independent groups do not declare one
-overall champion.
+first. Entrants eliminated at the same depth share a rank unless third place or
+full classification separates them. Several independent groups
+do not declare one overall champion.
+
+Typed metrics support numbers, judge panels and finishing places. A panel uses
+sum, mean or mean with one highest/lowest value removed. Placement metrics map
+raw ranks to configured awards and average occupied awards for ties. Weighted
+scores round to six decimal places and must agree with the stored totals on
+entry and import. Limits are 20 dimensions, 20 judges per panel and 512 entrant
+values. Definitions and weights lock after play. Explicit forfeit rulings may
+omit measurements. Descriptive statistics aggregate only supplied evidence.
+
+Set and point ratios use recorded set scores. Positive totals over zero against
+are unbeaten; zero over zero is neutral (1). Negative totals do not form a point
+ratio. A criterion lacking evidence in a tied cohort is skipped. Fair-play values
+are explicit public sanctions, where lower is better; an entered zero confirms
+no sanction. Missing sanctions never silently become zero.
 
 ## Corrections and persistence
 
@@ -450,11 +498,26 @@ require `confirmInvalidate`. Confirmation keeps the previous affected state in
 `metadata.correctionRecovery`, bounded to five correction records, and clears or
 removes invalidated results. Source-derived stages return to draft.
 
-The repository keeps the last 50 revision snapshots per tournament. Ordinary
-snapshots are compressed; protected snapshots are encrypted. Snapshots are
-stored per confirmed save rather than as an event-sourced log with periodic
-checkpoints. This is a deliberate simpler implementation with a storage cost.
-Expected-revision checks reject conflicting edits from another tab.
+The repository keeps 50 logical revisions. Full `checkpoint-v1` documents anchor
+validated `command-v1` patches. Every tenth consecutive revision is a checkpoint;
+large deltas (at least 80 percent of the compressed document), discontinuous
+revision numbers and changed creation identity also use checkpoints. Pruning
+reconstructs the first retained command as a checkpoint in the same transaction.
+Reads verify identity, hashes and a bounded dependency chain before returning a
+document. Missing bases or unsupported encodings fail without rewriting storage.
+Legacy untagged snapshots remain readable. Archives export reconstructed full
+documents, so the internal command representation does not change portability.
+Protected commands and checkpoints use authenticated revision envelopes; their
+outer hashes fingerprint ciphertext. Protect/unprotect converts every retained
+revision atomically. Expected revision and hash checks reject stale writers.
+
+Session Undo/Redo retains up to 20 confirmed edits and appends new revisions.
+It refreshes retained command references after restoration so repeated cycles
+remain valid as history is pruned. New edits clear Redo. Reloads, navigation,
+external revisions, document replacement and vault locking clear both stacks.
+Undo and History Restore share a preview with explicit acknowledgement of
+played/live/contested result changes. An external save invalidates an open
+preview; confirmation never applies it to a different current revision.
 
 The revision hash is SHA-256 over canonical JSON, excluding its own field.
 It detects inconsistent content and anchors update packets. It does not identify
@@ -466,13 +529,65 @@ Automatic scheduling follows match and stage dependencies, resource time
 windows, participant availability, assigned referees, and rest periods. For an
 unresolved slot it conservatively reserves every entrant who could reach it.
 That prevents possible conflicts but can produce a longer schedule than one
-based on known results. Regenerating after results resolve can reduce the
-reserved time.
+based on known results. Automatic regeneration is blocked after a non-BYE
+result, live/contested match or aggregate progress. Individual unplayed booking
+edits and reviewed delays remain available; historical playing times stay intact.
 
 The duration estimator's minimum is total playing time divided by resources.
 It is a lower bound, not a promised finish time. Dependencies, rest, availability,
-and ungenerated dynamic rounds can increase the duration. Scheduling is greedy;
-there is no optimal constraint solver or drag-and-drop timeline.
+and ungenerated dynamic rounds can increase the duration. The default scheduler
+is greedy. A separate branch-and-bound search accepts at most 10 expanded jobs
+and four venues, with a 50,000-node limit. It reports a proved optimum only when
+the bounded search or lower bound proves it; otherwise it reports the best valid
+candidate. Timeline dragging and equivalent form controls preview changes;
+delay propagation checks later dependencies and conflicts before confirmation.
+
+Aggregate ties expand to separate regulation-leg jobs, with an optional
+provisional extra-leg booking. Their resources, times and durations are editable
+per leg, and downstream play waits until the final reserved leg plus rest.
+Scored legs cannot be moved, and scored extra-leg bookings cannot be removed.
+Resource/referee/entrant checks, CSV, ICS and event
+schedules use these expanded jobs. A provisional extra booking reserves time
+conservatively even before it is needed; an ordinary final result removes an
+unused extra reservation. Optimization bounds count legs as jobs.
+
+Travel planning assigns venues to at most 12 scheduled unplayed matches with
+confirmed entrants. It minimizes the sum of spherical base-to-venue distances
+multiplied by a declared route factor, preserving fixed draw venues, availability
+and conflicts. A declared speed and cost per kilometer turn that estimate into
+time/cost figures. A bounded search reports whether it proved the best solution.
+These are repeated base-to-venue estimates, not road routing, between-match
+itineraries or measured travel time. Aggregate leg venue edits use their editor.
+
+## Timers, presets and records
+
+Gol Ya Pooch policies select manual confirmation, target/margin or timed periods.
+The persisted clock stores elapsed milliseconds plus a running timestamp, capped
+at seven days. It depends on the device clock. Target/sudden-death completion
+uses the ordinary result engine; an expired period needs an explicit operator
+confirmation. Cards are typed effects on points, possession and clock state with
+role and period/match limits. Latest-hand undo preserves effect order. The entire
+Gol state and hand evidence are excluded from public projection, while live totals
+remain public. Named sport presets contain rules, kind, duration and theme only.
+
+Time-trial timers separately retain up to 256 named splits per entrant and an
+optional HTTP(S) evidence reference with manual review status. Applying elapsed
+seconds to a score form does not silently confirm the result. Splits and evidence
+remain private; no automated game/video or certified timing claim is made.
+
+Local Elo uses completed two-entrant played/drawn results in timestamp, tournament
+ID and match ID order. BYEs, forfeits, walkovers and multi-entrant matches are
+excluded. Starting rating and K are configurable; internal calculations retain
+precision. At most 16 imported sources and 2,048 explicitly mapped identities
+are kept. Equal names never merge automatically. TSH1 packets contain actual
+results, not trusted source identity.
+
+Single-elimination predictions freeze complete picks before local play starts.
+Their draw hash derives from source paths, not later resolved slots. TSB1 packets
+claim a freeze time but cannot prove it or an author identity. Imported entries
+require acknowledgement. One correct completed winner earns one point; equal
+points share rank. Changed draws preserve incompatible entries but exclude them
+from the active leaderboard. Local records stay in private tournament metadata.
 
 ## Theme identities
 
@@ -504,7 +619,14 @@ Hiding a control is not the boundary for private information.
 
 Protected documents use AES-256-GCM, random salts and nonces, and
 PBKDF2-SHA256 with 600,000 iterations. Decrypted documents and secrets exist in
-memory while unlocked. Browser memory cannot be guaranteed to be physically
+memory while unlocked. The local inactivity preference defaults to 15 minutes,
+with off/1/5/15/30/60 choices. Trusted pointer, keyboard, touch, wheel and input
+events reset only that tab's deadline; revisions and visibility/focus events do
+not extend it. Resume/focus checks expiry. Lock unmounts sensitive forms and
+previews, clears app references and advances the session epoch. Confirmed encrypted
+writes can finish, but their late callbacks cannot reopen a cleared session.
+Protected event workspaces use the same hook and clear their linked credentials.
+Browser memory cannot be guaranteed to be physically
 erased, and access to an unlocked session is access to its unlocked data.
 
 Service-worker caches hold application files. IndexedDB holds tournament
@@ -576,7 +698,7 @@ Visual exports use public projections before SVG composition, font embedding, ra
 
 `src/collections` owns a strict, hashed version-1 event document. It references independent tournaments by ID and maps entrant IDs to explicit directory identities. Derived rankings and shared schedule conflicts are recomputed from confirmed tournament state. Event records use IndexedDB preferences, with optimistic revision checks and optional authenticated encryption. Multi-tournament import prepares validation and encryption before one transaction writes documents, snapshots and the collection record. Existing IDs are never overwritten by bulk import.
 
-The event presentation and printable HTML receive public projections, with private event descriptions, adjustment reasons and referee fields removed. Protected collection metadata stays encrypted. Copying a season generates independent tournament IDs and clears results and match schedules.
+The event presentation and printable HTML receive public projections, with private event descriptions, adjustment reasons and referee fields removed. Protected collection metadata stays encrypted. Copying a season generates independent tournament IDs and clears results and match schedules. Reviewed promotion/relegation computes all movements from completed source divisions before creating independent round-robin tournaments. Cutoff ties block movement; each resulting division must contain 2 to 128 entrants. Source seasons are unchanged.
 
 Optional theme design, scene target and overlay fields are validated data. The personal theme library stores copied theme settings independently of tournament vaults. Imported designs cannot supply HTML, CSS expressions or JavaScript. Bracket geometry transforms retain match IDs and source connections across horizontal, vertical, centered and compact layouts.
 

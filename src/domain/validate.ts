@@ -1,4 +1,19 @@
+import { validateCustomFields } from "./custom-fields";
 import { z } from "zod";
+import { validateResult } from "../scoring";
+import { timingSchema } from "../timing/model";
+import {
+  golAbilitySchema,
+  golHandStateSchema,
+  golPolicySchema,
+  golStateSchema,
+} from "./gol";
+import {
+  metricDefinitionsSchema,
+  metricValuesSchema,
+  validateMetrics,
+  weightedScores,
+} from "../scoring/metrics";
 import {
   advancedSceneTypes,
   overlaySchema,
@@ -6,6 +21,17 @@ import {
 } from "./display-options";
 import type { JsonValue, Tournament } from "./types";
 import { advancementErrors } from "./advancement";
+import { swissPolicyErrors, swissPolicySchema } from "./swiss";
+import {
+  aggregateAwayWinner,
+  aggregateScores,
+  aggregatePolicyErrors,
+  aggregatePolicySchema,
+  legScoresSchema,
+  legScheduleSchema,
+  validateAggregateResult,
+} from "./aggregate";
+import { ladderPolicyErrors, ladderPolicySchema } from "./ladder";
 import { locationSchema } from "./geography";
 import { groupDrawErrors, groupDrawIssueText, groupDrawSchema } from "./draw";
 import {
@@ -135,11 +161,15 @@ export const stageConfigSchema = z
     advanceCount: positive.max(512),
     capacity: positive.max(512),
     thirdPlace: z.boolean(),
+    fullPlacement: z.boolean().optional(),
+    aggregate: aggregatePolicySchema.optional(),
     grandFinalReset: z.boolean(),
     seed: shortText,
     seeding: z.enum(["ranked", "random", "snake", "manual"]),
     draw: groupDrawSchema.optional(),
     knockoutDraw: knockoutDrawSchema.optional(),
+    swiss: swissPolicySchema.optional(),
+    ladder: ladderPolicySchema.optional(),
   })
   .catchall(json);
 
@@ -150,6 +180,22 @@ export const advancementSchema = z
     perGroup: z.boolean(),
     selection: z
       .discriminatedUnion("kind", [
+        z
+          .object({
+            kind: z.literal("match-results"),
+            picks: z
+              .array(
+                z
+                  .object({
+                    matchId: id,
+                    outcome: z.enum(["winners", "losers"]),
+                  })
+                  .strict(),
+              )
+              .min(1)
+              .max(512),
+          })
+          .strict(),
         z
           .object({
             kind: z.literal("positions"),
@@ -203,6 +249,10 @@ export const stageSchema = z
 
 export const resultSchema = z
   .object({
+    legs: legScoresSchema.optional(),
+    aggregateTiebreakWinnerId: id.optional(),
+    fairPlay: z.array(z.number().min(0).max(1000000)).max(512).optional(),
+    metrics: metricValuesSchema.optional(),
     scores: z.array(number).max(512),
     winnerIds: z.array(id).max(512),
     placements: z.array(positive.max(512)).max(512).optional(),
@@ -222,6 +272,9 @@ export const resultSchema = z
 
 export const matchSchema = z
   .object({
+    aggregateProgress: legScoresSchema.optional(),
+    legSchedule: legScheduleSchema.optional(),
+    golState: golStateSchema.optional(),
     id,
     stageId: id,
     round: positive,
@@ -278,6 +331,7 @@ export const matchSchema = z
             awardedToId: id,
             action: shortText,
             cardId: id.optional(),
+            gol: golHandStateSchema.optional(),
           })
           .strict(),
       )
@@ -296,7 +350,17 @@ export const matchSchema = z
 
 export const rulesSchema = z
   .object({
-    scoring: z.enum(["high", "low", "sets", "manual", "placement", "time"]),
+    scoring: z.enum([
+      "high",
+      "low",
+      "sets",
+      "manual",
+      "placement",
+      "time",
+      "weighted",
+    ]),
+    metricDefinitions: metricDefinitionsSchema.optional(),
+    weightedDirection: z.enum(["high", "low"]).optional(),
     bestOf: positive.max(999),
     allowDraws: z.boolean(),
     pointsWin: number,
@@ -310,6 +374,9 @@ export const rulesSchema = z
           "differential",
           "scored",
           "head-to-head",
+          "set-ratio",
+          "point-ratio",
+          "fair-play",
           "buchholz",
           "median-buchholz",
           "sonneborn-berger",
@@ -321,12 +388,19 @@ export const rulesSchema = z
     targetScore: number,
     gol: z
       .object({
+        policy: golPolicySchema.optional(),
         playersPerTeam: positive.max(100),
         handPoints: number,
         cards: z
           .array(
             z
-              .object({ id, name: shortText, limit: count, points: number })
+              .object({
+                id,
+                name: shortText,
+                limit: count,
+                points: number,
+                ability: golAbilitySchema.optional(),
+              })
               .strict(),
           )
           .max(100),
@@ -356,6 +430,20 @@ export const themeSchema = z
 
 export const presentationSchema = z
   .object({
+    sponsorCards: z
+      .array(
+        z
+          .object({
+            id,
+            name: shortText.max(120),
+            logo: asset.optional(),
+            tier: z.enum(["main", "partner", "supporter"]),
+          })
+          .strict(),
+      )
+      .max(24)
+      .optional(),
+    sponsorLayout: z.enum(["grid", "strip", "spotlight"]).optional(),
     scenes: z
       .array(
         z
@@ -483,6 +571,8 @@ export function validateTournament(input: unknown): Tournament {
   assertUnique(document.matches, "match");
   assertUnique(document.schedule.resources, "resource");
   assertUnique(document.presentation.scenes, "scene");
+  assertUnique(document.presentation.sponsorCards ?? [], "sponsor");
+  assertUnique(document.rules.gol.cards, "card");
   const participants = new Set(
     document.participants.map((participant) => participant.id),
   );
@@ -502,7 +592,22 @@ export function validateTournament(input: unknown): Tournament {
       );
   };
   for (const stage of document.stages) {
+    if (
+      stage.config.timeRanking !== undefined &&
+      !["placement", "cumulative"].includes(String(stage.config.timeRanking))
+    )
+      throw new Error("Invalid time-trial standings policy.");
     const errors = advancementErrors(document, stage);
+    errors.push(...aggregatePolicyErrors(document, stage));
+    errors.push(...swissPolicyErrors(document, stage));
+    if (
+      stage.config.fullPlacement &&
+      !["single-elimination", "double-elimination"].includes(stage.format)
+    )
+      errors.push(
+        "Full placement brackets require single or double elimination.",
+      );
+    errors.push(...ladderPolicyErrors(document, stage));
     errors.push(
       ...groupDrawErrors(document, stage).map((issue) =>
         groupDrawIssueText(issue),
@@ -571,6 +676,15 @@ export function validateTournament(input: unknown): Tournament {
   };
   for (const stage of document.stages) visitStage(stage.id);
   for (const match of document.matches) {
+    if (match.metadata.timing !== undefined) {
+      const timing = timingSchema.parse(match.metadata.timing);
+      if (
+        Object.keys(timing).some(
+          (id) => !match.slots.some((slot) => slot.participantId === id),
+        )
+      )
+        throw new Error("A run timer must belong to an entrant in its match.");
+    }
     if (!stages.has(match.stageId))
       throw new Error("A match references a missing stage.");
     const assigned = match.slots.flatMap((slot) =>
@@ -580,6 +694,100 @@ export function validateTournament(input: unknown): Tournament {
       throw new Error("A match references a missing participant.");
     if (new Set(assigned).size !== assigned.length)
       throw new Error("A participant appears twice in one match.");
+    const aggregateStage = stages.get(match.stageId)!;
+    const aggregate = aggregateStage.config.aggregate;
+    if (match.aggregateProgress || match.legSchedule) {
+      if (!aggregate || match.slots.length !== 2)
+        throw new Error("Leg progress and schedules require an aggregate tie.");
+      const maximum =
+        aggregate.legs + (aggregate.tieBreak === "extra-leg" ? 1 : 0);
+      if (
+        (match.aggregateProgress?.length ?? 0) > maximum ||
+        match.legSchedule?.some((entry) => entry.leg > maximum)
+      )
+        throw new Error("A leg exceeds the configured aggregate policy.");
+      if (
+        match.legSchedule?.some(
+          (entry) =>
+            entry.resourceId &&
+            !document.schedule.resources.some(
+              (resource) => resource.id === entry.resourceId,
+            ),
+        )
+      )
+        throw new Error("A leg schedule references a missing resource.");
+      if (match.aggregateProgress) {
+        const legs = match.aggregateProgress;
+        if (
+          !legs.length ||
+          assigned.length !== 2 ||
+          match.result ||
+          !["ready", "live", "postponed", "contested", "canceled"].includes(
+            match.status,
+          )
+        )
+          throw new Error(
+            "Only an unresolved playable aggregate tie can save leg progress.",
+          );
+        if (
+          aggregate.awayGoals &&
+          legs.some((leg) => leg.some((score) => score < 0))
+        )
+          throw new Error("Away-goal scoring requires nonnegative leg scores.");
+        const regulation = aggregateScores(legs.slice(0, aggregate.legs));
+        if (
+          legs.length > aggregate.legs &&
+          (regulation[0] !== regulation[1] ||
+            aggregateAwayWinner(aggregate, assigned, legs))
+        )
+          throw new Error(
+            "An extra leg is allowed only when the regulation aggregate is tied.",
+          );
+        const total = aggregateScores(legs);
+        if (
+          match.liveScores &&
+          total.some((value, index) => value !== match.liveScores![index])
+        )
+          throw new Error(
+            "Live aggregate scores must equal the saved leg totals.",
+          );
+      }
+    }
+    if (match.result && match.status !== "bye") {
+      const tiebreakWinner = validateAggregateResult(
+        aggregateStage,
+        assigned,
+        match.result,
+      );
+      if (aggregate) {
+        const ruling = [
+          "forfeit",
+          "walkover",
+          "no-show",
+          "disqualified",
+        ].includes(match.result.outcome);
+        const scores = match.result.scores;
+        const scoreWinner =
+          assigned[
+            document.rules.scoring === "low"
+              ? scores[0] < scores[1]
+                ? 0
+                : 1
+              : scores[0] > scores[1]
+                ? 0
+                : 1
+          ];
+        if (
+          match.result.winnerIds.length !== 1 ||
+          (!ruling &&
+            (match.result.outcome !== "played" ||
+              match.result.winnerIds[0] !== (tiebreakWinner ?? scoreWinner)))
+        )
+          throw new Error(
+            "The stored aggregate result must declare its calculated or ruled winner.",
+          );
+      }
+    }
     if (
       match.result?.winnerIds.some((winnerId) => !assigned.includes(winnerId))
     )
@@ -593,6 +801,73 @@ export function validateTournament(input: unknown): Tournament {
       throw new Error(
         "Live scores must contain one value for every match slot.",
       );
+    if (
+      match.result?.fairPlay &&
+      match.result.fairPlay.length !== match.slots.length
+    )
+      throw new Error("Fair-play penalties require one value per entrant.");
+    if (
+      match.golState?.concealingTeamId &&
+      !assigned.includes(match.golState.concealingTeamId)
+    )
+      throw new Error("The concealing team must be in this match.");
+    for (const hand of match.hands ?? []) {
+      if (!hand.gol) continue;
+      if (
+        [
+          hand.guessingTeamId,
+          hand.concealingTeamId,
+          hand.awardedToId,
+          hand.gol.nextConcealingTeamId,
+          ...(hand.gol.cardUsedById ? [hand.gol.cardUsedById] : []),
+        ].some((teamId) => !assigned.includes(teamId))
+      )
+        throw new Error("A referee hand references a team outside this match.");
+    }
+    if (match.result?.metrics)
+      validateMetrics(
+        document.rules.metricDefinitions ?? [],
+        match.result.metrics,
+        match.slots.length,
+      );
+    if (
+      document.rules.scoring === "weighted" &&
+      match.result &&
+      match.status !== "bye" &&
+      ["played", "draw"].includes(match.result.outcome)
+    ) {
+      const expected = weightedScores(
+        document.rules.metricDefinitions ?? [],
+        match.result.metrics,
+        match.slots.length,
+      );
+      if (
+        expected.length !== match.result.scores.length ||
+        expected.some((score, index) => score !== match.result!.scores[index])
+      )
+        throw new Error(
+          "Recorded scores must agree with the weighted metric calculation.",
+        );
+      const stage = document.stages.find((item) => item.id === match.stageId);
+      if (stage) {
+        const normalized = validateResult(
+          match,
+          stage,
+          document.rules,
+          match.result,
+        );
+        if (
+          normalized.winnerIds.length !== match.result.winnerIds.length ||
+          normalized.winnerIds.some(
+            (winner) => !match.result!.winnerIds.includes(winner),
+          ) ||
+          normalized.outcome !== match.result.outcome
+        )
+          throw new Error(
+            "Recorded winners must agree with the weighted metric calculation.",
+          );
+      }
+    }
     for (const slot of match.slots) {
       if (
         slot.source &&
@@ -652,6 +927,7 @@ export function validateTournament(input: unknown): Tournament {
   }
   if (handled !== document.matches.length)
     throw new Error("Match dependencies must not contain a cycle.");
+  validateCustomFields(document);
   return document;
 }
 

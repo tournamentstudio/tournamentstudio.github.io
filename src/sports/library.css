@@ -1,0 +1,16 @@
+.sport-preset-library .two-columns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.sport-preset-library .two-columns > *,
+.sport-preset-library input {
+  min-width: 0;
+  max-width: 100%;
+}
+.sport-preset-library input {
+  width: 100%;
+}
+@media (max-width: 640px) {
+  .sport-preset-library .two-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

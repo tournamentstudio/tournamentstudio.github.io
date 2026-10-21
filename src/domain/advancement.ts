@@ -104,6 +104,7 @@ export function advancementErrors(
     );
   }
   const directPicks = new Set<string>();
+  const outcomePicks = new Set<string>();
   const wildcardRules = new Set<string>();
   const slots = new Set<number>();
   let total = 0;
@@ -129,8 +130,25 @@ export function advancementErrors(
     const selected = source.selection;
     if (selected && source.perGroup)
       errors.push(
-        "Explicit positions and wildcard rules cannot also select top entrants per group.",
+        selected.kind === "match-results"
+          ? "Match outcome connections cannot also select top entrants per group."
+          : "Explicit positions and wildcard rules cannot also select top entrants per group.",
       );
+    if (selected?.kind === "match-results") {
+      if (!selected.picks.length || selected.picks.length > 512)
+        errors.push("Select between 1 and 512 source match outcomes.");
+      for (const pick of selected.picks) {
+        const match = tournament.matches.find((item) => item.id === pick.matchId);
+        if ((match && match.stageId !== previous.id) || (!match && previous.status !== "draft"))
+          errors.push("A selected outcome references a missing source match.");
+        if (!["winners", "losers"].includes(pick.outcome))
+          errors.push("Choose winners or losers for every source match outcome.");
+        const key = JSON.stringify([previous.id, pick.matchId, pick.outcome]);
+        if (outcomePicks.has(key))
+          errors.push("A source match outcome is assigned more than once.");
+        outcomePicks.add(key);
+      }
+    }
     if (!selected && source.perGroup && !groups.length)
       errors.push("Per-group advancement requires a grouped source stage.");
     const picks =

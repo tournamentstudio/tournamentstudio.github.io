@@ -12,6 +12,8 @@ export function generatedMatchLabel(
     "Grand final reset": "تکرار فینال بزرگ",
   };
   if (labels[match.label]) return labels[match.label];
+  const placement = /^Places (\d+)-(\d+)$/.exec(match.label);
+  if (placement) return `رده‌های ${Number(placement[1]).toLocaleString("fa")} تا ${Number(placement[2]).toLocaleString("fa")}`;
   const generated = /^R(\d+) M(\d+)$/.exec(match.label);
   if (generated)
     return `دور ${Number(generated[1]).toLocaleString("fa")}، بازی ${Number(generated[2]).toLocaleString("fa")}`;

@@ -36,8 +36,12 @@ import {
 } from "./structure/KnockoutDrawEditor";
 import { stageProtection } from "./structure/helpers";
 import { ManualGroupEditor } from "./structure/ManualGroupEditor";
+import { TimeTrialPolicy } from "../timing/TimeTrialPolicy";
 import { ManualQualifierEditor } from "./structure/ManualQualifierEditor";
 import { SwissRestrictionsEditor } from "./structure/SwissRestrictionsEditor";
+import { SwissPairingEditor } from "./structure/SwissPairingEditor";
+import { SwissPolicyEditor } from "./structure/SwissPolicyEditor";
+import { LadderPolicyEditor } from "./structure/LadderPolicyEditor";
 import "./structure/structure.css";
 
 export function Structure({ tournament: doc, onChange }: EditorProps) {
@@ -284,6 +288,7 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
           metadata: {},
         };
     if (copy) delete added.config.manualQualifiers;
+    if (copy && added.config.swiss) added.config.swiss.lateEntries = [];
     next.stages.push(added);
     if (update(next, t("Add stage", "افزودن مرحله"))) setSelected(added.id);
   }
@@ -552,14 +557,44 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
                   onEdit={editStage}
                 />
               )}
-              {stage.format === "swiss" && (
-                <SwissRestrictionsEditor
-                  key={`swiss-${stage.id}`}
-                  tournament={doc}
+              {stage.format === "time-trial" && (
+                <TimeTrialPolicy
                   stage={stage}
                   locked={!!protection?.locked || dirty || anyDrawDirty}
                   onEdit={editStage}
                 />
+              )}
+              {stage.format === "ladder" && (
+                <LadderPolicyEditor
+                  stage={stage}
+                  locked={!!protection?.locked || dirty || anyDrawDirty}
+                  onEdit={editStage}
+                />
+              )}
+              {stage.format === "swiss" && (
+                <>
+                  <SwissPolicyEditor
+                    key={`swiss-policy-${stage.id}`}
+                    tournament={doc}
+                    stage={stage}
+                    locked={dirty || anyDrawDirty}
+                    onChange={update}
+                  />
+                  <SwissPairingEditor
+                    key={`swiss-pairs-${stage.id}`}
+                    tournament={doc}
+                    stage={stage}
+                    locked={dirty || anyDrawDirty}
+                    onChange={update}
+                  />
+                  <SwissRestrictionsEditor
+                    key={`swiss-${stage.id}`}
+                    tournament={doc}
+                    stage={stage}
+                    locked={!!protection?.locked || dirty || anyDrawDirty}
+                    onEdit={editStage}
+                  />
+                </>
               )}
               {(stage.format === "groups" || stage.format === "gsl") && (
                 <GroupDrawEditor
@@ -659,8 +694,8 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
           message={
             confirmation.action === "reset"
               ? t(
-                  "This removes the unplayed matches, including their schedules and notes. The previous saved revision remains in History. No later stage has a draw.",
-                  "دیدارهای بدون نتیجه همراه زمان‌بندی و یادداشت آن‌ها حذف می‌شوند. نسخه ذخیره‌شده قبلی در تاریخچه باقی می‌ماند. هیچ مرحله بعدی قرعه ندارد.",
+                  "This removes unplayed matches, schedules, notes and challenge invitations. The previous saved revision remains in History. No later stage has a draw.",
+                  "دیدارهای بدون نتیجه، برنامه‌ها، یادداشت‌ها و دعوت‌های چالش حذف می‌شوند. نسخه ذخیره‌شده قبلی در تاریخچه باقی می‌ماند. هیچ مرحله بعدی قرعه ندارد.",
                 )
               : t(
                   "This removes the stage and any unplayed matches. Saved history keeps the previous version.",

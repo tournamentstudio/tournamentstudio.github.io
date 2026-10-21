@@ -6,6 +6,7 @@ import "./competition.css";
 import type { BracketLayout } from "../domain/display-options";
 import {
   bracketConnectorPath,
+  compressVisibleDepths,
   supportsCenteredBracket,
   transformBracketLayout,
 } from "./bracket-layouts";
@@ -144,6 +145,13 @@ export function Bracket({
     [search, setSearch] = useState(""),
     [showScores, setShowScores] = useState(true),
     [showSeeds, setShowSeeds] = useState(false);
+  const [collapsedRounds, setCollapsedRounds] = useState<number[]>([]);
+  const [dragToPan, setDragToPan] = useState(false);
+  const drag = useRef<
+    | { x: number; y: number; left: number; top: number; moved: boolean }
+    | undefined
+  >(undefined);
+  const suppressClick = useRef(false);
   const scroll = useRef<HTMLDivElement>(null);
   const stage =
     tournament.stages.find((s) => s.id === stageId) ?? tournament.stages[0];
@@ -152,13 +160,18 @@ export function Bracket({
     [tournament.matches, stage?.id],
   );
   const matches = useMemo(
-    () => allMatches.filter((m) => round === "all" || m.round === +round),
-    [allMatches, round],
+    () =>
+      allMatches.filter(
+        (m) =>
+          (round === "all" || m.round === +round) &&
+          !collapsedRounds.includes(m.round),
+      ),
+    [allMatches, round, collapsedRounds],
   );
-  const baseGraph = useMemo(
-    () => layoutBracket(matches, tournament.theme.spacing),
-    [matches, tournament.theme.spacing],
-  );
+  const baseGraph = useMemo(() => {
+    const graph = layoutBracket(matches, tournament.theme.spacing);
+    return collapsedRounds.length ? compressVisibleDepths(graph) : graph;
+  }, [matches, tournament.theme.spacing, collapsedRounds]);
   const requestedLayout =
     layoutOverride ?? tournament.theme.design?.bracketLayout ?? "horizontal";
   const centeredSupported = useMemo(
@@ -254,6 +267,7 @@ export function Bracket({
             onChange={(e) => {
               setStageId(e.target.value);
               setRound("all");
+              setCollapsedRounds([]);
             }}
           >
             {tournament.stages.map((s) => (
@@ -342,9 +356,57 @@ export function Bracket({
                 ? t("Left to right", "چپ به راست")
                 : t("Right to left", "راست به چپ")}
             </button>
+            <button
+              type="button"
+              aria-pressed={dragToPan}
+              onClick={() => setDragToPan(!dragToPan)}
+            >
+              {t("Drag to pan", "کشیدن برای جابه‌جایی")}
+            </button>
           </>
         )}
       </div>
+      {allMatches.length > 0 && (
+        <details className="details-box bracket-round-options">
+          <summary>
+            {t("Expand or collapse rounds", "باز کردن یا جمع کردن دورها")}
+          </summary>
+          <div className="button-row">
+            {[...new Set(allMatches.map((match) => match.round))]
+              .sort((a, b) => a - b)
+              .map((roundNumber) => (
+                <button
+                  type="button"
+                  key={roundNumber}
+                  aria-expanded={!collapsedRounds.includes(roundNumber)}
+                  onClick={() =>
+                    setCollapsedRounds((current) =>
+                      current.includes(roundNumber)
+                        ? current.filter((value) => value !== roundNumber)
+                        : [...current, roundNumber],
+                    )
+                  }
+                >
+                  {collapsedRounds.includes(roundNumber)
+                    ? t("Expand round", "باز کردن دور")
+                    : t("Collapse round", "جمع کردن دور")}{" "}
+                  {roundNumber.toLocaleString(locale)} (
+                  {allMatches
+                    .filter((match) => match.round === roundNumber)
+                    .length.toLocaleString(locale)}
+                  )
+                </button>
+              ))}
+            <button
+              type="button"
+              disabled={!collapsedRounds.length}
+              onClick={() => setCollapsedRounds([])}
+            >
+              {t("Expand all rounds", "باز کردن همه دورها")}
+            </button>
+          </div>
+        </details>
+      )}
       {graphFormat && requestedLayout === "centered" && !centeredSupported && (
         <p className="competition-empty">
           {t(
@@ -356,17 +418,81 @@ export function Bracket({
       {!matches.length ? (
         <div className="competition-empty">
           {t(
-            "Generate this stage to see its matches.",
-            "برای دیدن مسابقه‌ها این مرحله را ایجاد کنید.",
+            allMatches.length
+              ? "All selected rounds are collapsed. Expand a round to show matches."
+              : "Generate this stage to see its matches.",
+            allMatches.length
+              ? "همه دورهای انتخاب شده جمع شده‌اند. برای دیدن دیدارها یک دور را باز کنید."
+              : "برای دیدن مسابقه‌ها این مرحله را ایجاد کنید.",
           )}
         </div>
       ) : graphFormat ? (
         <div
-          className="bracket-scroll themed"
+          className={`bracket-scroll themed ${dragToPan ? "bracket-pan-enabled" : ""}`}
           ref={scroll}
           style={themeStyle(tournament.theme)}
           data-pattern={getTheme(tournament.theme.preset).pattern}
           tabIndex={0}
+          onPointerDown={(event) => {
+            if (
+              !dragToPan ||
+              event.button !== 0 ||
+              event.pointerType === "touch"
+            )
+              return;
+            suppressClick.current = false;
+            drag.current = {
+              x: event.clientX,
+              y: event.clientY,
+              left: event.currentTarget.scrollLeft,
+              top: event.currentTarget.scrollTop,
+              moved: false,
+            };
+            event.currentTarget.setPointerCapture(event.pointerId);
+          }}
+          onPointerMove={(event) => {
+            const start = drag.current;
+            if (!start) return;
+            const dx = event.clientX - start.x,
+              dy = event.clientY - start.y;
+            if (Math.hypot(dx, dy) > 5) start.moved = true;
+            if (start.moved) {
+              event.preventDefault();
+              event.currentTarget.scrollLeft = start.left - dx;
+              event.currentTarget.scrollTop = start.top - dy;
+            }
+          }}
+          onPointerUp={(event) => {
+            suppressClick.current = Boolean(drag.current?.moved);
+            drag.current = undefined;
+            if (event.currentTarget.hasPointerCapture(event.pointerId))
+              event.currentTarget.releasePointerCapture(event.pointerId);
+          }}
+          onPointerCancel={() => {
+            drag.current = undefined;
+            suppressClick.current = false;
+          }}
+          onClickCapture={(event) => {
+            if (suppressClick.current) {
+              event.preventDefault();
+              event.stopPropagation();
+              suppressClick.current = false;
+            }
+          }}
+          onKeyDown={(event) => {
+            if (event.target !== event.currentTarget) return;
+            const movements: Record<string, [number, number]> = {
+              ArrowLeft: [-80, 0],
+              ArrowRight: [80, 0],
+              ArrowUp: [0, -80],
+              ArrowDown: [0, 80],
+            };
+            const movement = movements[event.key];
+            if (movement) {
+              event.preventDefault();
+              event.currentTarget.scrollBy(movement[0], movement[1]);
+            }
+          }}
           aria-label={t(
             "Scrollable bracket. Use arrow keys to pan.",
             "جدول قابل پیمایش. از کلیدهای جهت استفاده کنید.",

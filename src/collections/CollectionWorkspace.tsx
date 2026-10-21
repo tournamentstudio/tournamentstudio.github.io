@@ -10,6 +10,8 @@ import { CollectionEditor } from "./CollectionEditor";
 import { CollectionResults } from "./CollectionResults";
 import { exportCollection, forkBundle } from "./transport";
 import { collectionRepository, prepareCollection } from "./storage";
+import { NextSeason } from "./NextSeason";
+import { VaultInactivitySettings } from "../app/VaultInactivity";
 
 export function CollectionWorkspace({
   initial,
@@ -40,6 +42,7 @@ export function CollectionWorkspace({
   const [privateExport, setPrivateExport] = useState(false);
   const [transferSecret, setTransferSecret] = useState("");
   const [duplicate, setDuplicate] = useState(false);
+  const [moveSeason, setMoveSeason] = useState(false);
   const [newTitle, setNewTitle] = useState(initial.title);
   const [newSeason, setNewSeason] = useState("");
   const credentials = useRef(new Map<string, string>());
@@ -147,6 +150,7 @@ export function CollectionWorkspace({
         </div>
       </div>
       <ErrorText error={error} />
+      {secret && <VaultInactivitySettings />}
       <fieldset className="event-fieldset" disabled={busy}>
         <div className="button-row">
           <button
@@ -184,6 +188,13 @@ export function CollectionWorkspace({
             onClick={() => setDuplicate(true)}
           >
             {t("Duplicate for next season", "تکثیر برای فصل بعد")}
+          </button>
+          <button
+            className="button secondary"
+            disabled={!loaded || missing.length > 0}
+            onClick={() => setMoveSeason(true)}
+          >
+            {t("Apply promotion and relegation", "اعمال صعود و سقوط")}
           </button>
         </div>
         {collection.archived && (
@@ -474,6 +485,18 @@ export function CollectionWorkspace({
             {t("Create independent season", "ساخت فصل مستقل")}
           </button>
         </Modal>
+      )}
+      {moveSeason && (
+        <NextSeason
+          collection={collection}
+          documents={documents}
+          secret={secret}
+          onClose={() => setMoveSeason(false)}
+          onCreated={(value) => {
+            setMoveSeason(false);
+            onCreated(value);
+          }}
+        />
       )}
     </div>
   );

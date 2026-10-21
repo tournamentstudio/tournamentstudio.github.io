@@ -12,6 +12,7 @@ const drawFields = {
   pots: groupDrawSchema.shape.pots,
   restrictions: z.array(z.enum(["region", "organization"])).max(2),
   protectedSeeds: z.number().int().min(0).max(512),
+  fixedSlots: z.array(z.object({ participantId: z.string().min(1).max(160), slot: z.number().int().min(1).max(512) }).strict()).max(512).optional(),
 };
 const separationRule = z
   .object({
@@ -150,6 +151,7 @@ export const knockoutDrawSchema = z.discriminatedUnion("version", [
 ]);
 
 const messages: Record<string, [string, string]> = {
+  fixedAssignment: ["Explicit protected slots must use distinct active entrants and positions within the draw, without conflicting with qualification slots.", "جایگاه‌های محافظت‌شده صریح باید شرکت‌کنندگان فعال و جایگاه‌های یکتا در محدوده قرعه داشته باشند و با جایگاه‌های صعود تداخل نکنند."],
   stage: ["The stage does not exist.", "مرحله وجود ندارد."],
   format: [
     "Knockout draw restrictions require single or double elimination.",
@@ -401,6 +403,9 @@ export function knockoutDrawErrors(
   const ids = pots.flatMap((pot) => pot.participantIds);
   if (new Set(ids).size !== ids.length) add("duplicateEntrant");
   const participants = new Set(tournament.participants.map((item) => item.id));
+  const fixed = parsed.data.fixedSlots ?? [];
+  if (new Set(fixed.map((slot) => slot.participantId)).size !== fixed.length || new Set(fixed.map((slot) => slot.slot)).size !== fixed.length || fixed.some((slot) => !participants.has(slot.participantId)))
+    add("fixedAssignment");
   if (ids.some((id) => !participants.has(id))) add("unknownEntrant");
   if (new Set(restrictions).size !== restrictions.length)
     add("duplicateRestriction");

@@ -3,7 +3,18 @@ import type { Tournament } from "../domain/types";
 import { getStandings } from "../engine";
 import { Empty } from "../components/ui";
 import { useI18n, generatedMatchLabel } from "../i18n";
-export function Statistics({ tournament: doc }: { tournament: Tournament }) {
+import { MetricStatistics } from "../scoring/MetricStatistics";
+import type { EditorProps } from "./Participants";
+import { RecordsStudio } from "../records/RecordsStudio";
+export function Statistics(props: EditorProps) {
+  return (
+    <>
+      <StatisticsSummary tournament={props.tournament} />
+      <RecordsStudio {...props} />
+    </>
+  );
+}
+function StatisticsSummary({ tournament: doc }: { tournament: Tournament }) {
   const { t, locale } = useI18n();
   const played = doc.matches.filter(
     (m) => m.result && m.status === "completed",
@@ -127,6 +138,11 @@ export function Statistics({ tournament: doc }: { tournament: Tournament }) {
           </div>
         </section>
       </div>
+      <MetricStatistics
+        definitions={doc.rules.metricDefinitions ?? []}
+        participants={doc.participants}
+        matches={doc.matches}
+      />
       <section className="panel">
         <h3>{t("Recent results", "نتایج اخیر")}</h3>
         {[...played]

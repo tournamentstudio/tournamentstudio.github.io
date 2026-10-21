@@ -1,6 +1,12 @@
 import type { Locale, Match, Tournament } from "../domain/types";
 import { knockoutDrawIssueText } from "../domain/knockout-draw";
 import { schedulingConflictPairs } from "./conflict-pairs";
+import { hasMatchEvidence } from "../engine/match-evidence";
+import {
+  collapsedSchedule,
+  expandedSchedule,
+  hasAggregateBookings,
+} from "./legs";
 import {
   assignedKnockoutVenue,
   validateKnockoutVenueDistances,
@@ -11,8 +17,12 @@ const playable = (match: Match) =>
   match.status !== "bye" && match.status !== "canceled";
 const duration = (tournament: Tournament, match: Match) =>
   (match.durationMinutes ?? tournament.schedule.matchMinutes) * minutes;
+export const scheduleHasStarted = (tournament: Tournament) =>
+  tournament.matches.some(hasMatchEvidence);
 
-function possibleEntrants(tournament: Tournament): Map<string, Set<string>> {
+export function possibleEntrants(
+  tournament: Tournament,
+): Map<string, Set<string>> {
   const index = new Map(tournament.matches.map((match) => [match.id, match]));
   const memo = new Map<string, Set<string>>();
   const visiting = new Set<string>();
@@ -41,10 +51,33 @@ export function autoSchedule(
   input: Tournament,
   locale: Locale = input.locale,
 ): Tournament {
+  if (scheduleHasStarted(input))
+    throw new Error(
+      "Automatic schedule regeneration is locked after play starts. Adjust unfinished bookings individually or use reviewed delay propagation.",
+    );
+  return hypotheticalSchedule(input, locale);
+}
+/** Used only to test capacity on a disposable copy, never to save played bookings. */
+export function hypotheticalSchedule(
+  input: Tournament,
+  locale: Locale = input.locale,
+): Tournament {
+  if (hasAggregateBookings(input))
+    return collapsedSchedule(
+      input,
+      autoScheduleCore(expandedSchedule(input), locale, input),
+    );
+  return autoScheduleCore(input, locale);
+}
+export function autoScheduleCore(
+  input: Tournament,
+  locale: Locale,
+  venueSource: Tournament = input,
+): Tournament {
   const tournament = structuredClone(input);
   const venueIssues = tournament.stages.flatMap((stage) =>
     tournament.matches.some((match) => match.stageId === stage.id)
-      ? validateKnockoutVenueDistances(tournament, stage)
+      ? validateKnockoutVenueDistances(venueSource, stage)
       : [],
   );
   if (venueIssues.length)
@@ -108,8 +141,10 @@ export function autoSchedule(
         (stage) => stage.id === match.stageId,
       )!;
       dependencies.push(
-        ...stage.sources.flatMap(
-          (source) => stageMatches.get(source.stageId) ?? [],
+        ...stage.sources.flatMap((source) =>
+          source.selection?.kind === "match-results"
+            ? source.selection.picks.map((pick) => pick.matchId)
+            : (stageMatches.get(source.stageId) ?? []),
         ),
       );
       return dependencies.every((id) => ends.has(id));
@@ -125,8 +160,10 @@ export function autoSchedule(
       slot.source ? [slot.source.matchId] : [],
     );
     dependencies.push(
-      ...stage.sources.flatMap(
-        (source) => stageMatches.get(source.stageId) ?? [],
+      ...stage.sources.flatMap((source) =>
+        source.selection?.kind === "match-results"
+          ? source.selection.picks.map((pick) => pick.matchId)
+          : (stageMatches.get(source.stageId) ?? []),
       ),
     );
     const dependencyEnd = Math.max(
@@ -216,9 +253,22 @@ export function detectConflicts(
   tournament: Tournament,
   locale: Locale = tournament.locale,
 ): string[] {
+  return detectConflictsCore(
+    hasAggregateBookings(tournament)
+      ? expandedSchedule(tournament)
+      : tournament,
+    locale,
+    tournament,
+  );
+}
+export function detectConflictsCore(
+  tournament: Tournament,
+  locale: Locale,
+  venueSource: Tournament,
+): string[] {
   const conflicts: string[] = tournament.stages.flatMap((stage) =>
     tournament.matches.some((match) => match.stageId === stage.id)
-      ? validateKnockoutVenueDistances(tournament, stage).map((issue) =>
+      ? validateKnockoutVenueDistances(venueSource, stage).map((issue) =>
           knockoutDrawIssueText(issue, locale),
         )
       : [],
@@ -307,7 +357,15 @@ export function detectConflicts(
     }
     const stage = tournament.stages.find((stage) => stage.id === match.stageId);
     for (const source of stage?.sources ?? []) {
-      const prior = matches.filter((item) => item.stageId === source.stageId);
+      const selectedIds =
+        source.selection?.kind === "match-results"
+          ? new Set(source.selection.picks.map((pick) => pick.matchId))
+          : undefined;
+      const prior = matches.filter((item) =>
+        selectedIds
+          ? selectedIds.has(item.id)
+          : item.stageId === source.stageId,
+      );
       if (
         prior.some(
           (item) =>
@@ -363,6 +421,8 @@ export function estimateDuration(tournament: Tournament): {
   scheduledMinutes?: number;
   assumptions: string;
 } {
+  if (hasAggregateBookings(tournament))
+    tournament = expandedSchedule(tournament);
   const matches = tournament.matches.filter(playable);
   const resources = Math.max(1, tournament.schedule.resources.length);
   const total = matches.reduce(

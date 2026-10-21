@@ -1,7 +1,7 @@
 import Dexie, { type Table } from "dexie";
 import type { FormatId, Tournament, TournamentStatus } from "../domain/types";
 import { validateTournament } from "../domain/validate";
-import { canonicalize, compress, decompress, sha256 } from "../security/codec";
+import { canonicalize, compress, sha256 } from "../security/codec";
 import {
   decryptJson,
   encryptJson,
@@ -16,6 +16,14 @@ import {
   type TournamentPatch,
 } from "../sharing";
 import { previewSelectivePatch } from "../sharing/merge";
+import {
+  compactRevision,
+  reconstructRevisions,
+  type RevisionEntry,
+  type SnapshotRecord,
+} from "./revision-store";
+export type { RevisionEntry } from "./revision-store";
+import { restorationImpact } from "./restoration";
 
 export interface LibraryEntry {
   id: string;
@@ -32,22 +40,9 @@ export interface LibraryEntry {
   lastBackupRevision?: number;
 }
 
-export interface RevisionEntry {
-  revision: number;
-  at: string;
-  action: string;
-  hash: string;
-}
-
 interface DocumentRecord extends LibraryEntry {
   revisionHash: string;
   payload: Tournament | EncryptedPayload;
-}
-
-interface SnapshotRecord extends RevisionEntry {
-  tournamentId: string;
-  protected: boolean;
-  payload: Uint8Array | EncryptedPayload;
 }
 
 class TournamentDatabase extends Dexie {
@@ -194,6 +189,7 @@ async function prepareRecord(
 
 function snapshotFor(record: DocumentRecord, action: string): SnapshotRecord {
   return {
+    encoding: "checkpoint-v1",
     tournamentId: record.id,
     revision: record.revision,
     at: record.updatedAt,
@@ -210,8 +206,33 @@ async function storeRecord(
   record: DocumentRecord,
   expectedRevision: number | undefined,
   action: string,
+  previous?: Tournament,
+  secret?: string,
 ): Promise<void> {
   try {
+    const document = await openRecord(record, secret);
+    const snapshot = await compactRevision(
+      previous,
+      document,
+      snapshotFor(record, action),
+      secret,
+    );
+    const snapshots = [
+      ...(await db.snapshots.where("tournamentId").equals(record.id).toArray()),
+      snapshot,
+    ].sort((a, b) => a.revision - b.revision);
+    const expired = snapshots.slice(0, Math.max(0, snapshots.length - 50));
+    const firstRetained = snapshots[expired.length];
+    let checkpoint: SnapshotRecord | undefined;
+    if (expired.length && firstRetained?.encoding === "command-v1") {
+      const recovered = (
+        await reconstructRevisions(snapshots, secret, [firstRetained.revision])
+      ).get(firstRetained.revision)!;
+      checkpoint = snapshotFor(
+        await prepareRecord(recovered, record.protected, secret),
+        firstRetained.action,
+      );
+    }
     await db.transaction("rw", db.documents, db.snapshots, async () => {
       const current = await db.documents.get(record.id);
       if (expectedRevision === undefined) {
@@ -230,12 +251,8 @@ async function storeRecord(
         );
       }
       await db.documents.put(record);
-      await db.snapshots.put(snapshotFor(record, action));
-      const snapshots = await db.snapshots
-        .where("tournamentId")
-        .equals(record.id)
-        .sortBy("revision");
-      const expired = snapshots.slice(0, Math.max(0, snapshots.length - 50));
+      await db.snapshots.put(snapshot);
+      if (checkpoint) await db.snapshots.put(checkpoint);
       if (expired.length)
         await db.snapshots.bulkDelete(
           expired.map((snapshot) => [record.id, snapshot.revision]),
@@ -302,7 +319,13 @@ export const repository = {
     }
     document = await sealDocument(document);
     const record = await prepareRecord(document, Boolean(secret), secret);
-    await storeRecord(record, undefined, "Created or imported tournament");
+    await storeRecord(
+      record,
+      undefined,
+      "Created or imported tournament",
+      undefined,
+      secret,
+    );
     return document;
   },
 
@@ -401,6 +424,8 @@ export const repository = {
       await prepareRecord(document, current.protected, secret, current),
       expectedRevision,
       action,
+      previous,
+      secret,
     );
     return document;
   },
@@ -429,18 +454,15 @@ export const repository = {
       );
     const current = await openRecord(captured.current, secret);
     const entries: ArchiveRevision[] = [];
-    for (const snapshot of captured.snapshots) {
-      const value = snapshot.protected
-        ? await decryptJson(snapshot.payload, secret!)
-        : decompress(snapshot.payload as Uint8Array);
-      const tournament = validateTournament(value);
-      const hash = snapshot.protected
-        ? await sha256(canonicalize(snapshot.payload))
-        : tournament.revisionHash;
-      if (hash !== snapshot.hash || snapshot.revision !== tournament.revision)
-        throw new Error("The stored revision failed its integrity check.");
-      entries.push({ action: snapshot.action, tournament });
-    }
+    const reconstructed = await reconstructRevisions(
+      captured.snapshots,
+      secret,
+    );
+    for (const snapshot of captured.snapshots)
+      entries.push({
+        action: snapshot.action,
+        tournament: reconstructed.get(snapshot.revision)!,
+      });
     return validateArchiveRevisions(current, entries);
   },
 
@@ -504,6 +526,8 @@ export const repository = {
       await prepareRecord(next, current.protected, secret, current),
       current.revision,
       "Applied update packet",
+      base,
+      secret,
     );
     return next;
   },
@@ -574,28 +598,18 @@ export const repository = {
     revision: number,
     secret?: string,
   ): Promise<Tournament> {
-    const snapshot = await db.snapshots.get([id, revision]);
+    const snapshots = await db.snapshots
+      .where("tournamentId")
+      .equals(id)
+      .toArray();
+    const snapshot = snapshots.find((entry) => entry.revision === revision);
     if (!snapshot)
       throw new Error(
         "This revision is no longer in the local history. Restore an exported backup instead.",
       );
-    if (snapshot.protected && !secret)
-      throw new Error("Unlock this revision with its secret.");
-    const value = snapshot.protected
-      ? await decryptJson(snapshot.payload, secret!)
-      : decompress(snapshot.payload as Uint8Array);
-    const document = validateTournament(value);
-    const storedHash = snapshot.protected
-      ? await sha256(canonicalize(snapshot.payload))
-      : document.revisionHash;
-    if (
-      storedHash !== snapshot.hash ||
-      (await hashDocument(document)) !== document.revisionHash ||
-      document.id !== id ||
-      document.revision !== revision
-    )
-      throw new Error("The stored revision failed its integrity check.");
-    return document;
+    return (await reconstructRevisions(snapshots, secret, [revision])).get(
+      revision,
+    )!;
   },
 
   async restoreRevision(
@@ -613,6 +627,31 @@ export const repository = {
     );
   },
 
+  async restoreReviewed(
+    id: string,
+    targetRevision: number,
+    expectedRevision: number,
+    expectedHash: string,
+    confirmPlayed: boolean,
+    action: string,
+    secret?: string,
+  ): Promise<Tournament> {
+    const current = await repository.load(id, secret);
+    if (
+      current.revision !== expectedRevision ||
+      current.revisionHash !== expectedHash
+    )
+      throw new Error(
+        "The saved tournament changed after this preview. Review the restoration again.",
+      );
+    const target = await repository.loadRevision(id, targetRevision, secret);
+    if (restorationImpact(current, target).affected.length && !confirmPlayed)
+      throw new Error(
+        "Confirm the affected played matches before restoring this revision.",
+      );
+    return repository.save(target, expectedRevision, action, secret);
+  },
+
   async protect(id: string, secret: string): Promise<Tournament> {
     const current = await db.documents.get(id);
     if (!current) throw new Error("Tournament not found.");
@@ -624,14 +663,17 @@ export const repository = {
       .equals(id)
       .toArray();
     const snapshots: SnapshotRecord[] = [];
+    const reconstructed = await reconstructRevisions(previousSnapshots);
     for (const snapshot of previousSnapshots) {
       const payload = await encryptJson(
-        decompress(snapshot.payload as Uint8Array),
+        reconstructed.get(snapshot.revision),
         secret,
         "revision",
       );
       snapshots.push({
         ...snapshot,
+        encoding: "checkpoint-v1",
+        baseRevision: undefined,
         action: "Protected change",
         protected: true,
         hash: await sha256(canonicalize(payload)),
@@ -662,12 +704,13 @@ export const repository = {
       .equals(id)
       .toArray();
     const decrypted: SnapshotRecord[] = [];
+    const reconstructed = await reconstructRevisions(snapshots, secret);
     for (const snapshot of snapshots) {
-      const value = validateTournament(
-        await decryptJson(snapshot.payload, secret),
-      );
+      const value = reconstructed.get(snapshot.revision)!;
       decrypted.push({
         ...snapshot,
+        encoding: "checkpoint-v1",
+        baseRevision: undefined,
         action: "Restored private revision",
         hash: value.revisionHash,
         protected: false,

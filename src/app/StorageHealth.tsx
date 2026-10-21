@@ -7,6 +7,7 @@ import type { Tournament } from "../domain/types";
 import { StatusControl } from "./Rules";
 import type { EditorProps } from "./Participants";
 import { BackupReminderSettings } from "./BackupReminders";
+import { VaultInactivitySettings } from "./VaultInactivity";
 
 export function StorageHealth({ entries }: { entries: LibraryEntry[] }) {
   const { t, date } = useI18n();
@@ -95,6 +96,7 @@ export function StorageHealth({ entries }: { entries: LibraryEntry[] }) {
         {answer && <Notice>{answer}</Notice>}
       </section>
       <BackupReminderSettings />
+      <VaultInactivitySettings />
       <section className="panel">
         <h3>{t("Backup record", "سوابق پشتیبان")}</h3>
         <div className="table-scroll">
@@ -251,6 +253,7 @@ export function Settings({
               "بازیابی رمز وجود ندارد. هرکس به نشست باز دسترسی داشته باشد می‌تواند داده را ببیند.",
             )}
           </p>
+          <VaultInactivitySettings />
         </div>
       </div>
     </div>

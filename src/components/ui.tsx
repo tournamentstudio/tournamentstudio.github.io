@@ -9,6 +9,7 @@ import {
 } from "react";
 import { X, AlertCircle, ArrowUpRight } from "lucide-react";
 import { localizedDiagnostic, useI18n } from "../i18n";
+import { tabbableControls } from "./focus";
 
 export function Modal({
   title,
@@ -44,25 +45,27 @@ export function Modal({
       aria-modal="true"
       onKeyDown={(event) => {
         if (event.key !== "Tab" || event.defaultPrevented) return;
-        const controls = [
-          ...event.currentTarget.querySelectorAll<HTMLElement>(
-            "a[href], button, input, select, textarea, summary, [tabindex]",
-          ),
-        ].filter(
-          (control) =>
-            control.tabIndex >= 0 &&
-            !control.matches(":disabled") &&
-            !control.closest("[inert]") &&
-            control.getClientRects().length > 0 &&
-            getComputedStyle(control).visibility !== "hidden",
-        );
+        if (
+          event.target instanceof Element &&
+          event.target.closest("dialog") !== event.currentTarget
+        )
+          return;
+        const controls = tabbableControls(event.currentTarget);
         const first = controls[0],
           last = controls.at(-1);
         const active = document.activeElement;
-        if (event.shiftKey && active === first && last) {
+        if (
+          event.shiftKey &&
+          (active === first || active === event.currentTarget) &&
+          last
+        ) {
           event.preventDefault();
           last.focus();
-        } else if (!event.shiftKey && active === last && first) {
+        } else if (
+          !event.shiftKey &&
+          (active === last || active === event.currentTarget) &&
+          first
+        ) {
           event.preventDefault();
           first.focus();
         }

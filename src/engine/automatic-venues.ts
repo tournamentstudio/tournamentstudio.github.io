@@ -144,6 +144,7 @@ export function previewAutomaticKnockoutVenues(
     pots: structuredClone(draw?.pots ?? []),
     restrictions: [...(draw?.restrictions ?? [])],
     protectedSeeds: draw?.protectedSeeds ?? 0,
+    ...(draw?.fixedSlots ? { fixedSlots: structuredClone(draw.fixedSlots) } : {}),
     separation: structuredClone(
       draw && draw.version !== 1 ? draw.separation : [],
     ),

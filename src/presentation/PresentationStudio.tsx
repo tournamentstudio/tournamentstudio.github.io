@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   uid,
   type Locale,
@@ -10,6 +10,7 @@ import { Presentation, sceneLabel, sceneTypes } from "./Presentation";
 import "./presentation.css";
 import { SceneTargetEditor } from "./SceneTargetEditor";
 import { OverlayEditor } from "./OverlayEditor";
+import { SponsorEditor } from "./SponsorEditor";
 export function PresentationStudio({
   tournament,
   onChange,
@@ -21,6 +22,12 @@ export function PresentationStudio({
 }) {
   const [preview, setPreview] = useState(false),
     [type, setType] = useState<SceneType>("current");
+  const previewButton = useRef<HTMLButtonElement>(null),
+    wasPreview = useRef(false);
+  useEffect(() => {
+    if (wasPreview.current && !preview) previewButton.current?.focus();
+    wasPreview.current = preview;
+  }, [preview]);
   const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
   const settings = tournament.presentation;
   const update = (changes: Partial<PresentationSettings>) =>
@@ -66,7 +73,11 @@ export function PresentationStudio({
             )}
           </p>
         </div>
-        <button type="button" onClick={() => setPreview(true)}>
+        <button
+          ref={previewButton}
+          type="button"
+          onClick={() => setPreview(true)}
+        >
           {t("Preview presentation", "پیش‌نمایش")}
         </button>
       </div>
@@ -141,6 +152,7 @@ export function PresentationStudio({
         onChange={(overlay) => update({ overlay })}
         locale={locale}
       />
+      <SponsorEditor settings={settings} onChange={onChange} locale={locale} />
       <div className="scene-list">
         {settings.scenes.map((scene, i) => (
           <article className="scene-editor" key={scene.id}>
@@ -259,6 +271,7 @@ export function PresentationStudio({
         <label>
           {t("Scene type", "نوع نما")}{" "}
           <select
+            aria-label={t("Scene type", "نوع نما")}
             value={type}
             onChange={(e) => setType(e.target.value as SceneType)}
           >

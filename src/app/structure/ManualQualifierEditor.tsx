@@ -34,9 +34,10 @@ export function ManualQualifierEditor({
     preview.participantIds;
   const fixed = new Set(preview.participantIds);
   const candidates = new Set(
-    preview.sources.flatMap((source) =>
-      source.candidates.map((candidate) => candidate.participantId),
-    ),
+    preview.sources.flatMap((source) => [
+      ...source.qualifierIds,
+      ...source.candidates.map((candidate) => candidate.participantId),
+    ]),
   );
   const entrants = tournament.participants.filter((participant) =>
     candidates.has(participant.id),

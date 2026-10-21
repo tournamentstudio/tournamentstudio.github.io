@@ -6,6 +6,7 @@ export function recipePresentation(
 ): Tournament["presentation"] {
   const presentation = structuredClone(source);
   presentation.sponsors = [];
+  delete presentation.sponsorCards;
   if (presentation.overlay) delete presentation.overlay.matchId;
   presentation.scenes = presentation.scenes.map((scene) => {
     delete scene.matchId;

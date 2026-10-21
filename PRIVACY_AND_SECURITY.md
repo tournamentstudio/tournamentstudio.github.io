@@ -18,9 +18,9 @@ Export `.tourney` backups to a place you control. The library records when a bac
 
 Protected mode encrypts the complete tournament before it reaches IndexedDB. Titles, sport, status, rosters, notes, referee information, and audit entries are inside the encrypted document. Library rows show a generic title. The row still exposes an opaque tournament ID, revision, update time, encryption state, trash state, favorite state, backup time, ciphertext size, and a ciphertext fingerprint. The plaintext document hash stays inside the encryption envelope.
 
-Revision snapshots are encrypted too. Protecting a previously standard tournament encrypts its saved revisions and replaces the visible title and sport fields in one transaction.
+Revision commands and checkpoints are encrypted too. Protecting a previously standard tournament reconstructs and encrypts every retained revision, then replaces private library metadata in one transaction. The outer hash of a protected record fingerprints ciphertext, not the plaintext document.
 
-The unlocking secret is held in application memory while the document is open. It is not saved in local storage, IndexedDB, a URL, or beside the ciphertext. Locking must close the document and clear the application references to its plaintext and secret.
+The vault unlocking secret is held in application memory while the document is open. It is not saved in local storage or IndexedDB. A separately requested embedded-key share link deliberately carries its own newly generated sharing secret; this is a different transport choice, not vault key storage. Locking must close the document and clear the application references to its plaintext and secret.
 
 JavaScript memory cannot be guaranteed to be physically erased on demand. A person with developer tools, a compromised extension, malware, or access to an already unlocked browser can read data in memory. Local encryption does not provide server-side identity or permissions.
 
@@ -43,14 +43,16 @@ Public sharing and presentation use an explicit `publicProjection()` function. I
 The projection removes:
 
 - Match `private` fields, including a concealed object's position.
-- Referee names, private match notes, and hand-by-hand referee logs.
+- Referee names, private match notes, hand-by-hand referee logs, Gol clock/possession state and private timed-run splits/evidence.
+- Challenge invitation notes and state, local Elo source mappings and prediction records.
 - Team rosters, check-in state, tags, and custom participant metadata.
 - Participant base coordinates, including latitude and longitude.
 - Venue coordinates attached to courts, tables or rooms.
 - Tournament private metadata, correction recovery data, description, and audit history.
+- Custom field definitions and values unless explicitly marked public by the organizer.
 - Unrecognized stage configuration extensions and arbitrary match or stage metadata.
 
-Typed structural fields needed for brackets and standings are retained. These include qualification rules, pot membership and names, group and knockout restrictions, winners and losers separation round limits, final and third-place separation targets, distance bounds and their target rounds, protected seed counts, graph coordinates and bounded numeric participant points adjustments. Names, region, organization, logos, scores, fixtures, public scheduling, and presentation scenes remain visible.
+Typed structural fields needed for brackets and standings are retained. These include qualification rules, pot membership and names, group and knockout restrictions, winners and losers separation round limits, final and third-place separation targets, distance bounds and their target rounds, protected seed counts, graph coordinates and bounded numeric participant points adjustments. Names, region, organization, logos, scores, recorded scoring dimensions, explicit fair-play sanctions, fixtures, public scheduling and presentation scenes remain visible. Sponsor logos and text are intentionally public. Swiss missed-round credits, challenge queue order and aggregate leg outcomes remain visible because they affect competition results.
 
 Distance draws use manually entered city or club base coordinates. No device
 location is requested, and no geocoding or routing service receives those values.
@@ -83,7 +85,7 @@ Snapshot links contain compressed tournament data in the URL fragment. The fragm
 
 The application retains incoming code temporarily for the import screen and removes it from the visible route. Do not treat this as a guarantee that all prior copies of a URL have been erased.
 
-An encrypted snapshot or archive requires the separately shared secret. Sending the secret with the ciphertext gives anyone who receives both access to the contents.
+Separate-secret encrypted snapshots, updates and archives require the secret from another channel. The optional TSK1 link includes a generated secret and opens without another password prompt. Anyone receiving the complete link can decrypt it. Encryption never establishes the recipient or sender identity.
 
 Read-only preview is an interface choice. A recipient who has the document can save or modify their own copy. Previously shared data cannot be remotely revoked.
 
@@ -93,11 +95,11 @@ Snapshots do not sync across devices. Later changes require a new snapshot or an
 
 SHA-256 checksums detect incomplete or changed data. They do not authenticate the sender. The same limitation applies to registration responses and scorekeeper result proposals.
 
-Update packets must match the local tournament ID, base revision, and base hash. They are validated before a transaction. Duplicate application is rejected. Divergent copies require the verified saved base and an explicit operation review; incompatible structural changes require a fork. The previous revision remains available in local history, subject to the 50-snapshot retention limit.
+Update packets must match the local tournament ID, base revision, and base hash. They are validated before a transaction. Duplicate application is rejected. Divergent copies require the verified saved base and an explicit operation review; incompatible structural changes require a fork. The previous revision remains available in local history, subject to the 50-revision retention limit.
 
 Public updates omit private fields by using the public projection. Private update packets include private data. Select update encryption and share the secret separately when confidentiality is needed.
 
-The application does not implement digital signatures, trusted referee identities or remote revocation.
+The application does not implement digital signatures, trusted referee identities or remote revocation. TSH1 rating sources and TSB1 prediction packets are also unsigned. Local prediction freezing blocks late entry through the current UI, but an imported timestamp or device clock cannot prove when a prediction was made. Manual timing evidence is an organizer record, not automated game or video verification.
 
 ## Imported files and assets
 
@@ -126,7 +128,7 @@ Core application scripts, fonts, icons, and styles are bundled. Uploaded content
 
 The vault has no independent cryptographic audit. This is an application-level protection for local documents, not protection against a compromised browser or device.
 
-Auto-lock on inactivity, trusted digital signatures and embedded-key encrypted links are not implemented. Protected presentation windows need their own unlock state; a separate OBS browser process does not inherit another browser's data.
+Trusted digital signatures are not implemented. Inactivity locking defaults to 15 minutes and can be disabled or set to 1, 5, 15, 30 or 60 minutes in Storage Health or vault settings. Trusted user input resets the current tab; incoming scores do not. Expiry clears decrypted previews, unconfirmed forms and session history. Confirmed encrypted writes remain, and a late save cannot reopen the locked view. Sleeping browsers check the deadline when they resume. This is a device-clock safeguard, not protection from someone already using the unlocked tab. Protected presentation windows need their own unlock state; a separate OBS browser process does not inherit another browser's data.
 
 Use the explicit lock control when leaving a shared computer. Close other unlocked windows, keep software current, and retain tested backups with their correct secrets.
 
@@ -136,13 +138,13 @@ Waiting-list decisions, eligibility, payment status, availability and organizer 
 
 XLSX imports are limited to 2 MiB compressed and 8 MiB expanded across at most 100 ZIP entries. The reader refuses formulas, external relationships, macros, embedded objects, XML entities, unsafe paths and duplicate cells. Imported workbooks never execute code or load external links.
 
-A revision archive can contain private information deleted from the current tournament but retained in an older revision. The same archive encryption protects every included revision. Public visual exports use a fresh public projection and do not include the private revision table.
+A revision archive can contain private information deleted from the current tournament but retained in an older revision. Retained-history backups are private; public snapshot archives omit history. History comparisons default to public data; revealing private differences is an explicit local choice. Undo and restoration previews list changed areas and affected started matches without showing private values. The same archive encryption protects every included revision. Public visual exports use a fresh public projection and do not include the private revision table.
 
 ## Events, personal designs and QR transfers
 
 A protected event encrypts its directory, labels and configuration. Linking an already-protected tournament requires a protected event and an explicit unlock. Event lock clears the open collection and temporary tournament credentials. Decrypted data remains accessible to someone using the unlocked session. Public event projections remove private descriptions and adjustment reasons, and use the tournament public projection for every linked competition. Private event exports always require a separate secret; encrypted imports retain protection.
 
-Saved personal themes are a separate, unencrypted local library. They contain no tournament names or results. Images are excluded by default, because an uploaded logo or background can itself contain private information.
+Saved personal themes and named sport presets are separate, unencrypted local libraries. They contain no tournament names or results. Images are excluded by default, because an uploaded logo or background can itself contain private information.
 
 An embedded-key link protects the ciphertext against modification but carries its own secret. It is not recipient identity verification. Multipart checksums detect corruption and mixed frames, not trusted authorship. QR scanning does not grant permission to save data: preview and import remain explicit. Camera access starts only after a user action and stops on completion, close or unmount. PNG/JPEG QR inputs are limited to 3 MiB each, 4,096 pixels per dimension and 16 million pixels; image batches are limited to 128 images and 32 MiB.
 

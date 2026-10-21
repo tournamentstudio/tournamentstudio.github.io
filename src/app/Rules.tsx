@@ -1,11 +1,15 @@
+import { CustomFieldsStudio } from "./CustomFieldsStudio";
 import { useState } from "react";
-import { ArrowDown, ArrowUp, Plus, Trash2, Save } from "lucide-react";
+import { ArrowDown, ArrowUp, Trash2, Save } from "lucide-react";
 import type {
   Rules as RulesType,
   TieBreaker,
   TournamentStatus,
 } from "../domain/types";
-import { uid } from "../domain/types";
+import { GolRulesEditor } from "./gol/RulesEditor";
+import { MetricRulesEditor } from "../scoring/MetricRulesEditor";
+import { SportPresetLibrary } from "../sports/SportPresetLibrary";
+import { applySavedSportPreset } from "../sports/library";
 import { rulesSchema } from "../domain/validate";
 import { ErrorText, Field, Notice } from "../components/ui";
 import { useI18n, statusName } from "../i18n";
@@ -17,6 +21,9 @@ const breakerLabels: [TieBreaker, string, string][] = [
   ["differential", "Score difference", "تفاضل"],
   ["scored", "Scored", "امتیاز کسب‌شده"],
   ["head-to-head", "Head to head", "رو در رو"],
+  ["set-ratio", "Set ratio", "نسبت ست"],
+  ["point-ratio", "Point ratio", "نسبت امتیاز"],
+  ["fair-play", "Fewest fair-play penalties", "کمترین جریمه بازی جوانمردانه"],
   ["buchholz", "Buchholz", "بوخهولتز"],
   ["median-buchholz", "Median Buchholz", "بوخهولتز میانه"],
   ["sonneborn-berger", "Sonneborn-Berger", "سونبورن برگر"],
@@ -24,7 +31,7 @@ const breakerLabels: [TieBreaker, string, string][] = [
 ];
 
 export function Rules({ tournament: doc, onChange }: EditorProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [rules, setRules] = useState(structuredClone(doc.rules));
   const [error, setError] = useState<unknown>();
   const played = doc.matches.some((match) => match.status === "completed");
@@ -48,6 +55,33 @@ export function Rules({ tournament: doc, onChange }: EditorProps) {
           t(
             "Best-of scoring requires an odd number.",
             "تعداد ست‌ها برای تعیین برنده باید فرد باشد.",
+          ),
+        );
+      if (
+        played &&
+        (JSON.stringify(rules.metricDefinitions ?? []) !==
+          JSON.stringify(doc.rules.metricDefinitions ?? []) ||
+          rules.weightedDirection !== doc.rules.weightedDirection ||
+          ((rules.scoring === "weighted" || doc.rules.scoring === "weighted") &&
+            rules.scoring !== doc.rules.scoring))
+      )
+        throw new Error(
+          t(
+            "Metric definitions and weighted scoring are locked after results are recorded. Restore a revision from before play to change them.",
+            "تعریف آمار و امتیازدهی وزن‌دار پس از ثبت نتیجه قفل می‌شوند. برای تغییر، نسخه پیش از بازی را بازیابی کنید.",
+          ),
+        );
+      if (
+        rules.scoring === "weighted" &&
+        !(rules.metricDefinitions ?? []).some(
+          (definition) =>
+            definition.weight !== undefined && definition.weight !== 0,
+        )
+      )
+        throw new Error(
+          t(
+            "Weighted scoring needs at least one dimension with a nonzero weight.",
+            "امتیازدهی وزن‌دار دست‌کم به یک معیار با وزن غیرصفر نیاز دارد.",
           ),
         );
       const validated = rulesSchema.parse(rules);
@@ -112,6 +146,7 @@ export function Rules({ tournament: doc, onChange }: EditorProps) {
           <Field label={t("Scoring system", "روش امتیازدهی")}>
             <select
               value={rules.scoring}
+              disabled={played && doc.rules.scoring === "weighted"}
               onChange={(event) =>
                 setRules({
                   ...rules,
@@ -126,8 +161,21 @@ export function Rules({ tournament: doc, onChange }: EditorProps) {
                 ["manual", "Manual winner", "برنده دستی"],
                 ["placement", "Placement points", "امتیاز رتبه"],
                 ["time", "Fastest time", "کمترین زمان"],
+                [
+                  "weighted",
+                  "Weighted metrics and judge scores",
+                  "آمار وزن‌دار و امتیاز داوران",
+                ],
               ].map(([id, en, fa]) => (
-                <option key={id} value={id}>
+                <option
+                  key={id}
+                  value={id}
+                  disabled={
+                    played &&
+                    id === "weighted" &&
+                    doc.rules.scoring !== "weighted"
+                  }
+                >
                   {t(en, fa)}
                 </option>
               ))}
@@ -146,6 +194,27 @@ export function Rules({ tournament: doc, onChange }: EditorProps) {
             />
           </Field>
         </div>
+        {rules.scoring === "weighted" && (
+          <Field label={t("Weighted winner direction", "جهت برنده وزن‌دار")}>
+            <select
+              disabled={played}
+              value={rules.weightedDirection ?? "high"}
+              onChange={(event) =>
+                setRules({
+                  ...rules,
+                  weightedDirection: event.target.value as "high" | "low",
+                })
+              }
+            >
+              <option value="high">
+                {t("Highest total wins", "مجموع بیشتر برنده است")}
+              </option>
+              <option value="low">
+                {t("Lowest total wins", "مجموع کمتر برنده است")}
+              </option>
+            </select>
+          </Field>
+        )}
         <label className="check-row">
           <input
             type="checkbox"
@@ -188,6 +257,12 @@ export function Rules({ tournament: doc, onChange }: EditorProps) {
         </div>
         <section className="panel inset-panel">
           <h3>{t("Ordered tiebreakers", "ترتیب رفع تساوی")}</h3>
+          <p className="muted">
+            {t(
+              "Ratios use recorded sets or nonnegative points. A positive total divided by zero is unbeaten; zero divided by zero is neutral (1). Missing ratio or fair-play evidence skips that criterion for the tied group. Fair-play ranks lower penalty totals first.",
+              "نسبت‌ها از ست‌های ثبت شده یا امتیاز غیرمنفی محاسبه می‌شوند. مجموع مثبت بر صفر، بی‌شکست است؛ صفر بر صفر خنثی (۱) است. نبود داده نسبت یا بازی جوانمردانه، آن معیار را برای گروه مساوی کنار می‌گذارد. جریمه کمتر بازی جوانمردانه رتبه بهتری دارد.",
+            )}
+          </p>
           <p className="muted">
             {t(
               "Criteria are applied from top to bottom. Equal criteria leave a shared rank. Add seed only when that policy is agreed in advance.",
@@ -285,158 +360,38 @@ export function Rules({ tournament: doc, onChange }: EditorProps) {
           />
         </Field>
         {doc.sport === "gol-ya-pooch" && (
-          <section className="panel inset-panel">
-            <h3>{t("Gol Ya Pooch referee rules", "قوانین داوری گل یا پوچ")}</h3>
-            <Notice>
-              {t(
-                "Agree on a ruleset before play. Cards use structured point adjustments and per-team limits. No card executes code or reveals the concealed position.",
-                "پیش از بازی درباره قوانین توافق کنید. کارت‌ها تغییر امتیاز و سقف استفاده برای هر تیم دارند. هیچ کارت کد اجرا نمی‌کند یا مکان گل را نمایش نمی‌دهد.",
-              )}
-            </Notice>
-            <div className="two-columns">
-              <Field label={t("Players per team", "بازیکن در هر تیم")}>
-                <input
-                  type="number"
-                  min={1}
-                  max={30}
-                  value={rules.gol.playersPerTeam}
-                  onChange={(event) =>
-                    setRules({
-                      ...rules,
-                      gol: {
-                        ...rules.gol,
-                        playersPerTeam: Number(event.target.value),
-                      },
-                    })
-                  }
-                />
-              </Field>
-              <Field label={t("Default hand points", "امتیاز پیش‌فرض دست")}>
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={rules.gol.handPoints}
-                  onChange={(event) =>
-                    setRules({
-                      ...rules,
-                      gol: {
-                        ...rules.gol,
-                        handPoints: Number(event.target.value),
-                      },
-                    })
-                  }
-                />
-              </Field>
-            </div>
-            {rules.gol.cards.map((card, index) => (
-              <div className="card-rule-row" key={card.id}>
-                <Field label={t("Card name", "نام کارت")}>
-                  <input
-                    value={card.name}
-                    maxLength={80}
-                    onChange={(event) =>
-                      setRules({
-                        ...rules,
-                        gol: {
-                          ...rules.gol,
-                          cards: rules.gol.cards.map((value, position) =>
-                            position === index
-                              ? { ...value, name: event.target.value }
-                              : value,
-                          ),
-                        },
-                      })
-                    }
-                  />
-                </Field>
-                <Field label={t("Use limit", "سقف استفاده")}>
-                  <input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={card.limit}
-                    onChange={(event) =>
-                      setRules({
-                        ...rules,
-                        gol: {
-                          ...rules.gol,
-                          cards: rules.gol.cards.map((value, position) =>
-                            position === index
-                              ? { ...value, limit: Number(event.target.value) }
-                              : value,
-                          ),
-                        },
-                      })
-                    }
-                  />
-                </Field>
-                <Field label={t("Point adjustment", "تغییر امتیاز")}>
-                  <input
-                    type="number"
-                    min={-100}
-                    max={100}
-                    value={card.points}
-                    onChange={(event) =>
-                      setRules({
-                        ...rules,
-                        gol: {
-                          ...rules.gol,
-                          cards: rules.gol.cards.map((value, position) =>
-                            position === index
-                              ? { ...value, points: Number(event.target.value) }
-                              : value,
-                          ),
-                        },
-                      })
-                    }
-                  />
-                </Field>
-                <button
-                  className="icon-button"
-                  aria-label={t("Remove card", "حذف کارت")}
-                  onClick={() =>
-                    setRules({
-                      ...rules,
-                      gol: {
-                        ...rules.gol,
-                        cards: rules.gol.cards.filter(
-                          (value) => value.id !== card.id,
-                        ),
-                      },
-                    })
-                  }
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ))}
-            <button
-              className="text-button"
-              onClick={() =>
-                setRules({
-                  ...rules,
-                  gol: {
-                    ...rules.gol,
-                    cards: [
-                      ...rules.gol.cards,
-                      {
-                        id: uid(),
-                        name: t("New card", "کارت تازه"),
-                        limit: 1,
-                        points: 0,
-                      },
-                    ],
-                  },
-                })
-              }
-            >
-              <Plus size={16} />
-              {t("Add custom card", "افزودن کارت سفارشی")}
-            </button>
-          </section>
+          <GolRulesEditor
+            value={rules.gol}
+            locale={locale}
+            onChange={(gol) => setRules({ ...rules, gol })}
+          />
         )}
+        <MetricRulesEditor
+          definitions={rules.metricDefinitions ?? []}
+          onChange={(metricDefinitions) =>
+            setRules({ ...rules, metricDefinitions })
+          }
+          locale={locale}
+          sport={doc.sport}
+          disabled={played}
+        />
       </fieldset>
+      <CustomFieldsStudio tournament={doc} onChange={onChange} />
+      <SportPresetLibrary
+        tournament={{ ...doc, rules }}
+        locale={locale}
+        applyDisabled={played || locked}
+        onApply={(preset) => {
+          try {
+            const next = applySavedSportPreset(doc, preset);
+            setRules(next.rules);
+            onChange(next, t("Apply sport preset", "اعمال الگوی ورزش"));
+            setError(undefined);
+          } catch (error) {
+            setError(error);
+          }
+        }}
+      />
     </div>
   );
 }

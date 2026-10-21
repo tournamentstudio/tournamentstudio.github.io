@@ -15,6 +15,7 @@ import {
   type CollectionBundle,
 } from "./transport";
 import { CollectionWorkspace } from "./CollectionWorkspace";
+import { useVaultInactivity } from "../app/VaultInactivity";
 import "./collections.css";
 
 export function Collections({
@@ -60,18 +61,31 @@ export function Collections({
     setOpened(undefined);
     setSecret(undefined);
     setPassword("");
+    setUnlockId(undefined);
+    setPreview(undefined);
+    setCode("");
+    setTitle("");
+    setSeason("");
+    setCreate(false);
+    setImporting(false);
+    setBusy(false);
     setError(undefined);
     void refresh().catch(setError);
   }
+  useVaultInactivity(
+    opened && secret ? `event:${opened.id}` : undefined,
+    close,
+  );
   async function run(action: () => Promise<void>) {
+    const started = epoch.current;
     setBusy(true);
     try {
       await action();
-      setError(undefined);
+      if (started === epoch.current) setError(undefined);
     } catch (e) {
-      setError(e);
+      if (started === epoch.current) setError(e);
     } finally {
-      setBusy(false);
+      if (started === epoch.current) setBusy(false);
     }
   }
   if (opened)

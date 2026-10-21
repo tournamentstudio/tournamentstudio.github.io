@@ -1,3 +1,4 @@
+import { scheduleOccurrences } from "../scheduling/legs";
 import type { Locale, Tournament } from "../domain/types";
 import { layoutBracket, matchNames } from "../components/Bracket";
 import { getStandings } from "../engine";
@@ -93,6 +94,7 @@ export function tournamentCSV(
           ]
         : [
             [
+              "Match",
               "Stage",
               "Round",
               "Group",
@@ -102,7 +104,8 @@ export function tournamentCSV(
               "Scheduled time",
               "Resource",
             ],
-            ...t.matches.map((m) => [
+            ...scheduleOccurrences({ ...t, locale }).map((m) => [
+              m.label,
               t.stages.find((s) => s.id === m.stageId)?.name,
               m.round,
               m.group ?? "",
@@ -146,7 +149,9 @@ export function tournamentCalendar(t: Tournament, locale: Locale = "en") {
     "PRODID:-//TournaStudio//Tournament schedule//EN",
     "CALSCALE:GREGORIAN",
   ];
-  for (const m of t.matches.filter((m) => m.scheduledAt)) {
+  for (const m of scheduleOccurrences({ ...t, locale }).filter(
+    (m) => m.scheduledAt && !["bye", "canceled"].includes(m.status),
+  )) {
     const start = new Date(m.scheduledAt!);
     if (!Number.isFinite(start.getTime())) continue;
     lines.push(
@@ -157,7 +162,7 @@ export function tournamentCalendar(t: Tournament, locale: Locale = "en") {
       `DTEND:${icsDate(new Date(start.getTime() + (m.durationMinutes ?? t.schedule.matchMinutes) * 60000))}`,
       `SUMMARY:${icsEscape(matchNames(t, m, locale).join(" / "))}`,
       `LOCATION:${icsEscape(t.schedule.resources.find((r) => r.id === m.resourceId)?.name ?? "")}`,
-      `DESCRIPTION:${icsEscape(`${t.title} | ${t.stages.find((s) => s.id === m.stageId)?.name ?? ""} | ${m.round}`)}`,
+      `DESCRIPTION:${icsEscape(`${t.title} | ${m.label} | ${t.stages.find((s) => s.id === m.stageId)?.name ?? ""} | ${m.round}`)}`,
       "END:VEVENT",
     );
   }
@@ -286,10 +291,10 @@ export async function exportBracketPNG(
 }
 export function printableHTML(t: Tournament, locale: Locale = "en") {
   const heading = locale === "fa" ? "برنامه مسابقات" : "Match schedule";
-  const rows = t.matches
+  const rows = scheduleOccurrences({ ...t, locale })
     .map(
       (m) =>
-        `<tr><td>${escapeXML(matchNames(t, m, locale).join(" / "))}</td><td>${escapeXML(m.result?.scores.join(" / ") ?? "")}</td><td>${escapeXML(m.scheduledAt ? new Date(m.scheduledAt).toLocaleString(locale, { timeZone: t.timezone }) : "")}</td><td>${escapeXML(t.schedule.resources.find((r) => r.id === m.resourceId)?.name ?? "")}</td></tr>`,
+        `<tr><td>${escapeXML(m.label)}<br>${escapeXML(matchNames(t, m, locale).join(" / "))}</td><td>${escapeXML(m.result?.scores.join(" / ") ?? "")}</td><td>${escapeXML(m.scheduledAt ? new Date(m.scheduledAt).toLocaleString(locale, { timeZone: t.timezone }) : "")}</td><td>${escapeXML(t.schedule.resources.find((r) => r.id === m.resourceId)?.name ?? "")}</td></tr>`,
     )
     .join("");
   return `<!doctype html><html lang="${locale}" dir="${locale === "fa" ? "rtl" : "ltr"}"><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><title>${escapeXML(t.title)}</title><style>body{font:14px system-ui;margin:32px;color:#182c25}h1{font-size:32px}table{width:100%;border-collapse:collapse}td,th{padding:10px;border-bottom:1px solid #ddd;text-align:start}svg{max-width:100%;height:auto}tr{break-inside:avoid}@page{size:landscape;margin:15mm}</style></head><body><h1>${escapeXML(t.title)}</h1><p>${escapeXML(t.subtitle)}</p><h2>${heading}</h2><table><thead><tr><th>${locale === "fa" ? "شرکت‌کنندگان" : "Participants"}</th><th>${locale === "fa" ? "امتیاز" : "Score"}</th><th>${locale === "fa" ? "زمان" : "Time"}</th><th>${locale === "fa" ? "مکان" : "Resource"}</th></tr></thead><tbody>${rows}</tbody></table>${t.stages.map((s) => bracketSVG(t, s.id, locale)).join("")}<p>TournaStudio</p></body></html>`;

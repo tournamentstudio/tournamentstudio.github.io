@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { validateResult } from "../scoring";
 import type { MatchResult, Participant, Tournament } from "../domain/types";
 import {
   participantSchema,
@@ -218,8 +219,7 @@ export async function createResultProposal(
     notes,
     createdAt: new Date().toISOString(),
   });
-  await validateResultProposal(tournament, proposal);
-  return proposal;
+  return validateResultProposal(tournament, proposal);
 }
 
 export async function validateResultProposal(
@@ -250,8 +250,13 @@ export async function validateResultProposal(
     match.slots.filter((slot) => slot.participantId).length
   )
     throw new Error("The proposal must provide a score for every entrant.");
-  // The caller must preview and approve through the competition engine before saving.
-  return proposal;
+  const stage = tournament.stages.find((item) => item.id === match.stageId);
+  if (!stage) throw new Error("The proposed match no longer exists.");
+  // Approval remains an explicit organizer action after this validation.
+  return {
+    ...proposal,
+    result: validateResult(match, stage, tournament.rules, proposal.result),
+  };
 }
 
 export type OfflinePacket =

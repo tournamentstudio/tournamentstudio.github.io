@@ -1,4 +1,8 @@
 import type { Match, Standing, TieBreaker, Tournament } from "../domain/types";
+import { completedPlacementOrder } from "../engine/placements";
+import { standingEvidence } from "./ratios";
+import { cumulativeTimeBuckets } from "../timing/model";
+import { swissCredit } from "../domain/swiss";
 
 export function getStandings(
   tournament: Tournament,
@@ -29,6 +33,11 @@ export function getStandings(
     ids.map((participantId) => [
       participantId,
       {
+        setsWon: 0,
+        setsLost: 0,
+        setRatio: null,
+        pointRatio: null,
+        fairPlay: null,
         participantId,
         rank: 0,
         played: 0,
@@ -71,7 +80,9 @@ export function getStandings(
           result.scores.filter((other) => {
             return stageFormat === "time-trial" ||
               rules.scoring === "low" ||
-              rules.scoring === "time"
+              rules.scoring === "time" ||
+              (rules.scoring === "weighted" &&
+                rules.weightedDirection === "low")
               ? other < score
               : other > score;
           }).length,
@@ -127,7 +138,15 @@ export function getStandings(
     const adjustment = participant?.metadata.pointsAdjustment;
     if (typeof adjustment === "number" && Number.isFinite(adjustment))
       row.points += adjustment;
+    row.points += stage
+      ? swissCredit(tournament, stage, row.participantId)
+      : tournament.stages.reduce(
+          (sum, item) => sum + swissCredit(tournament, item, row.participantId),
+          0,
+        );
   }
+  for (const [id, evidence] of standingEvidence(matches, ids))
+    Object.assign(rows.get(id)!, evidence);
   for (const row of rows.values()) {
     const history = opponents.get(row.participantId) ?? [];
     const values = history
@@ -150,6 +169,9 @@ export function getStandings(
     ]),
   );
   const valueFor = (row: Standing, breaker: TieBreaker): number => {
+    if (breaker === "set-ratio") return row.setRatio ?? 0;
+    if (breaker === "point-ratio") return row.pointRatio ?? 0;
+    if (breaker === "fair-play") return -(row.fairPlay ?? 0);
     if (breaker === "buchholz") return row.buchholz;
     if (breaker === "median-buchholz") return row.medianBuchholz;
     if (breaker === "sonneborn-berger") return row.sonnebornBerger;
@@ -159,7 +181,8 @@ export function getStandings(
       (breaker === "scored" || breaker === "differential") &&
       (stage?.format === "time-trial" ||
         rules.scoring === "low" ||
-        rules.scoring === "time")
+        rules.scoring === "time" ||
+        (rules.scoring === "weighted" && rules.weightedDirection === "low"))
     )
       return -row[breaker];
     return row[breaker];
@@ -167,6 +190,14 @@ export function getStandings(
   let buckets = [[...rows.values()]];
   for (const breaker of rules.tieBreakers) {
     buckets = buckets.flatMap((bucket) => {
+      if (
+        (breaker === "set-ratio" &&
+          bucket.some((row) => row.setRatio === null)) ||
+        (breaker === "point-ratio" &&
+          bucket.some((row) => row.pointRatio === null)) ||
+        (breaker === "fair-play" && bucket.some((row) => row.fairPlay === null))
+      )
+        return [bucket];
       const headToHead =
         breaker === "head-to-head"
           ? miniLeague(
@@ -247,6 +278,11 @@ export function getStandings(
       );
     }
   }
+  if (stage && ["single-elimination", "double-elimination"].includes(stage.format) && stage.config.fullPlacement && stage.status === "completed") {
+    const ordered = completedPlacementOrder(matches);
+    if (ordered.length === rows.size)
+      buckets = ordered.map((id) => [rows.get(id)!]);
+  }
   if (stage?.format === "ladder" && Array.isArray(stage.metadata.ladderOrder)) {
     buckets = (stage.metadata.ladderOrder as string[]).flatMap((id) =>
       rows.has(id) ? [[rows.get(id)!]] : [],
@@ -279,6 +315,11 @@ export function getStandings(
       ];
     }
   }
+  if (
+    stage?.format === "time-trial" &&
+    stage.config.timeRanking === "cumulative"
+  )
+    buckets = cumulativeTimeBuckets([...rows.values()], matches);
   let offset = 0;
   return buckets.flatMap((bucket) => {
     const rank = offset + 1;

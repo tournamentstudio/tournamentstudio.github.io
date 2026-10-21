@@ -1,0 +1,126 @@
+.schedule-timeline {
+  min-width: 0;
+  margin-block: 1rem;
+}
+.schedule-timeline summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.timeline-scroll {
+  overflow: auto;
+  max-width: 100%;
+  margin-block: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  direction: ltr;
+}
+.timeline-hour-row {
+  display: grid;
+  grid-template-columns: 120px repeat(48, 80px);
+  font-size: 0.8rem;
+  padding-block: 0.5rem;
+}
+.timeline-resource-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  border-top: 1px solid var(--line);
+  min-height: 88px;
+}
+.timeline-resource-row > strong {
+  padding: 12px;
+  overflow-wrap: anywhere;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--surface);
+}
+.timeline-lane {
+  position: relative;
+  min-height: 88px;
+}
+.timeline-slot {
+  position: absolute;
+  top: 0;
+  width: 80px;
+  height: 100%;
+  border: 0;
+  border-inline-end: 1px dashed var(--line);
+  background: transparent;
+}
+.timeline-slot:hover,
+.timeline-slot:focus-visible {
+  background: color-mix(in srgb, var(--forest) 12%, transparent);
+}
+.timeline-match {
+  box-shadow: 0 2px 6px #173f3312;
+  position: absolute;
+  top: 8px;
+  min-height: 68px;
+  max-height: 76px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  text-align: start;
+  padding: 6px;
+  cursor: grab;
+}
+.timeline-match-title,
+.timeline-match small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.timeline-match.selected {
+  outline: 2px solid var(--forest);
+  z-index: 1;
+}
+.schedule-timeline input,
+.schedule-timeline select {
+  min-width: 0;
+  max-width: 100%;
+}
+.schedule-layout > *,
+.schedule-layout .field,
+.schedule-layout .two-columns > *,
+.schedule-layout input,
+.schedule-layout select {
+  min-width: 0;
+  max-width: 100%;
+}
+.schedule-layout .data-table {
+  min-width: 720px;
+}
+.schedule-layout .data-table td:first-child {
+  min-width: 180px;
+}
+@media (max-width: 600px) {
+  .schedule-layout,
+  .schedule-layout > .panel,
+  .schedule-layout .two-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.aggregate-leg-editor fieldset {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-block: 1rem;
+}
+.aggregate-leg-editor legend {
+  font-weight: 650;
+  padding-inline: 0.4rem;
+}
+.aggregate-leg-editor .field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 1rem;
+}
+.aggregate-leg-editor .field-grid > * {
+  min-width: 0;
+}

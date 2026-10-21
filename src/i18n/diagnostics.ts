@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { customFieldTranslations } from "./custom-field-messages";
 import type { GroupDrawIssue, Locale } from "../domain/types";
 import { groupDrawIssueText } from "../domain/draw";
 import { knockoutDrawIssueText } from "../domain/knockout-draw";
@@ -10,12 +11,18 @@ import { backgroundTranslations } from "./background-messages";
 import { themeTranslations } from "./theme-messages";
 import { interactionTranslations } from "./interaction-messages";
 import { collectionTranslations } from "./collection-messages";
+import { scheduleTranslations } from "./schedule-messages";
+import { competitionTranslations } from "./competition-messages";
+import { golTranslations } from "./gol-messages";
+import { swissTranslations } from "./swiss-messages";
+import { aggregateLadderTranslations } from "./aggregate-ladder-messages";
 import {
   advancementTranslations,
   diagnosticTemplates,
 } from "./diagnostic-templates";
 
 const messages = {
+  ...customFieldTranslations,
   ...diagnosticTranslations,
   ...advancementTranslations,
   ...tabularTranslations,
@@ -24,6 +31,11 @@ const messages = {
   ...themeTranslations,
   ...interactionTranslations,
   ...collectionTranslations,
+  ...scheduleTranslations,
+  ...competitionTranslations,
+  ...golTranslations,
+  ...swissTranslations,
+  ...aggregateLadderTranslations,
 };
 const terms: Record<string, string> = {
   meetings: "تعداد دیدارها",
@@ -75,7 +87,7 @@ const groupCodes =
     " ",
   );
 const knockoutCodes =
-  "stage format schema duplicatePot duplicateEntrant unknownEntrant duplicateRestriction source count invalidEntrants emptyPot incompletePots missingRegion missingOrganization protectedCount protectedConflict byeConflict fixedConflict capacity infeasible exhausted separationField duplicateSeparation separationRound separationCapacity separationFixed separationInfeasible losersFormat duplicateLosersSeparation losersRound losersFixed losersCapacity losersInfeasible duplicateFinalsSeparation finalsFormat resetUnavailable thirdPlaceUnavailable finalsCapacity thirdPlaceFixed finalsInfeasible missingLocation distanceFinals distanceFixed distanceInfeasible venueMissing venueTarget venueLocation venueFixed venueNoPosition venueInfeasible venueDistance".split(
+  "stage format schema duplicatePot duplicateEntrant unknownEntrant duplicateRestriction source count invalidEntrants emptyPot incompletePots missingRegion missingOrganization protectedCount protectedConflict byeConflict fixedConflict fixedAssignment capacity infeasible exhausted separationField duplicateSeparation separationRound separationCapacity separationFixed separationInfeasible losersFormat duplicateLosersSeparation losersRound losersFixed losersCapacity losersInfeasible duplicateFinalsSeparation finalsFormat resetUnavailable thirdPlaceUnavailable finalsCapacity thirdPlaceFixed finalsInfeasible missingLocation distanceFinals distanceFixed distanceInfeasible venueMissing venueTarget venueLocation venueFixed venueNoPosition venueInfeasible venueDistance".split(
     " ",
   );
 

@@ -1,4 +1,12 @@
 export const collectionTranslations: Record<string, string> = {
+  "Provide exactly one movement rule for every division.":
+    "برای هر دسته دقیقاً یک قاعده جابه‌جایی تعیین کنید.",
+  "Choose a different destination division for every nonzero movement rule.":
+    "برای هر جابه‌جایی غیرصفر یک دسته مقصد متفاوت انتخاب کنید.",
+  "Each new league division needs between 2 and 128 entrants.":
+    "هر دسته لیگ جدید به ۲ تا ۱۲۸ شرکت‌کننده نیاز دارد.",
+  "Link a source competition in every division to supply its sport and rules.":
+    "در هر دسته یک مسابقات منبع برای ورزش و قواعد پیوند دهید.",
   "Duplicate event identifier.": "شناسه رویداد تکراری است.",
   "An event participant references a missing division.":
     "یکی از شرکت‌کنندگان رویداد به دسته‌ای ناموجود اشاره دارد.",

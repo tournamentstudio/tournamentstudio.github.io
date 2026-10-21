@@ -1,0 +1,32 @@
+import type { Tournament } from "../domain/types";
+import { hasMatchEvidence } from "../engine/match-evidence";
+import { canonicalize } from "../security/codec";
+import { compareRevisions } from "../sharing/history-diff";
+
+export function restorationImpact(current: Tournament, target: Tournament) {
+  const changes = compareRevisions(current, target, true);
+  const structural =
+    canonicalize(current.rules) !== canonicalize(target.rules) ||
+    canonicalize(current.stages) !== canonicalize(target.stages);
+  const affected = current.matches.filter((match) => {
+    if (!hasMatchEvidence(match)) return false;
+    const old = target.matches.find((entry) => entry.id === match.id);
+    if (!old || structural) return true;
+    const competitionState = (entry: typeof match) => ({
+      result: entry.result ?? null,
+      slots: entry.slots,
+      status: entry.status,
+      liveScores: entry.liveScores ?? null,
+      aggregateProgress: entry.aggregateProgress ?? null,
+      hands: entry.hands ?? [],
+      golState: entry.golState ?? null,
+      concealedPosition: entry.private?.concealedPosition ?? null,
+      timing: entry.metadata.timing ?? null,
+    });
+    return (
+      canonicalize(competitionState(match)) !==
+      canonicalize(competitionState(old))
+    );
+  });
+  return { changes, affected };
+}

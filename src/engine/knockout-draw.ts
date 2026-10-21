@@ -151,6 +151,14 @@ export function previewKnockoutDraw(
   }
   const count = participantIds.length;
   const size = 2 ** Math.ceil(Math.log2(count));
+  for (const placement of draw.fixedSlots ?? []) {
+    if (!participantIds.includes(placement.participantId) || placement.slot > size || fixedSlots.some((existing) =>
+      (existing.participantId === placement.participantId && existing.slot !== placement.slot) ||
+      (existing.slot === placement.slot && existing.participantId !== placement.participantId),
+    )) add("fixedAssignment");
+    else if (!fixedSlots.some((existing) => existing.participantId === placement.participantId)) fixedSlots.push({ ...placement });
+  }
+  if (issueDetails.length) return result();
   const positions = seedPositions(size);
   const preferredSlot = new Map(
     participantIds.map((id, index) => [id, positions.indexOf(index + 1)]),

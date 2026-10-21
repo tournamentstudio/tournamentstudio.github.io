@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -19,6 +19,11 @@ import {
 } from "../domain/types";
 import { formats, generateStage } from "../engine";
 import { applySport, sports } from "../sports";
+import {
+  loadSportPresets,
+  applySavedSportPreset,
+  type SavedSport,
+} from "../sports/library";
 import { themes, getThemesForSport, getTheme, themeStyle } from "../themes";
 import { GameIdentity, ThemeMotif } from "../themes/ThemeMotif";
 import "./game-experience.css";
@@ -41,6 +46,12 @@ export function CreateFlow({
 }) {
   const { t, locale } = useI18n();
   const [step, setStep] = useState(0);
+  const stepHeading = useRef<HTMLHeadingElement>(null),
+    previousStep = useRef(step);
+  useEffect(() => {
+    if (previousStep.current !== step) stepHeading.current?.focus();
+    previousStep.current = step;
+  }, [step]);
   const [title, setTitle] = useState("");
   const [sport, setSport] = useState(template ?? "generic");
   const [format, setFormat] = useState<FormatId>(
@@ -75,6 +86,21 @@ export function CreateFlow({
   const [secret, setSecret] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>();
+  const [savedSports, setSavedSports] = useState<SavedSport[]>([]);
+  const [savedSportId, setSavedSportId] = useState("");
+  useEffect(() => {
+    let active = true;
+    void loadSportPresets()
+      .then((items) => {
+        if (active) setSavedSports(items);
+      })
+      .catch((error) => {
+        if (active) setError(error);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
   const participantNames = names
     .split(/\r?\n/)
     .map((x) => x.trim())
@@ -126,6 +152,10 @@ export function CreateFlow({
         createTournament(title.trim(), participants, format, sport),
         sport,
       );
+      const savedSport = savedSports.find(
+        (preset) => preset.id === savedSportId,
+      );
+      if (savedSport) doc = applySavedSportPreset(doc, savedSport);
       doc.locale = locale;
       doc.theme.preset = theme;
       if (initialPlan) {
@@ -264,7 +294,7 @@ export function CreateFlow({
         </aside>
         <section className="create-form panel">
           <div className="section-heading">
-            <h2>
+            <h2 ref={stepHeading} tabIndex={-1}>
               {
                 [
                   t("First, the essentials.", "ابتدا اطلاعات اصلی."),
@@ -291,6 +321,7 @@ export function CreateFlow({
                 <select
                   value={sport}
                   onChange={(e) => {
+                    setSavedSportId("");
                     setSport(e.target.value);
                     setTheme(
                       sports.find((preset) => preset.id === e.target.value)
@@ -305,6 +336,32 @@ export function CreateFlow({
                   ))}
                 </select>
               </Field>
+              {savedSports.length > 0 && (
+                <Field label={t("Saved sport preset", "الگوی ورزشی ذخیره شده")}>
+                  <select
+                    value={savedSportId}
+                    onChange={(event) => {
+                      setSavedSportId(event.target.value);
+                      const preset = savedSports.find(
+                        (item) => item.id === event.target.value,
+                      );
+                      if (preset) {
+                        setSport(preset.sport);
+                        setTheme(preset.theme.preset);
+                      }
+                    }}
+                  >
+                    <option value="">
+                      {t("Use activity defaults", "پیش‌فرض‌های فعالیت")}
+                    </option>
+                    {savedSports.map((preset) => (
+                      <option key={preset.id} value={preset.id}>
+                        {preset.name}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
               <div className="creation-note">
                 <Trophy size={25} />
                 <p>

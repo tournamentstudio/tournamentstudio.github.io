@@ -8,15 +8,28 @@ import {
 } from "lucide-react";
 import { uid } from "../domain/types";
 import type { ScheduleSettings } from "../domain/types";
-import { validateTournament } from "../domain/validate";
+import { hasMatchEvidence } from "../engine/match-evidence";
 import { assignedKnockoutVenue } from "../engine/venue-distance";
-import { autoSchedule, detectConflicts, estimateDuration } from "../scheduling";
+import {
+  autoSchedule,
+  detectConflicts,
+  estimateDuration,
+  scheduleHasStarted,
+} from "../scheduling";
 import { exportCalendar, exportCSV } from "../export";
 import { Field, Notice, ErrorText } from "../components/ui";
 import { Pagination, usePagination } from "../components/Pagination";
 import { useI18n, generatedMatchLabel, localizedDiagnostic } from "../i18n";
 import type { EditorProps } from "./Participants";
 import { ResourceLocationFields } from "./ResourceLocationFields";
+import { ScheduleTimeline } from "../scheduling/ScheduleTimeline";
+import { LegScheduleEditor } from "../scheduling/LegScheduleEditor";
+import { legCount } from "../scheduling/legs";
+import { TravelPlanner } from "../scheduling/TravelPlanner";
+import {
+  updateDirectBooking,
+  updateScheduleSettings,
+} from "../scheduling/settings";
 
 export function Schedule({ tournament: doc, onChange }: EditorProps) {
   const { t, locale } = useI18n();
@@ -77,9 +90,12 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
     JSON.stringify([doc.id, search]),
   );
   const referencedResources = new Set([
-    ...doc.matches.flatMap((match) =>
-      match.resourceId ? [match.resourceId] : [],
-    ),
+    ...doc.matches.flatMap((match) => [
+      ...(match.resourceId ? [match.resourceId] : []),
+      ...(match.legSchedule ?? []).flatMap((b) =>
+        b.resourceId ? [b.resourceId] : [],
+      ),
+    ]),
     ...doc.stages.flatMap((stage) =>
       stage.config.knockoutDraw?.version === 6
         ? stage.config.knockoutDraw.venueRules.map((rule) => rule.resourceId)
@@ -106,7 +122,7 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
             "منبعی که در قرعه یا دیدار ذخیره‌شده استفاده شده قابل حذف نیست.",
           ),
         );
-      const next = validateTournament({ ...doc, schedule: settings });
+      const next = updateScheduleSettings(doc, settings);
       onChange(
         generate ? autoSchedule(next, locale) : next,
         generate
@@ -114,6 +130,18 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
           : t("Save schedule settings", "ذخیره تنظیمات برنامه"),
       );
       setDraft(undefined);
+      setError(undefined);
+    } catch (e) {
+      setError(e);
+    }
+  }
+  function updateBooking(
+    id: string,
+    change: { scheduledAt?: string; resourceId?: string },
+    description: string,
+  ) {
+    try {
+      onChange(updateDirectBooking(doc, id, change), description);
       setError(undefined);
     } catch (e) {
       setError(e);
@@ -151,6 +179,9 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
         </div>
       </div>
       <ErrorText error={error} />
+      <ScheduleTimeline tournament={doc} onChange={onChange} />
+      <LegScheduleEditor tournament={doc} onChange={onChange} />
+      <TravelPlanner tournament={doc} onChange={onChange} />
       {stale && (
         <Notice danger>
           <p>
@@ -204,6 +235,7 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
                 min={1}
                 max={1440}
                 value={settings.matchMinutes}
+                disabled={scheduleHasStarted(doc)}
                 onChange={(e) =>
                   setSettings({
                     ...settings,
@@ -227,6 +259,14 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
               />
             </Field>
           </div>
+          {scheduleHasStarted(doc) && (
+            <p className="muted">
+              {t(
+                "Default match duration is locked after play starts. Review individual unfinished bookings instead.",
+                "پس از شروع بازی، مدت پیش‌فرض دیدار قفل می‌شود. رزروهای ناتمام را جداگانه بررسی کنید.",
+              )}
+            </p>
+          )}
           <div className="section-heading">
             <h4>
               {t("Courts, tables, or rooms", "زمین‌ها، میزها یا اتاق‌ها")}
@@ -361,11 +401,19 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
             type="submit"
             value="generate"
             className="button primary full-width"
-            disabled={stale}
+            disabled={stale || scheduleHasStarted(doc)}
           >
             <WandSparkles size={16} />
             {t("Generate schedule", "ساخت برنامه")}
           </button>
+          {scheduleHasStarted(doc) && (
+            <Notice>
+              {t(
+                "Automatic regeneration is locked after play starts. Edit unfinished bookings or review a propagated delay.",
+                "پس از شروع بازی، ساخت دوباره خودکار قفل می‌شود. رزروهای ناتمام را ویرایش کنید یا انتشار تأخیر را بررسی کنید.",
+              )}
+            </Notice>
+          )}
           <p className="muted">
             {t(
               "Unknown future opponents are reserved conservatively. The estimate excludes delays and cannot predict future dynamic rounds.",
@@ -445,6 +493,14 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
                   <tr key={m.id}>
                     <td>
                       <b>{generatedMatchLabel(m, locale)}</b>
+                      {legCount(doc, m) > 1 && (
+                        <small>
+                          {t(
+                            "Edit each leg in Aggregate leg bookings above.",
+                            "هر بازی را در زمان‌بندی رفت‌وبرگشت بالا ویرایش کنید.",
+                          )}
+                        </small>
+                      )}
                       <small className="table-subline">
                         {m.slots
                           .map(
@@ -458,6 +514,7 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
                     <td>
                       <input
                         type="datetime-local"
+                        disabled={legCount(doc, m) > 1 || hasMatchEvidence(m)}
                         aria-label={`${t("Start", "شروع")} ${generatedMatchLabel(m, locale)}`}
                         value={
                           m.scheduledAt
@@ -471,13 +528,13 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
                             : ""
                         }
                         onChange={(e) => {
-                          const next = structuredClone(doc);
-                          next.matches.find((x) => x.id === m.id)!.scheduledAt =
-                            e.target.value
-                              ? new Date(e.target.value).toISOString()
-                              : undefined;
-                          onChange(
-                            next,
+                          updateBooking(
+                            m.id,
+                            {
+                              scheduledAt: e.target.value
+                                ? new Date(e.target.value).toISOString()
+                                : undefined,
+                            },
                             t("Reschedule match", "زمان‌بندی دوباره دیدار"),
                           );
                         }}
@@ -488,16 +545,19 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
                         aria-label={`${t("Resource", "منبع")} ${generatedMatchLabel(m, locale)}`}
                         value={m.resourceId ?? ""}
                         disabled={
+                          legCount(doc, m) > 1 ||
+                          hasMatchEvidence(m) ||
                           !!assignedKnockoutVenue(
                             doc.stages.find((stage) => stage.id === m.stageId)!,
                             m,
                           )
                         }
                         onChange={(e) => {
-                          const next = structuredClone(doc);
-                          next.matches.find((x) => x.id === m.id)!.resourceId =
-                            e.target.value || undefined;
-                          onChange(next, t("Assign resource", "تخصیص منبع"));
+                          updateBooking(
+                            m.id,
+                            { resourceId: e.target.value || undefined },
+                            t("Assign resource", "تخصیص منبع"),
+                          );
                         }}
                       >
                         <option value="">

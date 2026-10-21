@@ -4,6 +4,7 @@ import { generateStage } from "../engine";
 import { layoutBracket } from "./Bracket";
 import {
   bracketConnectorPath,
+  compressVisibleDepths,
   supportsCenteredBracket,
   transformBracketLayout,
 } from "./bracket-layouts";
@@ -22,6 +23,19 @@ function graph(count: number, double = false) {
 }
 
 describe("bracket display geometry", () => {
+  it("compresses hidden round columns without changing source references", () => {
+    const original = graph(16);
+    const visible = original.nodes.filter((node) => node.match.round > 1);
+    const compressed = compressVisibleDepths(
+      layoutBracket(visible.map((node) => node.match)),
+    );
+    expect(Math.min(...compressed.nodes.map((node) => node.depth))).toBe(0);
+    expect(compressed.width).toBeLessThan(original.width);
+    expect(compressed.nodes.map((node) => node.match)).toEqual(
+      visible.map((node) => node.match),
+    );
+    expect(supportsCenteredBracket(compressed)).toBe(false);
+  });
   it.each([3, 7, 13, 31, 127, 512])(
     "keeps %i entrants visible without overlapping cards in each layout",
     (count) => {

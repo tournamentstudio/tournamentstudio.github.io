@@ -1,6 +1,7 @@
 import type { Match, Stage } from "../domain/types";
 import { entrant, loser, newMatch, winner } from "./formats";
 import { seedPositions } from "./random";
+import { classificationMatches, doubleClassificationMatches } from "./placements";
 
 export function singleElimination(
   stage: Stage,
@@ -61,7 +62,8 @@ export function singleElimination(
   const final = rounds.at(-1)![0];
   if (!double) {
     final.metadata.championship = true;
-    if (stage.config.thirdPlace && rounds.length > 1) {
+    if (stage.config.fullPlacement) matches.push(...classificationMatches(stage, rounds));
+    else if (stage.config.thirdPlace && rounds.length > 1) {
       const semifinals = rounds.at(-2)!;
       matches.push(
         newMatch(
@@ -149,6 +151,7 @@ export function singleElimination(
         },
       ),
     );
+  if (stage.config.fullPlacement) matches.push(...doubleClassificationMatches(stage, matches));
   return matches;
 }
 
