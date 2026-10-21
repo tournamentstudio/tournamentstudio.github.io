@@ -155,57 +155,84 @@
   color: var(--muted);
   font-size: 0.85rem;
 }
-.draw-losers-restrictions {
+.draw-losers-restrictions,
+.draw-finals-restrictions {
   border-block-start: 1px solid var(--line);
   padding-block-start: 12px;
 }
-.draw-losers-fields {
+.draw-losers-fields,
+.draw-finals-fields {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
   gap: 12px;
 }
-.draw-losers-fields .draw-restriction {
+.draw-losers-fields .draw-restriction,
+.draw-finals-fields .draw-restriction {
   min-width: 0;
 }
 .draw-losers-fields .field {
   margin: 0;
 }
-.draw-losers-preview {
+.draw-losers-preview,
+.draw-finals-preview {
   margin-block: 20px;
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: #f4f7ef;
 }
-.draw-losers-preview h4 {
+.draw-losers-preview h4,
+.draw-finals-preview h4 {
   margin-block: 0 12px;
 }
-.draw-losers-preview ul {
+.draw-losers-preview ul,
+.draw-finals-preview ul {
   padding: 0;
   margin: 0;
   list-style: none;
   display: grid;
   gap: 12px;
 }
-.draw-losers-preview li {
+.draw-losers-preview li,
+.draw-finals-preview li {
   display: flex;
   gap: 10px;
   align-items: start;
   line-height: 1.8;
 }
-.draw-losers-preview li > svg {
+.draw-losers-preview li > svg,
+.draw-finals-preview li > svg {
   flex-shrink: 0;
   margin-block-start: 5px;
 }
-.draw-losers-preview li > span {
+.draw-losers-preview li > span,
+.draw-finals-preview li > span {
   display: grid;
   overflow-wrap: anywhere;
   min-width: 0;
 }
-.draw-losers-preview p {
+.draw-losers-preview p,
+.draw-finals-preview p {
   color: var(--muted);
   font-size: 0.85rem;
   margin-block-end: 0;
+}
+.draw-finals-fields h5 {
+  font-size: 0.95rem;
+  margin-block: 0 12px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.draw-finals-fields .check-row {
+  align-items: start;
+  font-size: 0.85rem;
+}
+.draw-finals-fields .check-row input {
+  margin-block-start: 3px;
+}
+.draw-finals-fields .check-row span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .draw-separation-preview {
   display: grid;

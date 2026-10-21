@@ -37,6 +37,34 @@ export const knockoutDrawSchema = z.discriminatedUnion("version", [
         .max(2),
     })
     .strict(),
+  z
+    .object({
+      version: z.literal(4),
+      ...drawFields,
+      separation: z.array(separationRule).max(2),
+      losersSeparation: z
+        .array(
+          separationRule.extend({
+            throughRound: z.number().int().min(1).max(16),
+          }),
+        )
+        .max(2),
+      finalsSeparation: z
+        .array(
+          z
+            .object({
+              field: z.enum(["region", "organization"]),
+              targets: z
+                .array(z.enum(["grand-final", "reset", "third-place"]))
+                .min(1)
+                .max(3),
+            })
+            .strict(),
+        )
+        .min(1)
+        .max(2),
+    })
+    .strict(),
 ]);
 
 const messages: Record<string, [string, string]> = {
@@ -169,6 +197,34 @@ const messages: Record<string, [string, string]> = {
     "No draw protects every possible losers-bracket path while satisfying the other rules, fixed slots, and BYE recipients. Change these rules or the draw order.",
     "هیچ قرعه‌ای تمام مسیرهای ممکن جدول بازندگان را همراه با سایر قوانین، جایگاه‌های ثابت و دریافت‌کنندگان استراحت محافظت نمی‌کند. این قوانین یا ترتیب قرعه را تغییر دهید.",
   ],
+  duplicateFinalsSeparation: [
+    "Choose each finals separation field and target only once.",
+    "هر ویژگی و هدف جداسازی فینال را فقط یک بار انتخاب کنید.",
+  ],
+  finalsFormat: [
+    "Grand-final and reset separation require double elimination.",
+    "جداسازی فینال بزرگ و بازی تکرار فقط برای دوحذفی است.",
+  ],
+  resetUnavailable: [
+    "Enable the grand-final reset before protecting its entrants.",
+    "پیش از جداسازی شرکت‌کنندگان بازی تکرار، تکرار فینال بزرگ را فعال کنید.",
+  ],
+  thirdPlaceUnavailable: [
+    "Third-place separation requires single elimination with the third-place match enabled and at least three active entrants.",
+    "جداسازی رده‌بندی به تک‌حذفی، فعال بودن بازی رده‌بندی و دست‌کم سه شرکت‌کننده فعال نیاز دارد.",
+  ],
+  finalsCapacity: [
+    "{0} has {1} entrants. Any two entrants can reach the grand final and an enabled reset, so protecting either match requires a different label for every entrant. Seeding cannot prevent this meeting.",
+    "{0} دارای {1} شرکت‌کننده است. هر دو شرکت‌کننده می‌توانند به فینال بزرگ و بازی تکرار فعال‌شده برسند؛ بنابراین جداسازی هرکدام به ویژگی متفاوت برای همه شرکت‌کنندگان نیاز دارد. سیدبندی نمی‌تواند مانع این رویارویی شود.",
+  ],
+  thirdPlaceFixed: [
+    "Fixed positions allow entrants with the same {0} to meet in the third-place match. Change the source slots, protected seeds, or third-place rule.",
+    "جایگاه‌های ثابت اجازه می‌دهند شرکت‌کنندگان با {0} یکسان در بازی رده‌بندی روبه‌روی هم قرار گیرند. جایگاه‌های مبدا، سیدهای محافظت‌شده یا قانون رده‌بندی را تغییر دهید.",
+  ],
+  finalsInfeasible: [
+    "No draw protects the selected final or third-place matches while satisfying the other rules, fixed slots, and BYE recipients. Change the rules or draw order.",
+    "هیچ قرعه‌ای بازی‌های فینال یا رده‌بندی انتخاب‌شده را همراه با سایر قوانین، جایگاه‌های ثابت و دریافت‌کنندگان استراحت محافظت نمی‌کند. قوانین یا ترتیب قرعه را تغییر دهید.",
+  ],
 };
 
 export function knockoutDrawIssueText(
@@ -184,7 +240,7 @@ export function knockoutDrawIssueText(
     let value = issue.values[Number(index)] ?? "";
     if (
       locale === "fa" &&
-      ["separationFixed", "losersFixed"].includes(issue.code)
+      ["separationFixed", "losersFixed", "thirdPlaceFixed"].includes(issue.code)
     )
       value =
         value === "region"
@@ -231,14 +287,39 @@ export function knockoutDrawErrors(
     if (separation.some((item) => !restrictions.includes(item.field)))
       add("separationField");
   }
-  if (parsed.data.version === 3) {
-    if (stage.format !== "double-elimination") add("losersFormat");
+  if (parsed.data.version === 3 || parsed.data.version === 4) {
     const { losersSeparation } = parsed.data;
+    if (losersSeparation.length && stage.format !== "double-elimination")
+      add("losersFormat");
     if (
       new Set(losersSeparation.map((item) => item.field)).size !==
       losersSeparation.length
     )
       add("duplicateLosersSeparation");
+  }
+  if (parsed.data.version === 4) {
+    const { finalsSeparation } = parsed.data;
+    if (
+      new Set(finalsSeparation.map((rule) => rule.field)).size !==
+        finalsSeparation.length ||
+      finalsSeparation.some(
+        (rule) => new Set(rule.targets).size !== rule.targets.length,
+      )
+    )
+      add("duplicateFinalsSeparation");
+    const targets = new Set(finalsSeparation.flatMap((rule) => rule.targets));
+    if (
+      (targets.has("grand-final") || targets.has("reset")) &&
+      stage.format !== "double-elimination"
+    )
+      add("finalsFormat");
+    if (targets.has("reset") && !stage.config.grandFinalReset)
+      add("resetUnavailable");
+    if (
+      targets.has("third-place") &&
+      (stage.format !== "single-elimination" || !stage.config.thirdPlace)
+    )
+      add("thirdPlaceUnavailable");
   }
   return issues;
 }

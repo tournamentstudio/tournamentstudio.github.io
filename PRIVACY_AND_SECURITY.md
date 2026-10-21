@@ -48,7 +48,7 @@ The projection removes:
 - Tournament private metadata, correction recovery data, description, and audit history.
 - Unrecognized stage configuration extensions and arbitrary match or stage metadata.
 
-Typed structural fields needed for brackets and standings are retained. These include qualification rules, pot membership and names, group and knockout restrictions, winners and losers separation round limits, protected seed counts, graph coordinates and bounded numeric participant points adjustments. Names, region, organization, logos, scores, fixtures, public scheduling, and presentation scenes remain visible.
+Typed structural fields needed for brackets and standings are retained. These include qualification rules, pot membership and names, group and knockout restrictions, winners and losers separation round limits, final and third-place separation targets, protected seed counts, graph coordinates and bounded numeric participant points adjustments. Names, region, organization, logos, scores, fixtures, public scheduling, and presentation scenes remain visible.
 
 Presentation text is intentionally public. A secret typed into a team name, tournament title, sponsor name, or announcement is public content. The application cannot infer that an organizer has placed a secret in a public field.
 

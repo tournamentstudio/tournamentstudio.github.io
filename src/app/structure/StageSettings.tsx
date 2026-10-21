@@ -44,6 +44,19 @@ export function StageSettings({
   onRefreshEntrants,
 }: Props) {
   const { t, locale } = useI18n();
+  const draw = stage.config.knockoutDraw;
+  const finals = draw?.version === 4 ? draw.finalsSeparation : [];
+  const hasLosers =
+    !!draw && "losersSeparation" in draw && !!draw.losersSeparation.length;
+  const hasFinals = finals.some((rule) =>
+    rule.targets.some(
+      (target) => target === "grand-final" || target === "reset",
+    ),
+  );
+  const hasReset = finals.some((rule) => rule.targets.includes("reset"));
+  const hasThirdPlace = finals.some((rule) =>
+    rule.targets.includes("third-place"),
+  );
   return (
     <aside className="structure-settings">
       <div className="section-heading">
@@ -109,8 +122,9 @@ export function StageSettings({
                 (!!stage.config.knockoutDraw &&
                   format.id !== "single-elimination" &&
                   format.id !== "double-elimination") ||
-                (stage.config.knockoutDraw?.version === 3 &&
-                  format.id !== "double-elimination")
+                ((hasLosers || hasFinals) &&
+                  format.id !== "double-elimination") ||
+                (hasThirdPlace && format.id !== "single-elimination")
               }
             >
               {formatName(format.id, locale)}
@@ -134,11 +148,19 @@ export function StageSettings({
           )}
         </p>
       )}
-      {stage.config.knockoutDraw?.version === 3 && (
+      {(hasLosers || hasFinals) && (
         <p className="muted">
           {t(
-            "To switch to single elimination, turn off both losers bracket protections, preview the draw, and apply the rules first.",
-            "برای تغییر به تک‌حذفی، ابتدا هر دو محدودیت جدول بازندگان را غیرفعال کنید، پیش‌نمایش قرعه را ببینید و قوانین را اعمال کنید.",
+            "To switch to single elimination, turn off losers, grand-final, and reset protections, preview the draw, and apply the rules first.",
+            "برای تغییر به تک‌حذفی، ابتدا محدودیت‌های بازندگان، فینال بزرگ و فینال تکراری را غیرفعال کنید، پیش‌نمایش قرعه را ببینید و قوانین را اعمال کنید.",
+          )}
+        </p>
+      )}
+      {hasThirdPlace && (
+        <p className="muted">
+          {t(
+            "To change format or disable the third-place match, turn off its protections, preview the draw, and apply the rules first.",
+            "برای تغییر قالب یا غیرفعال کردن دیدار رده‌بندی، ابتدا محدودیت‌های آن را غیرفعال کنید، پیش‌نمایش قرعه را ببینید و قوانین را اعمال کنید.",
           )}
         </p>
       )}
@@ -217,7 +239,7 @@ export function StageSettings({
       <label className="check-row">
         <input
           type="checkbox"
-          disabled={locked || hasDraft}
+          disabled={locked || hasDraft || hasThirdPlace}
           checked={stage.config.thirdPlace}
           onChange={(event) =>
             onEdit({
@@ -230,7 +252,7 @@ export function StageSettings({
       <label className="check-row">
         <input
           type="checkbox"
-          disabled={locked || hasDraft}
+          disabled={locked || hasDraft || hasReset}
           checked={stage.config.grandFinalReset}
           onChange={(event) =>
             onEdit({
@@ -243,6 +265,14 @@ export function StageSettings({
         />
         {t("Double elimination final reset", "بازنشانی فینال دو حذفی")}
       </label>
+      {hasReset && (
+        <p className="muted">
+          {t(
+            "To disable the reset final, turn off its protections, preview the draw, and apply the rules first.",
+            "برای غیرفعال کردن فینال تکراری، ابتدا محدودیت‌های آن را غیرفعال کنید، پیش‌نمایش قرعه را ببینید و قوانین را اعمال کنید.",
+          )}
+        </p>
+      )}
       <div className="form-stack">
         <button
           className="button primary"

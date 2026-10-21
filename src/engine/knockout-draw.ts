@@ -17,11 +17,17 @@ import {
 } from "./knockout-separation";
 import { losersEncounterRounds } from "./losers-encounters";
 import { solveKnockoutPaths } from "./knockout-paths";
+import {
+  canMeetInThirdPlace,
+  prepareFinalsSeparation,
+  type ThirdPlaceRule,
+} from "./finals-separation";
 
 export const KNOCKOUT_DRAW_ALGORITHM = "knockout-matching-fnv1a-mulberry32-v1";
 export const KNOCKOUT_SEPARATION_ALGORITHM =
   "knockout-subtrees-fnv1a-mulberry32-v2";
 export const KNOCKOUT_PATHS_ALGORITHM = "knockout-paths-fnv1a-mulberry32-v3";
+export const KNOCKOUT_FINALS_ALGORITHM = "knockout-finals-fnv1a-mulberry32-v4";
 export const KNOCKOUT_DRAW_NODE_LIMIT = 100000;
 export const KNOCKOUT_DRAW_WORK_LIMIT = 20000000;
 
@@ -47,11 +53,13 @@ export function previewKnockoutDraw(
     issues: issueDetails.map((issue) => knockoutDrawIssueText(issue)),
     issueDetails,
     algorithm: stage?.config.knockoutDraw
-      ? stage.config.knockoutDraw.version === 3
-        ? KNOCKOUT_PATHS_ALGORITHM
-        : stage.config.knockoutDraw.version === 2
-          ? KNOCKOUT_SEPARATION_ALGORITHM
-          : KNOCKOUT_DRAW_ALGORITHM
+      ? stage.config.knockoutDraw.version === 4
+        ? KNOCKOUT_FINALS_ALGORITHM
+        : stage.config.knockoutDraw.version === 3
+          ? KNOCKOUT_PATHS_ALGORITHM
+          : stage.config.knockoutDraw.version === 2
+            ? KNOCKOUT_SEPARATION_ALGORITHM
+            : KNOCKOUT_DRAW_ALGORITHM
       : DRAW_ALGORITHM,
     exploredNodes,
   });
@@ -170,7 +178,7 @@ export function previewKnockoutDraw(
       if (total > playingMatches)
         add("capacity", name, String(total), String(playingMatches));
   }
-  if (draw.version === 3)
+  if (draw.version === 3 || draw.version === 4)
     for (const rule of draw.losersSeparation) {
       if (
         !draw.restrictions.includes(rule.field) &&
@@ -197,6 +205,25 @@ export function previewKnockoutDraw(
           if (total > 1) add("losersCapacity", name, String(total));
       }
     }
+  let thirdPlaceSeparation: ThirdPlaceRule[] = [];
+  if (draw.version === 4) {
+    const prepared = prepareFinalsSeparation(
+      draw,
+      participantIds,
+      participants,
+    );
+    thirdPlaceSeparation = prepared.thirdPlace;
+    issueDetails.push(
+      ...prepared.issues.filter(
+        (issue) =>
+          !issueDetails.some(
+            (existing) =>
+              existing.code === issue.code &&
+              JSON.stringify(existing.values) === JSON.stringify(issue.values),
+          ),
+      ),
+    );
+  }
   if (issueDetails.length) return result();
   const separation: SeparationRule[] = [];
   if (draw.version !== 1) {
@@ -288,8 +315,10 @@ export function previewKnockoutDraw(
       }
     }
     if (issueDetails.length) return result();
-    if (draw.version === 3) {
-      const encounters = losersEncounterRounds(stage, size);
+    if (draw.version === 3 || draw.version === 4) {
+      const encounters = draw.losersSeparation.length
+        ? losersEncounterRounds(stage, size)
+        : new Uint8Array(0);
       const losersSeparation: SeparationRule[] = draw.losersSeparation.map(
         (rule) => ({
           ...rule,
@@ -328,6 +357,32 @@ export function previewKnockoutDraw(
             break;
           }
         }
+      if (draw.version === 4)
+        for (const rule of draw.finalsSeparation) {
+          if (!rule.targets.includes("third-place")) continue;
+          let conflict = false;
+          for (let first = 0; first < fixed.length && !conflict; first++)
+            for (let second = first + 1; second < fixed.length; second++) {
+              const [a, slotA] = fixed[first];
+              const [b, slotB] = fixed[second];
+              if (
+                normalizeDrawLabel(participants.get(a)![rule.field]!) ===
+                  normalizeDrawLabel(participants.get(b)![rule.field]!) &&
+                canMeetInThirdPlace(
+                  size,
+                  byes,
+                  a,
+                  Math.floor(slotA / 2),
+                  b,
+                  Math.floor(slotB / 2),
+                )
+              ) {
+                conflict = true;
+                break;
+              }
+            }
+          if (conflict) add("thirdPlaceFixed", rule.field);
+        }
       if (issueDetails.length) return result();
       const solved = solveKnockoutPaths({
         slots,
@@ -337,6 +392,7 @@ export function previewKnockoutDraw(
         preferredSlot,
         separation,
         losersSeparation,
+        ...(draw.version === 4 ? { thirdPlaceSeparation } : {}),
         encounters,
         seed: stage.config.seed,
         nodeLimit: KNOCKOUT_DRAW_NODE_LIMIT,
@@ -344,7 +400,13 @@ export function previewKnockoutDraw(
       });
       exploredNodes = solved.exploredNodes;
       if (!solved.slots) {
-        add(solved.exhausted ? "exhausted" : "losersInfeasible");
+        add(
+          solved.exhausted
+            ? "exhausted"
+            : draw.version === 4
+              ? "finalsInfeasible"
+              : "losersInfeasible",
+        );
         return result();
       }
       return result(solved.slots);

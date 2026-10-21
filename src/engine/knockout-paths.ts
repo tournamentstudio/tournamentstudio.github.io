@@ -1,5 +1,6 @@
 import { shuffle } from "./random";
 import type { SeparationRule } from "./knockout-separation";
+import { canMeetInThirdPlace, type ThirdPlaceRule } from "./finals-separation";
 
 export interface KnockoutPathsInput {
   slots: (string | null)[];
@@ -9,6 +10,7 @@ export interface KnockoutPathsInput {
   preferredSlot: Map<string, number>;
   separation: SeparationRule[];
   losersSeparation: SeparationRule[];
+  thirdPlaceSeparation?: ThirdPlaceRule[];
   encounters: Uint8Array;
   seed: string;
   nodeLimit: number;
@@ -59,6 +61,11 @@ export function solveKnockoutPaths(input: KnockoutPathsInput): {
           ];
         return round > 0 && round <= rule.throughRound;
       },
+    })),
+    ...(input.thirdPlaceSeparation ?? []).map((rule) => ({
+      labels: rule.labels,
+      conflicts: (a: string, first: number, b: string, second: number) =>
+        canMeetInThirdPlace(size, byes, a, first, b, second),
     })),
   ].map((rule) => {
     const members = new Map<string, number[]>();

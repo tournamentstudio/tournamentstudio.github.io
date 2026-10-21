@@ -131,6 +131,11 @@ type KnockoutDrawFields = {
   restrictions: ("region" | "organization")[];
   protectedSeeds: number;
 };
+export type KnockoutFinalTarget = "grand-final" | "reset" | "third-place";
+export type KnockoutFinalRule = {
+  field: "region" | "organization";
+  targets: KnockoutFinalTarget[];
+};
 export type KnockoutDrawConfig = KnockoutDrawFields &
   (
     | { version: 1 }
@@ -151,6 +156,18 @@ export type KnockoutDrawConfig = KnockoutDrawFields &
           field: "region" | "organization";
           throughRound: number;
         }[];
+      }
+    | {
+        version: 4;
+        separation: {
+          field: "region" | "organization";
+          throughRound: number;
+        }[];
+        losersSeparation: {
+          field: "region" | "organization";
+          throughRound: number;
+        }[];
+        finalsSeparation: KnockoutFinalRule[];
       }
   );
 export interface KnockoutDrawPreview {

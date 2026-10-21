@@ -19,6 +19,8 @@ import { KnockoutRestrictions } from "./KnockoutRestrictions";
 import { KnockoutSeparationPreview } from "./KnockoutSeparationPreview";
 import { KnockoutLosersRestrictions } from "./KnockoutLosersRestrictions";
 import { KnockoutLosersPreview } from "./KnockoutLosersPreview";
+import { KnockoutFinalsRestrictions } from "./KnockoutFinalsRestrictions";
+import { KnockoutFinalsPreview } from "./KnockoutFinalsPreview";
 import "./draw.css";
 
 interface Props {
@@ -152,12 +154,12 @@ export function KnockoutDrawEditor({
             <Notice>
               {stage.format === "double-elimination"
                 ? t(
-                    "Choose winners and losers bracket protections independently. Grand finals, reset finals, and placement matches are excluded. Pots restrict opening matches only. No rule is relaxed automatically.",
-                    "جداسازی جدول برندگان و بازندگان را مستقل انتخاب کنید. فینال بزرگ، فینال تکراری و دیدارهای تعیین رتبه مستثنا هستند. گلدان‌ها فقط دیدارهای آغازین را محدود می‌کنند. هیچ قانونی خودکار کنار گذاشته نمی‌شود.",
+                    "Choose winners, losers, grand-final, and reset protections independently. Pots restrict opening matches only. No rule is relaxed automatically.",
+                    "جداسازی جدول برندگان، بازندگان، فینال بزرگ و فینال تکراری را مستقل انتخاب کنید. گلدان‌ها فقط دیدارهای آغازین را محدود می‌کنند. هیچ قانونی خودکار کنار گذاشته نمی‌شود.",
                   )
                 : t(
-                    "Separation applies through each selected winners round. Placement matches are excluded. Pots restrict opening matches only. No rule is relaxed automatically.",
-                    "جداسازی تا پایان دور انتخاب‌شده جدول برندگان اعمال می‌شود. دیدارهای تعیین رتبه مستثنا هستند. گلدان‌ها فقط دیدارهای آغازین را محدود می‌کنند. هیچ قانونی خودکار کنار گذاشته نمی‌شود.",
+                    "Choose winners-round and third-place protections independently. Pots restrict opening matches only. No rule is relaxed automatically.",
+                    "جداسازی دورهای برندگان و دیدار رده‌بندی را مستقل انتخاب کنید. گلدان‌ها فقط دیدارهای آغازین را محدود می‌کنند. هیچ قانونی خودکار کنار گذاشته نمی‌شود.",
                   )}
             </Notice>
             <p className="muted">
@@ -186,6 +188,12 @@ export function KnockoutDrawEditor({
                 onChange={onDraft}
               />
             )}
+            <KnockoutFinalsRestrictions
+              value={value}
+              stage={stage}
+              entrantCount={entrants.length}
+              onChange={onDraft}
+            />
             <p className="muted">
               {t(
                 "Round numbers count every bracket round, including rounds with BYEs. Preview validates the current entrant labels; changing labels after a draw does not move saved matches.",
@@ -284,6 +292,7 @@ export function KnockoutDrawEditor({
             participants={names}
           />
           <KnockoutLosersPreview value={value} preview={currentPreview} />
+          <KnockoutFinalsPreview value={value} preview={currentPreview} />
           <div className="draw-group-grid">
             {Array.from(
               { length: currentPreview.slots.length / 2 },

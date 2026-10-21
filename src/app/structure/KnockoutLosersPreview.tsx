@@ -13,7 +13,13 @@ export function KnockoutLosersPreview({
   preview: KnockoutDrawPreview;
 }) {
   const { t, locale } = useI18n();
-  if (value?.version !== 3 || !preview.ready) return null;
+  if (
+    !value ||
+    !("losersSeparation" in value) ||
+    !value.losersSeparation.length ||
+    !preview.ready
+  )
+    return null;
   return (
     <section
       className="draw-losers-preview"
@@ -54,8 +60,8 @@ export function KnockoutLosersPreview({
       </ul>
       <p>
         {t(
-          "No pair with the same protected label can meet in these losers rounds, regardless of who wins earlier matches. Grand finals, reset finals, and placement matches are excluded.",
-          "هیچ دو شرکت‌کننده با نام منطقه یا سازمان یکسان مشمول محدودیت، فارغ از برنده دیدارهای قبلی، در این دورهای بازندگان روبه‌رو نمی‌شوند. فینال بزرگ، فینال تکراری و دیدارهای تعیین رتبه مستثنا هستند.",
+          "No pair with the same protected label can meet in these losers rounds, regardless of who wins earlier matches. Final and placement protections are configured separately.",
+          "هیچ دو شرکت‌کننده با نام منطقه یا سازمان یکسان مشمول محدودیت، فارغ از برنده دیدارهای قبلی، در این دورهای بازندگان روبه‌رو نمی‌شوند. جداسازی فینال و دیدار رده‌بندی جداگانه تنظیم می‌شود.",
         )}
       </p>
     </section>

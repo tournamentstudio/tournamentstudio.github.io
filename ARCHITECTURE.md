@@ -263,11 +263,35 @@ the same winners section can have different lower paths. Version 3 retains the
 100,000-node and 20,000,000-work limits, with unknown feasibility reported when
 the search budget is exhausted.
 
+Version 4 adds independent `finalsSeparation` targets for grand finals, enabled
+resets and the single-elimination third-place match. Any pair of entrants can
+reach a double-elimination grand final together. The lower finalist can then
+win and trigger a reset with that same pair. Guaranteeing separation for either
+match therefore requires every active entrant's normalized label to be unique.
+Duplicate labels are rejected before search; seeding cannot solve that conflict.
+
+Third place receives the losers of opposite semifinals. Every entrant can lose
+a semifinal in brackets of eight or more slots; in a four-slot bracket, an
+opening BYE recipient cannot lose that semifinal. Two eligible entrants can
+meet in third place exactly when they start in opposite halves. The v4 solver
+therefore keeps matching labels in one half, accounting for BYE eligibility.
+With three entrants, only one semifinal has a loser and third place has no
+two-entrant encounter. Two-entrant stages have no third-place match to protect.
+
+`knockout-finals-fnv1a-mulberry32-v4` extends the joint path search with this
+third-place pair constraint. Pots, pins, BYE entitlements and winner sections
+remain active in the same search. A third-place rule can conflict with a winners
+rule that requires matching affiliations to occupy opposite halves. The same
+node/work budgets apply; exhaustion returns unknown feasibility and no slots.
+Final policies require their actual stage format and enabled match settings.
+There is no generator for other placement matches and no final-time reseeding.
+
 The editor follows the same draft, preview, revalidation and draw-lock rules as
-group drawing, with a per-field preview of protected winners sections and
-verified lower-round policies. The optional configuration stays absent in
-legacy documents, and version 1 and 2
-documents retain their original draw algorithm and hashes.
+group drawing, with previews of protected winners sections, lower rounds and
+selected final targets. The optional configuration stays absent in legacy
+documents, and version 1, 2 and 3 documents retain their original draw algorithm
+and hashes. Removing final targets restores the earliest rule version that
+still represents the remaining settings.
 Public projections validate it explicitly, and recipes remap its pot entrant
 references instead of leaking or reusing original participant identifiers.
 
@@ -397,7 +421,14 @@ round robin is capped at 128 entrants. Large SVG layouts, long lists, and repeat
 whole-document saves need further browser performance measurement; the engine
 limit does not imply equal responsiveness on every device.
 
-The production bundle also passed `npx playwright test`: 36 cases across
+On the same machine, a later v4 draw check at 512 entrants measured 8.80 ms for a
+grand-final/reset preview with distinct labels, 13.69 ms for third place with
+repeated labels, and 16.43 ms with third-place, opening restrictions and two pots
+together. The respective generation calls took 10.99, 16.76 and 19.11 ms. A
+duplicate-label final rule was rejected in 0.57 ms before search. These Node
+measurements cover preview and generation, not scoring every match or rendering.
+
+The initial production bundle also passed `npx playwright test`: 36 cases across
 Chromium, Firefox, and WebKit in 1.5 minutes. Each browser ran 12 workflows,
 including a completed 13-entrant bracket, private and public transfers, encrypted
 recovery, correction confirmation, same-profile live presentation, Persian

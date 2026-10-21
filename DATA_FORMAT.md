@@ -226,6 +226,47 @@ Removing the last losers rule restores version 2 when later winners rules
 remain, or version 1 otherwise. Existing version 1 and 2 configurations retain
 their representation and deterministic behavior.
 
+Version 4 adds final and third-place targets:
+
+```json
+{
+  "version": 4,
+  "pots": [],
+  "restrictions": [],
+  "protectedSeeds": 0,
+  "separation": [],
+  "losersSeparation": [],
+  "finalsSeparation": [
+    { "field": "region", "targets": ["grand-final", "reset"] },
+    { "field": "organization", "targets": ["grand-final"] }
+  ]
+}
+```
+
+`finalsSeparation` contains one or two unique fields. Each rule has a nonempty
+array of unique targets from `grand-final`, `reset` and `third-place`. Final
+fields are independent of first-round and later-round fields. `separation`
+and `losersSeparation` retain their earlier meanings and may both be empty.
+Unknown keys, fields, targets and duplicate entries are rejected.
+
+`grand-final` requires double elimination. `reset` also requires the stage's
+`grandFinalReset` setting. Either target requires a nonempty, distinct normalized
+label for every active entrant in the selected field. Any pair can reach both
+finals, so a duplicate cannot be resolved by moving entrants in the draw.
+
+`third-place` requires single elimination with `thirdPlace` enabled and at least
+three active entrants. The solver prevents matching affiliations among the two
+possible semifinal losers from occupying opposite halves. An opening BYE in a
+four-slot bracket has no loser and is excluded from this encounter test. With
+three entrants the third-place match has no pair to separate. No other placement
+matches are implied. Both selected fields still require labels for all entrants.
+
+Version 4 uses `knockout-finals-fnv1a-mulberry32-v4`. All rules, pots, fixed slots
+and BYE entitlements apply together. Removing all final targets restores version
+3 if lower rules remain, version 2 if only later winners rules remain, or version
+1 otherwise. Versions 1, 2 and 3 retain their canonical representation and draw
+algorithms; they are not silently upgraded.
+
 `protectedSeeds` pins the first specified number of entrants in the selected
 draw order to their standard seed positions. For a field of `n`, the bracket
 has the next power-of-two slot count and exactly `slotCount - n` BYEs. The first
@@ -238,8 +279,8 @@ The optional object is validated on import and retained by public snapshots,
 files, encrypted backups and updates. Pot names and affiliations remain public.
 Recipes remap its pot references to new entrant IDs, without carrying names or
 affiliations. Absent fields remain absent in older documents and their hashes.
-Unknown rule versions are rejected. A release that supports only versions 1 and 2
-rejects version 3 instead of ignoring its losers rules. Earlier releases
+Unknown rule versions are rejected. A release that supports only versions 1 to 3
+rejects version 4 instead of ignoring its final rules. Earlier releases
 from before knockout-rule validation may preserve the entire object as extension
 data without enforcing it; update the app before regenerating a shared tournament
 that uses it.

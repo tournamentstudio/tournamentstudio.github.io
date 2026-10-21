@@ -17,6 +17,7 @@ The application is a static React and TypeScript bundle hosted on GitHub Pages. 
 - Multiple qualifying sources, exact cross-group bracket slots, and wildcard comparisons by totals, per-match values or retained group results.
 - Seed pots for Groups and GSL, with previewed balanced draws and limits on entrants from the same region or organization.
 - Knockout pot draws with region and organization separation through selected winners and losers rounds, protected seed positions, explicit qualifier slots, and a BYE preview.
+- Independent grand-final, reset and third-place separation checks, with a preview that rejects impossible combinations before matches are generated.
 - Multi-entrant free-for-all heats, time trials, Grand Prix points, gauntlets, and an adjacent-challenge ladder.
 - Schedules with multiple resources, rest periods, referee conflicts, and CSV or calendar export.
 
@@ -113,7 +114,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for contracts and [FEATURES.md](FEATURES.
 
 There is no hosted registration service, account system, payment processing, cloud storage, or cross-device live collaboration. Registration and scorekeeper responses are explicit file exchanges.
 
-Some requested capabilities remain unfinished: geographic distance rules, two-legged ties, full season/event records, prediction brackets, XLSX, slide-file exports, advanced broadcast overlays, and parts of the theme editor. Affiliation separation does not cover grand finals, resets or placement matches. Counts are capped at 512 entrants and 20,000 matches per document. A 512-entrant round robin exceeds the match cap; the limit is not a promise that every format supports the same field size.
+Some requested capabilities remain unfinished: geographic distance rules, full placement brackets, two-legged ties, full season/event records, prediction brackets, XLSX, slide-file exports, advanced broadcast overlays, and parts of the theme editor. Protecting a grand final or reset requires distinct affiliation labels for all entrants because any pair can reach those matches. Placement separation covers the single-elimination third-place match. Counts are capped at 512 entrants and 20,000 matches per document. A 512-entrant round robin exceeds the match cap; the limit is not a promise that every format supports the same field size.
 
 Modern Chromium, Firefox, and WebKit are the browser targets. PWA installation and persistent-storage permission vary by browser. A secure context is required for crypto and service workers; HTTPS and localhost qualify.
 

@@ -14,7 +14,7 @@ export function KnockoutLosersRestrictions({
 }) {
   const { t, locale } = useI18n();
   const rounds = Math.max(0, 2 * Math.log2(bracketSize) - 2);
-  const rules = value.version === 3 ? value.losersSeparation : [];
+  const rules = "losersSeparation" in value ? value.losersSeparation : [];
   return (
     <section
       className="draw-losers-restrictions"

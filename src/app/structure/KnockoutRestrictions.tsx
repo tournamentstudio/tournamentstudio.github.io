@@ -35,7 +35,7 @@ export function KnockoutRestrictions({
       withSeparationRules(
         value,
         next,
-        value.version === 3 ? value.losersSeparation : [],
+        "losersSeparation" in value ? value.losersSeparation : [],
         restrictions,
       ),
     );
