@@ -8,6 +8,8 @@ import {
 } from "../domain/types";
 import { Presentation, sceneLabel, sceneTypes } from "./Presentation";
 import "./presentation.css";
+import { SceneTargetEditor } from "./SceneTargetEditor";
+import { OverlayEditor } from "./OverlayEditor";
 export function PresentationStudio({
   tournament,
   onChange,
@@ -133,6 +135,12 @@ export function PresentationStudio({
           "متن نماها و نام حامیان عمومی است. اطلاعات خصوصی را در یادداشت برگزارکننده بنویسید. نمای نمایش پس از ذخیره، در همین پروفایل مرورگر به‌روز می‌شود. در OBS پنجره مرورگر را ضبط کنید؛ منبع مرورگر جداگانه حافظه مستقل دارد.",
         )}
       </p>
+      <OverlayEditor
+        tournament={tournament}
+        value={settings.overlay}
+        onChange={(overlay) => update({ overlay })}
+        locale={locale}
+      />
       <div className="scene-list">
         {settings.scenes.map((scene, i) => (
           <article className="scene-editor" key={scene.id}>
@@ -151,12 +159,33 @@ export function PresentationStudio({
                 {t("Duration in seconds", "مدت به ثانیه")}
                 <input
                   type="number"
-                  min={3}
+                  min={
+                    scene.type === "introduction"
+                      ? Math.max(
+                          3,
+                          (scene.participantIds?.length ??
+                            tournament.participants.filter(
+                              (p) => p.status === "active",
+                            ).length) * 2,
+                        )
+                      : 3
+                  }
                   max={3600}
                   value={scene.duration}
                   onChange={(e) =>
                     edit(scene.id, {
-                      duration: Math.min(3600, Math.max(3, +e.target.value)),
+                      duration: Math.min(
+                        3600,
+                        Math.max(
+                          scene.type === "introduction"
+                            ? (scene.participantIds?.length ??
+                                tournament.participants.filter(
+                                  (p) => p.status === "active",
+                                ).length) * 2
+                            : 3,
+                          +e.target.value,
+                        ),
+                      ),
                     })
                   }
                 />
@@ -168,6 +197,10 @@ export function PresentationStudio({
                 "break",
                 "countdown",
                 "champion",
+                "introduction",
+                "semifinal",
+                "final-intro",
+                "trophy",
               ].includes(scene.type) && (
                 <label className="scene-text-label">
                   {scene.type === "countdown"
@@ -184,6 +217,12 @@ export function PresentationStudio({
                   />
                 </label>
               )}
+              <SceneTargetEditor
+                tournament={tournament}
+                scene={scene}
+                onChange={(changes) => edit(scene.id, changes)}
+                locale={locale}
+              />
             </div>
             <div className="scene-actions">
               <button
@@ -237,7 +276,21 @@ export function PresentationStudio({
             update({
               scenes: [
                 ...settings.scenes,
-                { id: uid(), type, title: "", text: "", duration: 15 },
+                {
+                  id: uid(),
+                  type,
+                  title: "",
+                  text: "",
+                  duration:
+                    type === "introduction"
+                      ? Math.max(
+                          15,
+                          tournament.participants.filter(
+                            (p) => p.status === "active",
+                          ).length * 2,
+                        )
+                      : 15,
+                },
               ],
             })
           }

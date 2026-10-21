@@ -137,3 +137,13 @@ Waiting-list decisions, eligibility, payment status, availability and organizer 
 XLSX imports are limited to 2 MiB compressed and 8 MiB expanded across at most 100 ZIP entries. The reader refuses formulas, external relationships, macros, embedded objects, XML entities, unsafe paths and duplicate cells. Imported workbooks never execute code or load external links.
 
 A revision archive can contain private information deleted from the current tournament but retained in an older revision. The same archive encryption protects every included revision. Public visual exports use a fresh public projection and do not include the private revision table.
+
+## Events, personal designs and QR transfers
+
+A protected event encrypts its directory, labels and configuration. Linking an already-protected tournament requires a protected event and an explicit unlock. Event lock clears the open collection and temporary tournament credentials. Decrypted data remains accessible to someone using the unlocked session. Public event projections remove private descriptions and adjustment reasons, and use the tournament public projection for every linked competition. Private event exports always require a separate secret; encrypted imports retain protection.
+
+Saved personal themes are a separate, unencrypted local library. They contain no tournament names or results. Images are excluded by default, because an uploaded logo or background can itself contain private information.
+
+An embedded-key link protects the ciphertext against modification but carries its own secret. It is not recipient identity verification. Multipart checksums detect corruption and mixed frames, not trusted authorship. QR scanning does not grant permission to save data: preview and import remain explicit. Camera access starts only after a user action and stops on completion, close or unmount. PNG/JPEG QR inputs are limited to 3 MiB each, 4,096 pixels per dimension and 16 million pixels; image batches are limited to 128 images and 32 MiB.
+
+Backup reminders run only while the app is open. They do not make unattended files or send notifications to other services. A recorded backup identifies the exported revision, so a slow older export cannot hide a reminder for later edits.

@@ -1,3 +1,8 @@
+import type {
+  AdvancedSceneType,
+  OverlaySettings,
+  ThemeDesign,
+} from "./display-options";
 export type Locale = "en" | "fa";
 export type TournamentStatus =
   | "draft"
@@ -332,6 +337,7 @@ export interface Rules {
   };
 }
 export interface ThemeSettings {
+  design?: ThemeDesign;
   preset: string;
   accent?: string;
   background?: string;
@@ -347,6 +353,7 @@ export interface ThemeSettings {
   reducedMotion: boolean;
 }
 export type SceneType =
+  | AdvancedSceneType
   | "title"
   | "participants"
   | "bracket"
@@ -365,6 +372,8 @@ export type SceneType =
   | "podium"
   | "qr";
 export interface Scene {
+  participantIds?: string[];
+  matchId?: string;
   id: string;
   type: SceneType;
   title: string;
@@ -372,6 +381,7 @@ export interface Scene {
   text: string;
 }
 export interface PresentationSettings {
+  overlay?: OverlaySettings;
   scenes: Scene[];
   aspect: "16:9" | "4:3" | "9:16";
   autoRotate: boolean;

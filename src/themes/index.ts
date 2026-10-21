@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { designStyle } from "./design";
 import type { ThemeSettings } from "../domain/types";
 import { validateRasterAsset } from "../security/codec";
 import { identityFor, type ThemeIdentity } from "./identities";
@@ -865,6 +866,7 @@ export function themeStyle(settings: ThemeSettings): CSSProperties {
     "--theme-image": settings.backgroundImage
       ? `url("${settings.backgroundImage}")`
       : "none",
+    ...designStyle(settings.design),
   } as CSSProperties;
 }
 /** Only decoded raster assets enter themes. SVG and remote URLs are excluded. */

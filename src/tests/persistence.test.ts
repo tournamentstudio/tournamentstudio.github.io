@@ -127,7 +127,7 @@ describe("transactional persistence", () => {
   it("keeps backup and favorite flags outside competition revisions", async () => {
     const document = await repository.create(fixture());
     await repository.favorite(document.id, true);
-    await repository.markBackup(document.id);
+    await repository.markBackup(document.id, document.revision);
     const entry = (await repository.list())[0];
     expect(entry.favorite).toBe(true);
     expect(entry.lastBackupAt).toBeTruthy();

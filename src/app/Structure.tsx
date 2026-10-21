@@ -35,6 +35,9 @@ import {
   withKnockoutDraw,
 } from "./structure/KnockoutDrawEditor";
 import { stageProtection } from "./structure/helpers";
+import { ManualGroupEditor } from "./structure/ManualGroupEditor";
+import { ManualQualifierEditor } from "./structure/ManualQualifierEditor";
+import { SwissRestrictionsEditor } from "./structure/SwissRestrictionsEditor";
 import "./structure/structure.css";
 
 export function Structure({ tournament: doc, onChange }: EditorProps) {
@@ -531,6 +534,33 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
                 onApply={applyConnections}
                 onDiscard={() => clearDraft(stage.id)}
               />
+              {!!stage.sources.length && (
+                <ManualQualifierEditor
+                  key={`qualifiers-${stage.id}`}
+                  tournament={doc}
+                  stage={stage}
+                  locked={!!protection?.locked || dirty || anyDrawDirty}
+                  onEdit={editStage}
+                />
+              )}
+              {(stage.format === "groups" || stage.format === "gsl") && (
+                <ManualGroupEditor
+                  key={`manual-groups-${stage.id}`}
+                  tournament={doc}
+                  stage={stage}
+                  locked={!!protection?.locked || dirty || anyDrawDirty}
+                  onEdit={editStage}
+                />
+              )}
+              {stage.format === "swiss" && (
+                <SwissRestrictionsEditor
+                  key={`swiss-${stage.id}`}
+                  tournament={doc}
+                  stage={stage}
+                  locked={!!protection?.locked || dirty || anyDrawDirty}
+                  onEdit={editStage}
+                />
+              )}
               {(stage.format === "groups" || stage.format === "gsl") && (
                 <GroupDrawEditor
                   key={`draw-${stage.id}`}

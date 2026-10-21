@@ -1,0 +1,101 @@
+.theme-advanced-controls,
+.personal-theme-library {
+  margin-block: 28px;
+  display: grid;
+  gap: 18px;
+}
+.personal-theme-library p {
+  line-height: 1.8;
+  max-width: 900px;
+}
+.personal-theme-list {
+  display: grid;
+  gap: 12px;
+}
+.personal-theme-list article {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  border: 1px solid #71857544;
+  border-radius: 14px;
+  padding: 16px;
+}
+.personal-theme-list article > div:first-child {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+.personal-theme-list strong {
+  overflow-wrap: anywhere;
+}
+.personal-theme-list small {
+  color: #607066;
+}
+.personal-theme-list .theme-tools {
+  margin: 0;
+  flex-wrap: wrap;
+}
+.theme-advanced-controls .theme-fields {
+  align-items: start;
+}
+.theme-advanced-controls input[type="color"] {
+  min-height: 44px;
+  width: 100%;
+}
+.themed {
+  font-weight: var(--theme-weight, inherit);
+}
+.themed.theme-preview h3,
+.themed .presentation-title-scene,
+.themed .presentation-prose {
+  text-align: var(--theme-align, inherit);
+}
+.themed .theme-preview-card,
+.themed .match-grid-card,
+.themed .scoreboard-entrant {
+  background: var(--theme-card-fill, var(--theme-card));
+  box-shadow: var(--theme-card-shadow, var(--theme-shadow));
+  backdrop-filter: var(--theme-card-backdrop, none);
+}
+.themed .match-card {
+  fill: var(--theme-card-fill, var(--theme-card));
+  filter: var(--theme-card-filter, none);
+}
+.themed .standings-table td,
+.themed .standings-table th {
+  border-bottom-width: var(--theme-table-border, 1px);
+}
+.themed .standings-table tbody tr:nth-child(even) {
+  background: var(--theme-table-stripe, transparent);
+}
+.themed .bracket-winner {
+  filter: var(--theme-winner-filter, none);
+  text-decoration: var(--theme-winner-decoration, none);
+}
+.themed .scene-fade {
+  animation-duration: var(--theme-animation, 0.35s);
+}
+.themed .bracket-team,
+.themed .theme-preview-card,
+.themed .scoreboard-entrant {
+  font-weight: var(--theme-weight, 500);
+}
+.themed h1,
+.themed h2,
+.themed h3 {
+  font-weight: var(--theme-weight, 700);
+}
+@media (max-width: 600px) {
+  .personal-theme-list .theme-tools {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+  .personal-theme-list .theme-tools button {
+    flex: 1 1 80px;
+    white-space: normal;
+    line-height: 1.6;
+  }
+}

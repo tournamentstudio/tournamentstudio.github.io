@@ -1,3 +1,4 @@
+@import "./display-design.css";
 .themed {
   color: var(--theme-fg);
   background: var(--theme-bg);

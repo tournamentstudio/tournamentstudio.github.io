@@ -42,8 +42,15 @@ import { Modal, Field, ErrorText, Confirm, Notice } from "../components/ui";
 import { Home } from "./Home";
 import { CreateFlow } from "./CreateFlow";
 import { FormatAdvisor } from "./FormatAdvisor";
+import type { AdvisorPlan } from "./advisor-plans";
 import { StorageHealth, resetIdentity } from "./StorageHealth";
 import { ImportCenter } from "./ImportCenter";
+import { BackupReminderNotice } from "./BackupReminders";
+const Collections = lazy(() =>
+  import("../collections/Collections").then((m) => ({
+    default: m.Collections,
+  })),
+);
 const Workspace = lazy(() =>
   import("./Workspace").then((m) => ({ default: m.Workspace })),
 );
@@ -99,6 +106,7 @@ function Studio({
   const [importCode, setImportCode] = useState("");
   const [template, setTemplate] = useState<string>();
   const [initialFormat, setInitialFormat] = useState<FormatId>();
+  const [initialPlan, setInitialPlan] = useState<AdvisorPlan>();
   const [purgeId, setPurgeId] = useState<string>();
   const [online, setOnline] = useState(navigator.onLine);
   const [help, setHelp] = useState(false);
@@ -544,9 +552,10 @@ function Studio({
       if (epoch === sessionEpoch.current) setError(e);
     }
   }
-  function start(templateId?: string, formatId?: FormatId) {
+  function start(templateId?: string, formatId?: FormatId, plan?: AdvisorPlan) {
     setTemplate(templateId);
     setInitialFormat(formatId);
+    setInitialPlan(plan);
     go("/create");
   }
   const renderedEpoch = sessionEpoch.current;
@@ -609,6 +618,7 @@ function Studio({
           {[
             ["/", "Home", "خانه", LayoutDashboard],
             ["/library", "My tournaments", "مسابقات من", Layers3],
+            ["/events", "Events & seasons", "رویدادها و فصل‌ها", Layers3],
             ["/advisor", "Format advisor", "راهنمای قالب", Compass],
             ["/storage", "Storage health", "وضعیت ذخیره‌سازی", HardDrive],
           ].map(([path, en, fa, Icon]) => {
@@ -755,6 +765,10 @@ function Studio({
         </header>
         <main id="main-content" tabIndex={-1}>
           <ErrorText error={error} />
+          <BackupReminderNotice
+            entries={entries}
+            onOpenStorage={() => go("/storage")}
+          />
           {!!saveError && (
             <div className="save-error-banner">
               <ErrorText error={saveError} />
@@ -819,13 +833,22 @@ function Studio({
               <CreateFlow
                 template={template}
                 initialFormat={initialFormat}
+                initialPlan={initialPlan}
                 onCancel={() => go("/")}
                 onCreate={create}
               />
             ) : route === "/advisor" ? (
-              <FormatAdvisor onCreate={(format) => start(undefined, format)} />
+              <FormatAdvisor
+                onCreate={(format, plan) => start(undefined, format, plan)}
+              />
             ) : route === "/storage" ? (
               <StorageHealth entries={entries} />
+            ) : route === "/events" ? (
+              <Collections
+                tournaments={entries}
+                onOpenTournament={(entryId) => go(`/t/${entryId}`)}
+                onLibraryChanged={refresh}
+              />
             ) : (
               <Home
                 entries={entries}

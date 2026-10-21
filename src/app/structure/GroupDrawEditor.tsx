@@ -15,6 +15,7 @@ import {
 import { Field, Notice } from "../../components/ui";
 import { useI18n } from "../../i18n";
 import { DrawPots } from "./DrawPots";
+import { DrawCeremony } from "./DrawCeremony";
 import "./draw.css";
 
 interface Props {
@@ -311,6 +312,15 @@ export function GroupDrawEditor({
               ? t("Draw preview is ready", "پیش‌نمایش قرعه آماده است")
               : t("Draw needs attention", "قرعه به بررسی نیاز دارد")}
           </h4>
+          {currentPreview.ready && (
+            <DrawCeremony
+              tournament={tournament}
+              groups={currentPreview.groups}
+              mode="group"
+              seed={stage.config.seed}
+              algorithm={currentPreview.algorithm}
+            />
+          )}
           {currentPreview.issueDetails.map((issue, index) => (
             <Notice danger key={index}>
               {groupDrawIssueText(issue, locale)}

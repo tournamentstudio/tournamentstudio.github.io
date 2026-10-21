@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   CalendarDays,
   Plus,
@@ -13,6 +13,7 @@ import { assignedKnockoutVenue } from "../engine/venue-distance";
 import { autoSchedule, detectConflicts, estimateDuration } from "../scheduling";
 import { exportCalendar, exportCSV } from "../export";
 import { Field, Notice, ErrorText } from "../components/ui";
+import { Pagination, usePagination } from "../components/Pagination";
 import { useI18n, generatedMatchLabel, localizedDiagnostic } from "../i18n";
 import type { EditorProps } from "./Participants";
 import { ResourceLocationFields } from "./ResourceLocationFields";
@@ -29,8 +30,52 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
     setDraft({ revision: draft?.revision ?? doc.revision, settings: value });
   }
   const [error, setError] = useState<unknown>();
-  const conflicts = detectConflicts(doc, locale);
-  const estimate = estimateDuration({ ...doc, schedule: settings });
+  const [search, setSearch] = useState("");
+  const participants = useMemo(
+    () =>
+      new Map(
+        doc.participants.map((participant) => [participant.id, participant]),
+      ),
+    [doc.participants],
+  );
+  const resources = useMemo(
+    () =>
+      new Map(
+        doc.schedule.resources.map((resource) => [resource.id, resource]),
+      ),
+    [doc.schedule.resources],
+  );
+  const conflicts = useMemo(() => detectConflicts(doc, locale), [doc, locale]);
+  const estimate = useMemo(
+    () => estimateDuration({ ...doc, schedule: settings }),
+    [doc, settings],
+  );
+  const filtered = useMemo(() => {
+    const query = search.normalize("NFKC").toLocaleLowerCase(locale);
+    return doc.matches
+      .filter((match) => match.status !== "bye" && match.status !== "canceled")
+      .filter(
+        (match) =>
+          !query ||
+          [
+            generatedMatchLabel(match, locale),
+            match.referee ?? "",
+            resources.get(match.resourceId ?? "")?.name ?? "",
+            ...match.slots.map(
+              (slot) => participants.get(slot.participantId ?? "")?.name ?? "",
+            ),
+          ].some((value) =>
+            value.normalize("NFKC").toLocaleLowerCase(locale).includes(query),
+          ),
+      )
+      .sort((a, b) =>
+        (a.scheduledAt ?? "z").localeCompare(b.scheduledAt ?? "z"),
+      );
+  }, [doc.matches, search, locale, resources, participants]);
+  const { visible, pagination } = usePagination(
+    filtered,
+    JSON.stringify([doc.id, search]),
+  );
   const referencedResources = new Set([
     ...doc.matches.flatMap((match) =>
       match.resourceId ? [match.resourceId] : [],
@@ -378,6 +423,13 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
               )}
             </Notice>
           )}
+          <Field label={t("Search schedule", "جستجوی برنامه")}>
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </Field>
           <div className="table-scroll">
             <table className="data-table">
               <thead>
@@ -389,116 +441,108 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
                 </tr>
               </thead>
               <tbody>
-                {[...doc.matches]
-                  .filter((m) => m.status !== "bye" && m.status !== "canceled")
-                  .sort((a, b) =>
-                    (a.scheduledAt ?? "z").localeCompare(b.scheduledAt ?? "z"),
-                  )
-                  .map((m) => (
-                    <tr key={m.id}>
-                      <td>
-                        <b>{generatedMatchLabel(m, locale)}</b>
-                        <small className="table-subline">
-                          {m.slots
-                            .map(
-                              (s) =>
-                                doc.participants.find(
-                                  (p) => p.id === s.participantId,
-                                )?.name ?? t("TBD", "نامشخص"),
-                            )
-                            .join(" / ")}
-                        </small>
-                      </td>
-                      <td>
-                        <input
-                          type="datetime-local"
-                          aria-label={`${t("Start", "شروع")} ${generatedMatchLabel(m, locale)}`}
-                          value={
-                            m.scheduledAt
-                              ? new Date(
-                                  new Date(m.scheduledAt).getTime() -
-                                    new Date(
-                                      m.scheduledAt,
-                                    ).getTimezoneOffset() *
-                                      60000,
-                                )
-                                  .toISOString()
-                                  .slice(0, 16)
-                              : ""
-                          }
-                          onChange={(e) => {
-                            const next = structuredClone(doc);
-                            next.matches.find(
-                              (x) => x.id === m.id,
-                            )!.scheduledAt = e.target.value
+                {visible.map((m) => (
+                  <tr key={m.id}>
+                    <td>
+                      <b>{generatedMatchLabel(m, locale)}</b>
+                      <small className="table-subline">
+                        {m.slots
+                          .map(
+                            (s) =>
+                              participants.get(s.participantId ?? "")?.name ??
+                              t("TBD", "نامشخص"),
+                          )
+                          .join(" / ")}
+                      </small>
+                    </td>
+                    <td>
+                      <input
+                        type="datetime-local"
+                        aria-label={`${t("Start", "شروع")} ${generatedMatchLabel(m, locale)}`}
+                        value={
+                          m.scheduledAt
+                            ? new Date(
+                                new Date(m.scheduledAt).getTime() -
+                                  new Date(m.scheduledAt).getTimezoneOffset() *
+                                    60000,
+                              )
+                                .toISOString()
+                                .slice(0, 16)
+                            : ""
+                        }
+                        onChange={(e) => {
+                          const next = structuredClone(doc);
+                          next.matches.find((x) => x.id === m.id)!.scheduledAt =
+                            e.target.value
                               ? new Date(e.target.value).toISOString()
                               : undefined;
-                            onChange(
-                              next,
-                              t("Reschedule match", "زمان‌بندی دوباره دیدار"),
-                            );
-                          }}
-                        />
-                      </td>
-                      <td>
-                        <select
-                          aria-label={`${t("Resource", "منبع")} ${generatedMatchLabel(m, locale)}`}
-                          value={m.resourceId ?? ""}
-                          disabled={
-                            !!assignedKnockoutVenue(
-                              doc.stages.find(
-                                (stage) => stage.id === m.stageId,
-                              )!,
-                              m,
-                            )
-                          }
-                          onChange={(e) => {
-                            const next = structuredClone(doc);
-                            next.matches.find(
-                              (x) => x.id === m.id,
-                            )!.resourceId = e.target.value || undefined;
-                            onChange(next, t("Assign resource", "تخصیص منبع"));
-                          }}
-                        >
-                          <option value="">
-                            {t("Unassigned", "تعیین نشده")}
+                          onChange(
+                            next,
+                            t("Reschedule match", "زمان‌بندی دوباره دیدار"),
+                          );
+                        }}
+                      />
+                    </td>
+                    <td>
+                      <select
+                        aria-label={`${t("Resource", "منبع")} ${generatedMatchLabel(m, locale)}`}
+                        value={m.resourceId ?? ""}
+                        disabled={
+                          !!assignedKnockoutVenue(
+                            doc.stages.find((stage) => stage.id === m.stageId)!,
+                            m,
+                          )
+                        }
+                        onChange={(e) => {
+                          const next = structuredClone(doc);
+                          next.matches.find((x) => x.id === m.id)!.resourceId =
+                            e.target.value || undefined;
+                          onChange(next, t("Assign resource", "تخصیص منبع"));
+                        }}
+                      >
+                        <option value="">
+                          {t("Unassigned", "تعیین نشده")}
+                        </option>
+                        {doc.schedule.resources.map((r) => (
+                          <option key={r.id} value={r.id}>
+                            {r.name}
                           </option>
-                          {doc.schedule.resources.map((r) => (
-                            <option key={r.id} value={r.id}>
-                              {r.name}
-                            </option>
-                          ))}
-                        </select>
-                        {assignedKnockoutVenue(
-                          doc.stages.find((stage) => stage.id === m.stageId)!,
-                          m,
-                        ) && (
-                          <small className="table-subline">
-                            {t(
-                              "Venue fixed by draw rules. Reset the unplayed stage to change it.",
-                              "محل با قوانین قرعه ثابت شده است. برای تغییر، مرحله بازی‌نشده را بازنشانی کنید.",
-                            )}
-                          </small>
-                        )}
-                      </td>
-                      <td>
-                        <input
-                          aria-label={`${t("Referee", "داور")} ${generatedMatchLabel(m, locale)}`}
-                          defaultValue={m.referee ?? ""}
-                          onBlur={(e) => {
-                            if (e.target.value === (m.referee ?? "")) return;
-                            const next = structuredClone(doc);
-                            next.matches.find((x) => x.id === m.id)!.referee =
-                              e.target.value;
-                            onChange(next, t("Assign referee", "تعیین داور"));
-                          }}
-                        />
-                      </td>
-                    </tr>
-                  ))}
+                        ))}
+                      </select>
+                      {assignedKnockoutVenue(
+                        doc.stages.find((stage) => stage.id === m.stageId)!,
+                        m,
+                      ) && (
+                        <small className="table-subline">
+                          {t(
+                            "Venue fixed by draw rules. Reset the unplayed stage to change it.",
+                            "محل با قوانین قرعه ثابت شده است. برای تغییر، مرحله بازی‌نشده را بازنشانی کنید.",
+                          )}
+                        </small>
+                      )}
+                    </td>
+                    <td>
+                      <input
+                        aria-label={`${t("Referee", "داور")} ${generatedMatchLabel(m, locale)}`}
+                        defaultValue={m.referee ?? ""}
+                        onBlur={(e) => {
+                          if (e.target.value === (m.referee ?? "")) return;
+                          const next = structuredClone(doc);
+                          next.matches.find((x) => x.id === m.id)!.referee =
+                            e.target.value;
+                          onChange(next, t("Assign referee", "تعیین داور"));
+                        }}
+                      />
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
+          <Pagination
+            pagination={pagination}
+            label={t("Schedule pages", "صفحه‌های برنامه")}
+          />
         </div>
       </div>
     </div>

@@ -33,6 +33,10 @@ import {
 } from "../export";
 import { Field, Notice, ErrorText } from "../components/ui";
 import { useI18n } from "../i18n";
+import { encodeEmbeddedCode } from "../sharing/embedded";
+import { prepareTransfer } from "../sharing/transfer";
+import { TransferAssistant, type TransferRequest } from "./TransferAssistant";
+import { QRTransfer } from "./QRTransfer";
 
 export function ShareCenter({
   tournament: doc,
@@ -72,19 +76,16 @@ export function ShareCenter({
       setBusy(false);
     }
   }
-  async function snapshot() {
-    const value = await encodeCode(
-      doc,
-      encrypt ? password : undefined,
-      scope === "private",
-    );
-    const url = `${location.origin}${location.pathname}#/open/${encodeURIComponent(value)}`;
+  async function showCode(value: string, label: string, withLink: boolean) {
+    const url = withLink
+      ? `${location.origin}${location.pathname}#/open/${encodeURIComponent(value)}`
+      : "";
     setCode(value);
     setLink(url);
     setQr("");
-    setOutputLabel(t("Snapshot", "تصویر داده"));
+    setOutputLabel(label);
     setCopied(false);
-    if (new TextEncoder().encode(url).length <= 1800)
+    if (url && new TextEncoder().encode(url).length <= 1800)
       setQr(
         await QRCode.toDataURL(url, {
           errorCorrectionLevel: "M",
@@ -93,6 +94,44 @@ export function ShareCenter({
           color: { dark: "#173b32", light: "#ffffff" },
         }),
       );
+  }
+  async function snapshot(embedded = false) {
+    const value = embedded
+      ? await encodeEmbeddedCode(doc, scope === "private")
+      : await encodeCode(
+          doc,
+          encrypt ? password : undefined,
+          scope === "private",
+        );
+    await showCode(
+      value,
+      embedded
+        ? t(
+            "Encrypted snapshot with embedded key",
+            "تصویر رمزگذاری‌شده با کلید همراه",
+          )
+        : t("Snapshot", "تصویر داده"),
+      true,
+    );
+  }
+  async function transfer(request: TransferRequest) {
+    const prepared = await prepareTransfer(doc, request, secret);
+    if (prepared.kind === "archive") {
+      downloadFile(
+        prepared.bytes,
+        `${doc.slug || "tournament"}-${prepared.privateData ? "private" : "public"}.tourney`,
+      );
+      if (prepared.backupRevision !== undefined)
+        await repository.markBackup(doc.id, prepared.backupRevision);
+      return;
+    }
+    const label =
+      prepared.purpose === "recipe"
+        ? t("Structure recipe", "دستور ساخت")
+        : prepared.purpose === "update"
+          ? t("Update packet", "بسته به‌روزرسانی")
+          : t("Snapshot", "تصویر داده");
+    await showCode(prepared.code, label, prepared.link);
   }
   async function backup() {
     const revisions = includeHistory
@@ -104,14 +143,14 @@ export function ShareCenter({
       revisions,
     );
     downloadFile(bytes, `${doc.slug || "tournament"}.tourney`);
-    await repository.markBackup(doc.id);
+    await repository.markBackup(doc.id, doc.revision);
   }
   async function recipe() {
-    setCode(await encodeRecipe(doc));
-    setLink("");
-    setQr("");
-    setOutputLabel(t("Structure recipe", "دستور ساخت"));
-    setCopied(false);
+    await showCode(
+      await encodeRecipe(doc),
+      t("Structure recipe", "دستور ساخت"),
+      false,
+    );
   }
   async function patch() {
     const base = await repository.loadRevision(doc.id, baseRevision, secret);
@@ -119,13 +158,11 @@ export function ShareCenter({
       patchScope === "public" ? publicProjection(base) : base,
       patchScope === "public" ? publicProjection(doc) : doc,
     );
-    setCode(
+    await showCode(
       await encodePatch(packet, encryptPatch ? patchPassword : undefined),
+      t("Update packet", "بسته به‌روزرسانی"),
+      false,
     );
-    setLink("");
-    setQr("");
-    setOutputLabel(t("Update packet", "بسته به‌روزرسانی"));
-    setCopied(false);
   }
   async function copy(value: string) {
     await navigator.clipboard.writeText(value);
@@ -149,6 +186,11 @@ export function ShareCenter({
         </button>
       </div>
       <ErrorText error={error} />
+      <TransferAssistant
+        tournament={doc}
+        busy={busy}
+        onTransfer={(request) => work(() => transfer(request))}
+      />
       <div className="share-layout">
         <section className="panel share-main">
           <div className="section-icon">
@@ -221,11 +263,28 @@ export function ShareCenter({
           <button
             className="button primary"
             disabled={busy || (encrypt && password.length < 8)}
-            onClick={() => work(snapshot)}
+            onClick={() => work(() => snapshot())}
           >
             <Link2 size={17} />
             {t("Generate link & code", "ساخت پیوند و کد")}
           </button>
+          <button
+            className="button secondary"
+            disabled={busy}
+            onClick={() => work(() => snapshot(true))}
+          >
+            <LockKeyhole size={17} />
+            {t(
+              "Generate encrypted link with embedded key",
+              "ساخت پیوند رمزگذاری‌شده با کلید همراه",
+            )}
+          </button>
+          <p className="muted">
+            {t(
+              "An embedded-key link includes its decryption key. Anyone with the complete link can read and copy its contents; no separate secret is needed.",
+              "پیوند دارای کلید همراه، کلید رمزگشایی را در خود دارد. هرکس پیوند کامل را داشته باشد می‌تواند محتوا را بخواند و کپی کند؛ رمز جداگانه لازم نیست.",
+            )}
+          </p>
           <div className="sharing-facts">
             <Check size={16} />
             <span>
@@ -309,7 +368,7 @@ export function ShareCenter({
               value={code}
               spellCheck={false}
               dir="ltr"
-              aria-label="Portable code"
+              aria-label={t("Portable code", "کد قابل انتقال")}
             />
           </Field>
           {link && (
@@ -318,7 +377,7 @@ export function ShareCenter({
                 readOnly
                 value={link}
                 dir="ltr"
-                aria-label="Snapshot link"
+                aria-label={t("Snapshot link", "پیوند تصویر داده")}
               />
             </Field>
           )}
@@ -361,6 +420,7 @@ export function ShareCenter({
               )}
             </Notice>
           )}
+          <QRTransfer key={code} code={code} slug={doc.slug} />
           {qr ? (
             <div className="qr-output">
               <img

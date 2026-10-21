@@ -3,6 +3,13 @@ import type { Locale, Match, Tournament } from "../domain/types";
 import { getTheme, themeStyle } from "../themes";
 import "../themes/themes.css";
 import "./competition.css";
+import type { BracketLayout } from "../domain/display-options";
+import {
+  bracketConnectorPath,
+  supportsCenteredBracket,
+  transformBracketLayout,
+} from "./bracket-layouts";
+import { groupLabel } from "../i18n";
 
 export interface BracketNode {
   match: Match;
@@ -131,6 +138,7 @@ export function Bracket({
   const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
   const [stageId, setStageId] = useState(tournament.stages[0]?.id ?? "");
   const [zoom, setZoom] = useState(1),
+    [layoutOverride, setLayout] = useState<BracketLayout>(),
     [rtl, setRtl] = useState(locale === "fa"),
     [round, setRound] = useState("all"),
     [search, setSearch] = useState(""),
@@ -139,16 +147,64 @@ export function Bracket({
   const scroll = useRef<HTMLDivElement>(null);
   const stage =
     tournament.stages.find((s) => s.id === stageId) ?? tournament.stages[0];
-  const allMatches = tournament.matches.filter((m) => m.stageId === stage?.id);
-  const matches = allMatches.filter(
-    (m) => round === "all" || m.round === +round,
+  const allMatches = useMemo(
+    () => tournament.matches.filter((m) => m.stageId === stage?.id),
+    [tournament.matches, stage?.id],
   );
-  const graph = useMemo(
+  const matches = useMemo(
+    () => allMatches.filter((m) => round === "all" || m.round === +round),
+    [allMatches, round],
+  );
+  const baseGraph = useMemo(
     () => layoutBracket(matches, tournament.theme.spacing),
     [matches, tournament.theme.spacing],
   );
-  const nodeMap = new Map(graph.nodes.map((n) => [n.match.id, n]));
-  const participantMap = new Map(tournament.participants.map((p) => [p.id, p]));
+  const requestedLayout =
+    layoutOverride ?? tournament.theme.design?.bracketLayout ?? "horizontal";
+  const centeredSupported = useMemo(
+    () => supportsCenteredBracket(baseGraph),
+    [baseGraph],
+  );
+  const layout =
+    requestedLayout === "centered" && !centeredSupported
+      ? "horizontal"
+      : requestedLayout;
+  const graph = useMemo(
+    () => transformBracketLayout(baseGraph, layout),
+    [baseGraph, layout],
+  );
+  const nodeMap = useMemo(
+    () => new Map(graph.nodes.map((n) => [n.match.id, n])),
+    [graph],
+  );
+  const participantMap = useMemo(
+    () => new Map(tournament.participants.map((p) => [p.id, p])),
+    [tournament.participants],
+  );
+  const namesByMatch = useMemo(
+    () =>
+      new Map(
+        matches.map((match) => [
+          match.id,
+          match.slots.map((slot) =>
+            slot.participantId
+              ? (participantMap.get(slot.participantId)?.name ?? "?")
+              : slot.source
+                ? slot.source.result === "winner"
+                  ? locale === "fa"
+                    ? "برنده"
+                    : "Winner"
+                  : locale === "fa"
+                    ? "بازنده"
+                    : "Loser"
+                : locale === "fa"
+                  ? "استراحت"
+                  : "BYE",
+          ),
+        ]),
+      ),
+    [matches, participantMap, locale],
+  );
   const selectedIds = new Set(
     tournament.participants
       .filter(
@@ -165,8 +221,9 @@ export function Bracket({
     "gauntlet",
   ].includes(stage?.format ?? "");
   const xFor = (n: BracketNode) => (rtl ? graph.width - n.x - n.width : n.x);
-  const nameFor = (m: Match, i: number) => matchNames(tournament, m, locale)[i];
-  const short = (s: string) => (s.length > 26 ? `${s.slice(0, 25)}…` : s);
+  const nameFor = (m: Match, i: number) => namesByMatch.get(m.id)?.[i] ?? "?";
+  const short = (s: string) =>
+    Array.from(s).length > 26 ? `${Array.from(s).slice(0, 25).join("")}…` : s;
   const caption = (m: Match) =>
     m.bracket === "final"
       ? t("Grand final", "فینال بزرگ")
@@ -174,7 +231,7 @@ export function Bracket({
         ? t("Grand final reset", "تکرار فینال")
         : m.bracket === "placement"
           ? t("Third place", "رده‌بندی")
-          : `${t("Round", "دور")} ${m.round}${m.group ? ` · ${m.group}` : ""}${m.bracket === "losers" ? ` · ${t("Lower", "بازنده‌ها")}` : m.bracket === "winners" && stage?.format === "double-elimination" ? ` · ${t("Upper", "برنده‌ها")}` : ""}`;
+          : `${t("Round", "دور")} ${m.round.toLocaleString(locale)}${m.group ? ` · ${groupLabel(m.group, locale)}` : ""}${m.bracket === "losers" ? ` · ${t("Lower", "بازنده‌ها")}` : m.bracket === "winners" && stage?.format === "double-elimination" ? ` · ${t("Upper", "برنده‌ها")}` : ""}`;
   const fit = () => {
     if (scroll.current)
       setZoom(
@@ -244,6 +301,24 @@ export function Bracket({
         </label>
         {graphFormat && (
           <>
+            <label>
+              {t("Bracket layout", "چیدمان جدول")}
+              <select
+                value={requestedLayout}
+                onChange={(event) =>
+                  setLayout(event.target.value as BracketLayout)
+                }
+              >
+                <option value="horizontal">{t("One-sided", "یک‌طرفه")}</option>
+                <option value="vertical">
+                  {t("Top to bottom", "بالا به پایین")}
+                </option>
+                <option value="centered" disabled={!centeredSupported}>
+                  {t("Centered final", "فینال در مرکز")}
+                </option>
+                <option value="compact">{t("Compact", "فشرده")}</option>
+              </select>
+            </label>
             <button
               type="button"
               onClick={() => setZoom(Math.max(0.2, zoom - 0.2))}
@@ -270,6 +345,14 @@ export function Bracket({
           </>
         )}
       </div>
+      {graphFormat && requestedLayout === "centered" && !centeredSupported && (
+        <p className="competition-empty">
+          {t(
+            "Centered finals need a complete single championship tree. This selection uses the one-sided layout.",
+            "فینال مرکزی به درخت کامل یک رقابت قهرمانی نیاز دارد. این انتخاب با چیدمان یک‌طرفه نمایش داده می‌شود.",
+          )}
+        </p>
+      )}
       {!matches.length ? (
         <div className="competition-empty">
           {t(
@@ -294,6 +377,7 @@ export function Bracket({
             role="group"
             aria-label={stage?.name}
             data-testid="bracket-svg"
+            data-layout={layout}
             width={graph.width * zoom}
             height={graph.height * zoom}
             viewBox={`0 0 ${graph.width} ${graph.height}`}
@@ -307,17 +391,20 @@ export function Bracket({
                   ? nodeMap.get(slot.source.matchId)
                   : undefined;
                 if (!source) return null;
-                const x1 = xFor(source) + (rtl ? 0 : source.width),
-                  y1 = source.y + source.height / 2,
-                  x2 = xFor(node) + (rtl ? node.width : 0),
-                  y2 = node.y + 34 + i * 30 + 15;
                 const highlighted = source.match.slots.some(
                   (s) => s.participantId && selectedIds.has(s.participantId),
                 );
                 return (
                   <path
                     key={`${node.match.id}-${i}`}
-                    d={`M${x1},${y1}H${(x1 + x2) / 2}V${y2}H${x2}`}
+                    d={bracketConnectorPath(
+                      source,
+                      node,
+                      i,
+                      layout,
+                      rtl,
+                      graph.width,
+                    )}
                     className={`bracket-line ${highlighted ? "highlight" : ""}`}
                     strokeDasharray={
                       tournament.theme.connector === "dashed"
@@ -341,7 +428,7 @@ export function Bracket({
                   transform={`translate(${x},${node.y})`}
                   role={!readOnly && onMatchClick ? "button" : "group"}
                   tabIndex={!readOnly && onMatchClick ? 0 : undefined}
-                  aria-label={`${caption(m)}: ${matchNames(tournament, m, locale).join(" / ")}`}
+                  aria-label={`${caption(m)}: ${namesByMatch.get(m.id)?.join(" / ")}`}
                   onClick={() => !readOnly && onMatchClick?.(m)}
                   onKeyDown={(e) => {
                     if (!readOnly && (e.key === "Enter" || e.key === " ")) {
@@ -350,7 +437,7 @@ export function Bracket({
                     }
                   }}
                 >
-                  <title>{matchNames(tournament, m, locale).join(" / ")}</title>
+                  <title>{namesByMatch.get(m.id)?.join(" / ")}</title>
                   <rect
                     className="match-card"
                     width={node.width}

@@ -6,6 +6,8 @@ import { podiumPlaces, sceneLabel } from "../presentation/Presentation";
 import { encodeCode, publicProjection } from "../sharing";
 import { bracketSVG, escapeXML } from "./index";
 import { embedSVGFonts } from "./files";
+import { advancedSlidePages } from "./advanced-slides";
+import type { AdvancedScene } from "../presentation/advanced-scenes";
 import {
   championPosterSVG,
   exportLabel,
@@ -49,6 +51,11 @@ async function scenePages(
   const label = (en: string, fa: string) => exportLabel(locale, en, fa);
   const names = new Map(t.participants.map((p) => [p.id, p.name]));
   switch (scene.type) {
+    case "introduction":
+    case "semifinal":
+    case "final-intro":
+    case "trophy":
+      return advancedSlidePages(t, scene as AdvancedScene, locale);
     case "participants":
       return tableVisualPages(
         t,

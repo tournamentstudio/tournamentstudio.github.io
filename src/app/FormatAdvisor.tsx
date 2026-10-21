@@ -3,11 +3,12 @@ import { ArrowUpRight, Clock, Users } from "lucide-react";
 import type { FormatId } from "../domain/types";
 import { Field } from "../components/ui";
 import { useI18n, formatName } from "../i18n";
+import { advisorPlans, type AdvisorPlan } from "./advisor-plans";
 
 export function FormatAdvisor({
   onCreate,
 }: {
-  onCreate: (format: FormatId) => void;
+  onCreate: (format: FormatId, plan?: AdvisorPlan) => void;
 }) {
   const { t, locale } = useI18n();
   const [count, setCount] = useState(16);
@@ -15,54 +16,35 @@ export function FormatAdvisor({
   const [hours, setHours] = useState(4);
   const [resources, setResources] = useState(2);
   const [minimum, setMinimum] = useState(2);
-  const options: {
-    format: FormatId;
-    matches: number;
-    minimum: number;
-    rounds: number;
-    note: string;
-  }[] = [
-    {
-      format: "single-elimination",
-      matches: count - 1,
-      minimum: 1,
-      rounds: Math.ceil(Math.log2(count)),
-      note: t(
-        "A decisive finish with the fewest matches. One loss ends an entrant’s run.",
-        "پایان قطعی با کمترین دیدار. یک باخت به معنی حذف است.",
-      ),
-    },
-    {
-      format: "double-elimination",
-      matches: count * 2 - 1,
-      minimum: 2,
-      rounds: Math.ceil(Math.log2(count)) * 2 + 1,
-      note: t(
-        "A second chance for every entrant, with more time needed for the final rounds.",
-        "فرصت دوم برای همه، با زمان بیشتر برای دورهای پایانی.",
-      ),
-    },
-    {
-      format: "round-robin",
-      matches: (count * (count - 1)) / 2,
-      minimum: count - 1,
-      rounds: count % 2 ? count : count - 1,
-      note: t(
-        "Everyone meets everyone. Strong comparison, but match count grows quickly.",
-        "همه با هم بازی می‌کنند. مقایسه بهتر با افزایش سریع تعداد دیدارها.",
-      ),
-    },
-    {
-      format: "swiss",
-      matches: Math.floor(count / 2) * Math.ceil(Math.log2(count)),
-      minimum: Math.ceil(Math.log2(count)) - (count % 2),
-      rounds: Math.ceil(Math.log2(count)),
-      note: t(
-        "Pair by points over a fixed number of rounds. Rankings can remain tied.",
-        "جفت‌سازی بر پایه امتیاز در دورهای مشخص. امکان برابری رتبه‌ها وجود دارد.",
-      ),
-    },
-  ];
+  const [preferGroups, setPreferGroups] = useState(false);
+  const [preferFinals, setPreferFinals] = useState(false);
+  const options = advisorPlans(count, minutes, resources);
+  const notes: Record<string, string> = {
+    single: t(
+      "A decisive finish with the fewest matches. One loss ends an entrant’s run.",
+      "پایان قطعی با کمترین دیدار. یک باخت به معنی حذف است.",
+    ),
+    double: t(
+      "A second chance for every entrant, with more time needed for the final rounds.",
+      "فرصت دوم برای همه، با زمان بیشتر برای دورهای پایانی.",
+    ),
+    league: t(
+      "Everyone meets everyone. Strong comparison, but match count grows quickly.",
+      "همه با هم بازی می‌کنند. مقایسه بهتر با افزایش سریع تعداد دیدارها.",
+    ),
+    swiss: t(
+      "Pair by points over a fixed number of rounds. Rankings can remain tied.",
+      "جفت‌سازی بر پایه امتیاز در دورهای مشخص. امکان برابری رتبه‌ها وجود دارد.",
+    ),
+    "groups-finals": t(
+      "Balanced groups feed the top two into knockout playoffs. Uneven groups can give entrants different match totals.",
+      "گروه‌های متعادل، دو نفر برتر را به مرحله حذفی می‌فرستند. گروه‌های نابرابر ممکن است تعداد دیدار متفاوتی داشته باشند.",
+    ),
+    "swiss-finals": t(
+      "Swiss standings seed a knockout final stage. Qualification ties need a valid tie-break or a manual decision.",
+      "رتبه‌های سوئیسی، سیدبندی مرحله حذفی پایانی را تعیین می‌کنند. تساوی در مرز صعود به معیار معتبر یا تصمیم دستی نیاز دارد.",
+    ),
+  };
   return (
     <div className="content-page">
       <header className="page-heading">
@@ -92,7 +74,9 @@ export function FormatAdvisor({
             max={512}
             value={count}
             onChange={(e) =>
-              setCount(Math.max(2, Math.min(512, Number(e.target.value))))
+              setCount(
+                Math.max(2, Math.min(512, Math.floor(Number(e.target.value)))),
+              )
             }
           />
         </Field>
@@ -100,8 +84,13 @@ export function FormatAdvisor({
           <input
             type="number"
             min={1}
+            max={1440}
             value={minutes}
-            onChange={(e) => setMinutes(Math.max(1, Number(e.target.value)))}
+            onChange={(e) =>
+              setMinutes(
+                Math.min(1440, Math.max(1, Number(e.target.value) || 1)),
+              )
+            }
           />
         </Field>
         <Field label={t("Available hours", "ساعت در دسترس")}>
@@ -116,8 +105,13 @@ export function FormatAdvisor({
           <input
             type="number"
             min={1}
+            max={64}
             value={resources}
-            onChange={(e) => setResources(Math.max(1, Number(e.target.value)))}
+            onChange={(e) =>
+              setResources(
+                Math.max(1, Math.min(64, Math.floor(Number(e.target.value)))),
+              )
+            }
           />
         </Field>
         <Field
@@ -131,20 +125,47 @@ export function FormatAdvisor({
           />
         </Field>
       </div>
+      <div className="button-row">
+        <label className="check-row">
+          <input
+            type="checkbox"
+            checked={preferGroups}
+            onChange={(event) => setPreferGroups(event.target.checked)}
+          />
+          {t("Prefer group play", "ترجیح مرحله گروهی")}
+        </label>
+        <label className="check-row">
+          <input
+            type="checkbox"
+            checked={preferFinals}
+            onChange={(event) => setPreferFinals(event.target.checked)}
+          />
+          {t("Require knockout finals", "نیاز به مرحله حذفی پایانی")}
+        </label>
+      </div>
       <div className="advisor-grid">
         {options.map((o) => {
           const duration =
             Math.max(Math.ceil(o.matches / resources), o.rounds) * minutes;
-          const fits = duration <= hours * 60 && o.minimum >= minimum;
+          const fits =
+            duration <= hours * 60 &&
+            o.minimum >= minimum &&
+            (!preferGroups || o.plan.format === "groups") &&
+            (!preferFinals ||
+              o.plan.playoffs ||
+              o.plan.format.endsWith("elimination"));
           return (
-            <article className="panel advisor-card" key={o.format}>
+            <article className="panel advisor-card" key={o.id}>
               <span className={`badge ${fits ? "status-ready" : ""}`}>
                 {fits
                   ? t("Fits your brief", "متناسب با برنامه")
                   : t("Consider the tradeoff", "نیازمند بررسی")}
               </span>
-              <h2>{formatName(o.format, locale)}</h2>
-              <p>{o.note}</p>
+              <h2>
+                {formatName(o.plan.format, locale)}
+                {o.plan.playoffs ? t(" + playoffs", " + مرحله حذفی") : ""}
+              </h2>
+              <p>{notes[o.id]}</p>
               <div>
                 <Users size={16} />
                 {o.matches} {t("matches", "دیدار")}
@@ -154,7 +175,7 @@ export function FormatAdvisor({
               </div>
               <button
                 className="text-button"
-                onClick={() => onCreate(o.format)}
+                onClick={() => onCreate(o.plan.format, o.plan)}
               >
                 {t("Open builder", "باز کردن سازنده")}
                 <ArrowUpRight size={16} />

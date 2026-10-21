@@ -1,18 +1,14 @@
-import { useState } from "react";
 import { Check, Eye, GitBranch, Plus, RotateCcw } from "lucide-react";
 import type {
   KnockoutDrawConfig,
-  KnockoutDrawPreview,
   Participant,
   Stage,
   Tournament,
 } from "../../domain/types";
-import {
-  knockoutDrawIssueText,
-  previewAdvancement,
-  previewKnockoutDraw,
-} from "../../engine";
-import { Field, Notice } from "../../components/ui";
+import { knockoutDrawIssueText, previewAdvancement } from "../../engine";
+import { ErrorText, Field, Notice } from "../../components/ui";
+import { useDrawPreview } from "../../workers/use-draw-preview";
+import { DrawCeremony } from "./DrawCeremony";
 import { useI18n } from "../../i18n";
 import { DrawPots } from "./DrawPots";
 import { KnockoutRestrictions } from "./KnockoutRestrictions";
@@ -63,10 +59,6 @@ export function KnockoutDrawEditor({
   onApply,
 }: Props) {
   const { t, locale } = useI18n();
-  const [preview, setPreview] = useState<{
-    key: string;
-    result: KnockoutDrawPreview;
-  }>();
   const draftDocument: Tournament = {
     ...tournament,
     stages: tournament.stages.map((item) =>
@@ -74,7 +66,11 @@ export function KnockoutDrawEditor({
     ),
   };
   const key = JSON.stringify(draftDocument);
-  const currentPreview = preview?.key === key ? preview.result : undefined;
+  const computation = useDrawPreview(
+    { kind: "knockout", tournament: draftDocument, stageId: stage.id },
+    key,
+  );
+  const currentPreview = computation.result;
   const sourcePreview = stage.sources.length
     ? previewAdvancement(tournament, stage.id)
     : undefined;
@@ -267,13 +263,8 @@ export function KnockoutDrawEditor({
       <div className="draw-actions">
         <button
           className="button secondary"
-          disabled={locked || stale}
-          onClick={() =>
-            setPreview({
-              key,
-              result: previewKnockoutDraw(draftDocument, stage.id),
-            })
-          }
+          disabled={locked || stale || computation.busy}
+          onClick={() => void computation.run()}
         >
           <Eye size={16} />
           {t("Preview knockout draw", "پیش‌نمایش قرعه حذفی")}
@@ -292,6 +283,33 @@ export function KnockoutDrawEditor({
           </button>
         )}
       </div>
+      {computation.busy && (
+        <div className="button-row">
+          <span role="status">
+            {t("Calculating draw preview", "در حال محاسبه پیش‌نمایش قرعه")}
+          </span>
+          <button
+            type="button"
+            className="button secondary"
+            onClick={computation.cancel}
+          >
+            {t("Cancel preview", "لغو پیش‌نمایش")}
+          </button>
+        </div>
+      )}
+      <ErrorText error={computation.error} />
+      {computation.canRunLocally && (
+        <button
+          type="button"
+          className="button secondary"
+          onClick={() => void computation.run(true)}
+        >
+          {t(
+            "Run bounded preview locally",
+            "اجرای پیش‌نمایش با سقف محاسبه مشخص در این صفحه",
+          )}
+        </button>
+      )}
       {dirty && !currentPreview && (
         <p className="muted">
           {t(
@@ -307,6 +325,19 @@ export function KnockoutDrawEditor({
               ? t("Draw preview is ready", "پیش‌نمایش قرعه آماده است")
               : t("Draw needs attention", "قرعه به بررسی نیاز دارد")}
           </h4>
+          {currentPreview.ready && (
+            <DrawCeremony
+              tournament={tournament}
+              groups={Array.from(
+                { length: currentPreview.slots.length / 2 },
+                (_, index) =>
+                  currentPreview.slots.slice(index * 2, index * 2 + 2),
+              )}
+              mode="match"
+              seed={stage.config.seed}
+              algorithm={currentPreview.algorithm}
+            />
+          )}
           {currentPreview.issueDetails.map((issue, index) => (
             <Notice danger key={index}>
               {knockoutDrawIssueText(issue, locale)}

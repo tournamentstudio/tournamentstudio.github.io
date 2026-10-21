@@ -1,5 +1,6 @@
 import type { Locale, Match, Tournament } from "../domain/types";
 import { knockoutDrawIssueText } from "../domain/knockout-draw";
+import { schedulingConflictPairs } from "./conflict-pairs";
 import {
   assignedKnockoutVenue,
   validateKnockoutVenueDistances,
@@ -242,6 +243,30 @@ export function detectConflicts(
     (match) => playable(match) && match.scheduledAt,
   );
   const index = new Map(tournament.matches.map((match) => [match.id, match]));
+  const participantIndex = new Map(
+    tournament.participants.map((participant) => [participant.id, participant]),
+  );
+  const resourceIndex = new Map(
+    tournament.schedule.resources.map((resource) => [resource.id, resource]),
+  );
+  const rest = tournament.schedule.restMinutes * minutes;
+  const candidatePairs =
+    Number.isFinite(rest) && rest >= 0
+      ? schedulingConflictPairs(
+          matches.map((match, index) => {
+            const start = Date.parse(match.scheduledAt!);
+            return {
+              index,
+              start,
+              end: start + duration(tournament, match),
+              resourceId: match.resourceId,
+              referee: match.referee,
+              entrantIds: possible.get(match.id) ?? new Set<string>(),
+            };
+          }),
+          rest,
+        )
+      : undefined;
   for (let i = 0; i < matches.length; i++) {
     const match = matches[i];
     const start = Date.parse(match.scheduledAt!);
@@ -250,9 +275,7 @@ export function detectConflicts(
       conflicts.push(`${match.label} has an invalid time or duration.`);
       continue;
     }
-    const resource = tournament.schedule.resources.find(
-      (resource) => resource.id === match.resourceId,
-    );
+    const resource = resourceIndex.get(match.resourceId ?? "");
     if (!resource) conflicts.push(`${match.label} has no valid resource.`);
     else if (
       (resource.availableFrom && start < Date.parse(resource.availableFrom)) ||
@@ -260,9 +283,7 @@ export function detectConflicts(
     )
       conflicts.push(`${match.label} is outside its resource availability.`);
     for (const id of possible.get(match.id) ?? []) {
-      const metadata = tournament.participants.find(
-        (participant) => participant.id === id,
-      )?.metadata;
+      const metadata = participantIndex.get(id)?.metadata;
       if (
         (typeof metadata?.availableFrom === "string" &&
           start < Date.parse(metadata.availableFrom)) ||
@@ -301,7 +322,12 @@ export function detectConflicts(
         );
       }
     }
-    for (let j = i + 1; j < matches.length; j++) {
+    for (const j of candidatePairs
+      ? (candidatePairs.get(i) ?? [])
+      : Array.from(
+          { length: matches.length - i - 1 },
+          (_, offset) => i + offset + 1,
+        )) {
       const other = matches[j];
       const otherStart = Date.parse(other.scheduledAt!);
       const otherEnd = otherStart + duration(tournament, other);
@@ -314,7 +340,6 @@ export function detectConflicts(
         conflicts.push(
           `${match.label} and ${other.label} assign the same referee.`,
         );
-      const rest = tournament.schedule.restMinutes * minutes;
       if (
         start < otherEnd + rest &&
         otherStart < end + rest &&

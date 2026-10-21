@@ -2,6 +2,12 @@ import type { Locale, Tournament } from "../domain/types";
 import { layoutBracket, matchNames } from "../components/Bracket";
 import { getStandings } from "../engine";
 import { getTheme } from "../themes";
+import { publicProjection } from "../sharing";
+import {
+  bracketConnectorPath,
+  transformBracketLayout,
+  supportsCenteredBracket,
+} from "../components/bracket-layouts";
 
 export function downloadBlob(filename: string, blob: Blob) {
   const url = URL.createObjectURL(blob),
@@ -189,8 +195,15 @@ export function bracketSVG(
   stageId = t.stages[0]?.id,
   locale: Locale = "en",
 ) {
+  t = publicProjection(t);
   const matches = t.matches.filter((m) => m.stageId === stageId),
-    graph = layoutBracket(matches, t.theme.spacing),
+    baseGraph = layoutBracket(matches, t.theme.spacing),
+    requestedLayout = t.theme.design?.bracketLayout ?? "horizontal",
+    layout =
+      requestedLayout === "centered" && !supportsCenteredBracket(baseGraph)
+        ? "horizontal"
+        : requestedLayout,
+    graph = transformBracketLayout(baseGraph, layout),
     theme = getTheme(t.theme.preset);
   const fg = t.theme.foreground ?? theme.foreground,
     bg = t.theme.background ?? theme.background,
@@ -205,17 +218,13 @@ export function bracketSVG(
     for (const [i, s] of n.match.slots.entries()) {
       const source = s.source ? nodes.get(s.source.matchId) : undefined;
       if (!source) continue;
-      const x1 = source.x + source.width,
-        x2 = n.x,
-        y1 = source.y + source.height / 2,
-        y2 = n.y + 49 + i * 30;
       parts.push(
-        `<path d="M${x1} ${y1}H${(x1 + x2) / 2}V${y2}H${x2}" fill="none" stroke="${safeColor(accent, theme.accent)}" stroke-opacity=".5"/>`,
+        `<path d="${bracketConnectorPath(source, n, i, layout, locale === "fa", graph.width)}" fill="none" stroke="${safeColor(accent, theme.accent)}" stroke-opacity=".5"/>`,
       );
     }
   for (const n of graph.nodes) {
     parts.push(
-      `<g transform="translate(${n.x},${n.y})"><rect width="${n.width}" height="${n.height}" rx="${Math.min(40, Math.max(0, t.theme.radius ?? theme.radius))}" fill="${theme.card}" stroke="${safeColor(accent, theme.accent)}" stroke-opacity=".35"/><text x="12" y="22" font-size="11" fill="${theme.muted}">${locale === "fa" ? "دور" : "ROUND"} ${n.match.round}</text>`,
+      `<g transform="translate(${locale === "fa" ? graph.width - n.x - n.width : n.x},${n.y})"><rect width="${n.width}" height="${n.height}" rx="${Math.min(40, Math.max(0, t.theme.radius ?? theme.radius))}" fill="${safeColor(t.theme.design?.cardColor ?? theme.card, theme.card)}" stroke="${safeColor(accent, theme.accent)}" stroke-opacity=".35"/><text x="12" y="22" font-size="11" fill="${theme.muted}">${locale === "fa" ? "دور" : "ROUND"} ${n.match.round.toLocaleString(locale)}</text>`,
     );
     const names = matchNames(t, n.match, locale);
     n.match.slots.forEach((s, i) => {

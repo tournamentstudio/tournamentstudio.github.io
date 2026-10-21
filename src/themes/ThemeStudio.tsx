@@ -1,8 +1,13 @@
 import { useId, useState } from "react";
-import { z } from "zod";
 import type { Locale, ThemeSettings, Tournament } from "../domain/types";
 import { downloadText } from "../export";
-import { validateRasterAsset } from "../security/codec";
+import {
+  parsePortableTheme,
+  portableThemeSchema,
+  serializePortableTheme,
+} from "./library";
+import { ThemeDesignControls } from "./ThemeDesignControls";
+import { PersonalThemeLibrary } from "./PersonalThemeLibrary";
 import {
   gameCollections,
   getTheme,
@@ -15,25 +20,7 @@ import { GameIdentity, ThemeMotif } from "./ThemeMotif";
 import { contrastRatio } from "./contrast";
 import "./themes.css";
 
-const color = z.string().regex(/^#[0-9a-f]{6}$/i);
-export const themeFileSchema = z.object({
-  version: z.literal(1),
-  theme: z.object({
-    preset: z.string().max(80),
-    accent: color.optional(),
-    background: color.optional(),
-    foreground: color.optional(),
-    radius: z.number().min(0).max(40).optional(),
-    fontScale: z.number().min(0.7).max(2).optional(),
-    spacing: z.number().min(0.5).max(2).optional(),
-    borderWidth: z.number().min(0).max(5).optional(),
-    connector: z.enum(["solid", "dashed"]).optional(),
-    font: z.enum(["inter", "vazirmatn", "serif", "mono"]).optional(),
-    backgroundImage: z.string().refine(validateRasterAsset).optional(),
-    logo: z.string().refine(validateRasterAsset).optional(),
-    reducedMotion: z.boolean(),
-  }),
-});
+export const themeFileSchema = portableThemeSchema;
 export function ThemeStudio({
   tournament,
   onChange,
@@ -95,8 +82,7 @@ export function ThemeStudio({
     if (!file) return;
     try {
       if (file.size > 8_000_000) throw new Error("size");
-      const parsed = themeFileSchema.parse(JSON.parse(await file.text()));
-      onChange(parsed.theme);
+      onChange(parsePortableTheme(await file.text()));
       setError("");
     } catch {
       setError(
@@ -452,7 +438,7 @@ export function ThemeStudio({
           onClick={() =>
             downloadText(
               `${tournament.slug || "theme"}.theme.json`,
-              JSON.stringify({ version: 1, theme: current }, null, 2),
+              serializePortableTheme(current),
               "application/json",
             )
           }
@@ -486,6 +472,16 @@ export function ThemeStudio({
           </button>
         )}
       </div>
+      <ThemeDesignControls
+        theme={current}
+        onChange={onChange}
+        locale={locale}
+      />
+      <PersonalThemeLibrary
+        current={current}
+        onApply={onChange}
+        locale={locale}
+      />
       {error && <p role="alert">{error}</p>}
     </div>
   );

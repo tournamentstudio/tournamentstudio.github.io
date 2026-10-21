@@ -571,3 +571,15 @@ Participant table adapters live in `src/app/participants` and the bounded Spread
 The sharing layer supports multi-stage recipes and optional revision archives. Selective update review uses a verified common base and replays result operations through the competition engine. Persistence rechecks the current hash/revision before a transactional write. Imports with history commit document and snapshot records together; a quota failure leaves neither partial table behind.
 
 Visual exports use public projections before SVG composition, font embedding, rasterization or ZIP creation. Localization maps diagnostics and generated labels at display time without rewriting stored documents or changing hashes. Dialog focus handling and field descriptions are shared UI behavior.
+
+## Collections, display options and bounded work
+
+`src/collections` owns a strict, hashed version-1 event document. It references independent tournaments by ID and maps entrant IDs to explicit directory identities. Derived rankings and shared schedule conflicts are recomputed from confirmed tournament state. Event records use IndexedDB preferences, with optimistic revision checks and optional authenticated encryption. Multi-tournament import prepares validation and encryption before one transaction writes documents, snapshots and the collection record. Existing IDs are never overwritten by bulk import.
+
+The event presentation and printable HTML receive public projections, with private event descriptions, adjustment reasons and referee fields removed. Protected collection metadata stays encrypted. Copying a season generates independent tournament IDs and clears results and match schedules.
+
+Optional theme design, scene target and overlay fields are validated data. The personal theme library stores copied theme settings independently of tournament vaults. Imported designs cannot supply HTML, CSS expressions or JavaScript. Bracket geometry transforms retain match IDs and source connections across horizontal, vertical, centered and compact layouts.
+
+The draw worker protocol carries one bounded request per worker. Cancellation terminates that worker; changed input invalidates pending results. Worker failures do not imply an infeasible draw and require an explicit choice before synchronous fallback. List pagination bounds mounted controls while search still covers the full dataset. Schedule conflict candidates use indexed interval processing.
+
+On the local test machine, 512-entrant section rendering measured 61 to 280 ms with 990 to 1,434 DOM nodes. Tournament creation took 643 to 2,770 ms. A restricted worker preview took 168 to 497 ms, with the longest sampled animation-frame gap between 41 and 111 ms. These measurements are observations, not device-independent guarantees.

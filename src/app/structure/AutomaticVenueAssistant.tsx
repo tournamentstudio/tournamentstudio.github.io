@@ -15,8 +15,8 @@ import {
   automaticVenueIssueText,
   type AutomaticVenueRequest,
 } from "../../engine/automatic-venues";
-import { previewScheduledKnockoutVenues } from "../../scheduling/automatic-venues";
-import { Field, Notice } from "../../components/ui";
+import { ErrorText, Field, Notice } from "../../components/ui";
+import { useDrawPreview } from "../../workers/use-draw-preview";
 import { useI18n } from "../../i18n";
 import { KnockoutVenueTargets } from "./KnockoutVenueTargets";
 import { AutomaticVenuePreview } from "./AutomaticVenuePreview";
@@ -42,10 +42,6 @@ export function AutomaticVenueAssistant({
   const [minKm, setMinKm] = useState<number>();
   const [maxKm, setMaxKm] = useState<number | undefined>(MAX_DISTANCE_KM);
   const [checkAvailability, setCheckAvailability] = useState(true);
-  const [proposal, setProposal] = useState<{
-    key: string;
-    result: ReturnType<typeof previewScheduledKnockoutVenues>;
-  }>();
   const [applied, setApplied] = useState<string>();
   const resources = tournament.schedule.resources;
   const catalog = getKnockoutVenueTargets(stage, entrantCount);
@@ -66,7 +62,17 @@ export function AutomaticVenueAssistant({
     request,
     checkAvailability,
   ]);
-  const current = proposal?.key === key ? proposal.result : undefined;
+  const computation = useDrawPreview(
+    {
+      kind: "automatic-venues",
+      tournament,
+      stageId: stage.id,
+      request,
+      checkAvailability,
+    },
+    key,
+  );
+  const current = computation.result;
   return (
     <details className="automatic-venue-assistant">
       <summary>
@@ -244,17 +250,8 @@ export function AutomaticVenueAssistant({
         <button
           type="button"
           className="button secondary"
-          onClick={() =>
-            setProposal({
-              key,
-              result: previewScheduledKnockoutVenues(
-                tournament,
-                stage.id,
-                request,
-                checkAvailability,
-              ),
-            })
-          }
+          disabled={computation.busy}
+          onClick={() => void computation.run()}
         >
           <Search size={16} />
           {t("Find venue assignments", "یافتن محل بازی دیدارها")}
@@ -268,7 +265,7 @@ export function AutomaticVenueAssistant({
             onChange(current.draw);
             setApplied(JSON.stringify(current.draw));
             setTargets([]);
-            setProposal(undefined);
+            computation.cancel();
           }}
         >
           <Check size={16} />
@@ -278,6 +275,33 @@ export function AutomaticVenueAssistant({
           )}
         </button>
       </div>
+      {computation.busy && (
+        <div className="button-row">
+          <span role="status">
+            {t("Finding venue assignments", "در حال یافتن محل بازی دیدارها")}
+          </span>
+          <button
+            type="button"
+            className="button secondary"
+            onClick={computation.cancel}
+          >
+            {t("Cancel preview", "لغو پیش‌نمایش")}
+          </button>
+        </div>
+      )}
+      <ErrorText error={computation.error} />
+      {computation.canRunLocally && (
+        <button
+          type="button"
+          className="button secondary"
+          onClick={() => void computation.run(true)}
+        >
+          {t(
+            "Run bounded preview locally",
+            "اجرای پیش‌نمایش با سقف محاسبه مشخص در این صفحه",
+          )}
+        </button>
+      )}
       {applied === JSON.stringify(value) && (
         <Notice>
           {t(
@@ -286,7 +310,7 @@ export function AutomaticVenueAssistant({
           )}
         </Notice>
       )}
-      {proposal && !current && (
+      {computation.stale && (
         <p className="muted" role="status">
           {t(
             "Inputs changed. Find venue assignments again before adding suggestions.",

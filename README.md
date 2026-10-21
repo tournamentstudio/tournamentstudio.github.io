@@ -36,7 +36,7 @@ English and Persian labels, local Inter and Vazirmatn fonts, and RTL layouts are
 
 The 50 theme presets include game collections for all 14 activities. Original court diagrams, paddles, chess pieces, Persian geometry and other vector artwork sit on paper, wood, felt, tile and other material treatments. Theme Studio recommends related choices and lets you search the full catalog. The selected identity appears in creation, the workspace, match cards and scorekeeping.
 
-Presentation Studio has 17 scene types, playlists, keyboard controls, fullscreen, and three aspect ratios. A second tab in the same browser profile reloads confirmed revisions. That is local communication, not synchronization across devices.
+Presentation Studio has 21 scene types, playlists, keyboard controls, fullscreen, and three aspect ratios. A second tab in the same browser profile reloads confirmed revisions. That is local communication, not synchronization across devices.
 
 Gol Ya Pooch has a three-player default roster, editable target and hand points, configurable cards with use limits, a quick score form, and a hand-by-hand referee form. Its scorecards show progress toward the configured target. Public projections contain live totals but exclude hand logs and concealed positions. Traditional, Modern, Night, Saffron, Courtyard, Velvet and Ink House themes also work in presentation mode. Both sides receive identical decorative emblems, independent of concealed gameplay information.
 
@@ -134,3 +134,11 @@ The [brand kit](public/brand/README.md) contains the logo, wordmark and social i
 ## License
 
 The application is MIT licensed. See [LICENSE](LICENSE). Bundled fonts use the SIL Open Font License. Dependency acknowledgments are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+## Events and reusable designs
+
+I use the Events & seasons workspace to connect separate competitions without guessing that equal participant names identify the same team. Event standings combine weighted placement awards; schedules check explicitly shared people, venues and referees. Event packages include all linked competitions and import as independent copies. Private event packages require encryption.
+
+Theme Studio saves named designs locally. Presentation includes participant introductions, trophy scenes and broadcast overlays, with PNG/SVG exports. The Share Center offers an embedded-key link option, a transfer assistant, and multipart QR images. The importer decodes QR images locally and starts a camera only on request.
+
+Large entrant, match and schedule lists use bounded pages, and restricted draws can run in a cancelable worker. The app remains usable when workers are unavailable through an explicit local preview option.

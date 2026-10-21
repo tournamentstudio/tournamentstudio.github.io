@@ -6,6 +6,7 @@ import { publicProjection } from "../sharing";
 import { getTheme } from "../themes";
 import { groupLabel } from "../i18n";
 import { validateRasterAsset } from "../security/codec";
+import { themeDesignSchema } from "../domain/display-options";
 import { escapeXML } from "./index";
 
 export interface VisualPage {
@@ -63,8 +64,10 @@ export function visualPalette(t: Tournament) {
     background: color(t.theme.background, theme.background),
     foreground: color(t.theme.foreground, theme.foreground),
     accent: color(t.theme.accent, theme.accent),
-    card: theme.card,
-    muted: theme.muted,
+    card: color(t.theme.design?.cardColor, theme.card),
+    muted: t.theme.design?.cardColor
+      ? color(t.theme.foreground, theme.foreground)
+      : theme.muted,
     radius: Math.max(0, Math.min(48, t.theme.radius ?? theme.radius)),
   };
 }
@@ -78,6 +81,11 @@ export function visualFrame(
   height = 900,
 ) {
   const c = visualPalette(t);
+  const design = themeDesignSchema.safeParse(t.theme.design ?? {});
+  const gradient = design.success ? design.data.gradient : undefined;
+  const paint = gradient
+    ? `<defs><linearGradient id="scene-gradient" x1="0" y1="0" x2="1" y2="0" gradientTransform="rotate(${gradient.angle} .5 .5)"><stop offset="0" stop-color="${gradient.from}"/><stop offset="1" stop-color="${gradient.to}"/></linearGradient></defs>`
+    : "";
   const logo =
     t.theme.logo && validateRasterAsset(t.theme.logo)
       ? `<image href="${escapeXML(t.theme.logo)}" x="30" y="26" width="60" height="60" preserveAspectRatio="xMidYMid meet"/>`
@@ -93,7 +101,7 @@ export function visualFrame(
       ((width - 220) / Math.max(1, Array.from(t.title).length)) * 2.4,
     ),
   );
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="title"><title id="title">${escapeXML(title)}</title><style>text{font-family:TournaExportArabic,TournaExportLatin,sans-serif}</style><rect width="100%" height="100%" fill="${c.background}"/>${background}${logo}<path d="M0 0H${width}V12H0Z" fill="${c.accent}"/><g font-weight="600">${visualText(t.title, width / 2, 56, titleSize, width - 220, locale, c.muted)}${body}${visualText("TournaStudio", width / 2, height - 30, 18, width - 100, "en", c.muted)}</g></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="title"><title id="title">${escapeXML(title)}</title><style>text{font-family:TournaExportArabic,TournaExportLatin,sans-serif}</style>${paint}<rect width="100%" height="100%" fill="${gradient ? "url(#scene-gradient)" : c.background}"/>${background}${logo}<path d="M0 0H${width}V12H0Z" fill="${c.accent}"/><g font-weight="${design.success ? (design.data.fontWeight ?? 600) : 600}">${visualText(t.title, width / 2, 56, titleSize, width - 220, locale, c.muted)}${body}${visualText("TournaStudio", width / 2, height - 30, 18, width - 100, "en", c.muted)}</g></svg>`;
 }
 
 export function selectedScoreboardMatch(t: Tournament): Match | undefined {
@@ -122,11 +130,21 @@ export function scoreboardSVG(
     );
   const c = visualPalette(t),
     names = matchNames(t, match, locale);
+  const compactField = names.length <= 2,
+    nameSize = compactField ? 52 : 38;
   const rows = names.map((name, i) => {
-    const lines = wrapVisualText(name, 42).length;
-    return { name, index: i, height: Math.max(110, lines * 57 + 38) };
+    const lines = wrapVisualText(
+      name,
+      Math.floor(1100 / (nameSize * 0.62)),
+    ).length;
+    return {
+      name,
+      index: i,
+      height: Math.max(compactField ? 240 : 110, lines * nameSize * 1.5 + 38),
+    };
   });
-  let y = 175;
+  const totalHeight = rows.reduce((sum, row) => sum + row.height, 0);
+  let y = Math.max(175, (900 - totalHeight) / 2 + 20);
   const content = rows
     .map(({ name, index, height }) => {
       const winner =
@@ -139,7 +157,13 @@ export function scoreboardSVG(
             0
           ).toLocaleString(locale)
         : "·";
-      const out = `<rect x="80" y="${y}" width="1440" height="${height - 12}" rx="${c.radius}" fill="${c.card}" stroke="${winner ? c.accent : c.muted}" stroke-opacity="${winner ? 1 : 0.2}"/>${visualText(name, 690, y + 55, 38, 1100, locale, winner ? c.accent : c.foreground)}${visualText(score, 1405, y + 65, 48, 180, locale, c.foreground)}`;
+      const lineCount = wrapVisualText(
+        name,
+        Math.floor(1100 / (nameSize * 0.62)),
+      ).length;
+      const textY =
+        y + (height - (lineCount - 1) * nameSize * 1.5) / 2 + nameSize / 3;
+      const out = `<rect x="80" y="${y}" width="1440" height="${height - 12}" rx="${c.radius}" fill="${c.card}" stroke="${winner ? c.accent : c.muted}" stroke-opacity="${winner ? 1 : 0.2}"/>${visualText(name, 690, textY, nameSize, 1100, locale, winner ? c.accent : c.foreground)}${visualText(score, 1405, y + height / 2 + 16, compactField ? 72 : 48, 180, locale, c.foreground)}`;
       y += height;
       return out;
     })

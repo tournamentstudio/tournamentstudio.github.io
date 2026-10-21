@@ -5,6 +5,7 @@ import { repository, type RevisionEntry } from "../persistence";
 import { exportArchive, downloadFile } from "../sharing";
 import { Notice, ErrorText, Confirm } from "../components/ui";
 import { useI18n } from "../i18n";
+import { HistoryComparison } from "./HistoryComparison";
 export function History({
   tournament: doc,
   secret,
@@ -64,6 +65,12 @@ export function History({
           "۵۰ نسخه آخر به‌صورت محلی نگهداری می‌شود. بازیابی نسخه تازه می‌سازد و تاریخچه را بازنویسی نمی‌کند. برای بایگانی بلندمدت پشتیبان فایل بگیرید.",
         )}
       </Notice>
+      <HistoryComparison
+        key={doc.id}
+        tournament={doc}
+        revisions={revisions}
+        secret={secret}
+      />
       <div className="revision-list">
         {revisions.map((r) => (
           <div className="revision-row" key={r.revision}>

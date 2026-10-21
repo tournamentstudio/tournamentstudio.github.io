@@ -29,6 +29,7 @@ export interface LibraryEntry {
   favorite: boolean;
   trashedAt?: string;
   lastBackupAt?: string;
+  lastBackupRevision?: number;
 }
 
 export interface RevisionEntry {
@@ -139,6 +140,9 @@ function entryFor(
     favorite: previous?.favorite ?? false,
     ...(previous?.trashedAt ? { trashedAt: previous.trashedAt } : {}),
     ...(previous?.lastBackupAt ? { lastBackupAt: previous.lastBackupAt } : {}),
+    ...(previous?.lastBackupRevision !== undefined
+      ? { lastBackupRevision: previous.lastBackupRevision }
+      : {}),
   };
 }
 
@@ -300,6 +304,67 @@ export const repository = {
     const record = await prepareRecord(document, Boolean(secret), secret);
     await storeRecord(record, undefined, "Created or imported tournament");
     return document;
+  },
+
+  async createMany(
+    inputs: Tournament[],
+    secret?: string,
+    eventPreference?: { key: string; value: string },
+  ): Promise<Tournament[]> {
+    if (
+      inputs.length > 64 ||
+      new Set(inputs.map((d) => d.id)).size !== inputs.length
+    )
+      throw new Error("An event import needs at most 64 distinct tournaments.");
+    if (
+      eventPreference &&
+      (!/^event:[a-zA-Z0-9-]{1,120}$/.test(eventPreference.key) ||
+        eventPreference.value.length > 24 * 1024 * 1024)
+    )
+      throw new Error("Invalid event storage record.");
+    const documents = await Promise.all(
+      inputs.map((input) =>
+        sealDocument({
+          ...validateTournament(input),
+          revision: Math.max(1, input.revision),
+        }),
+      ),
+    );
+    const records = await Promise.all(
+      documents.map((document) =>
+        prepareRecord(document, Boolean(secret), secret),
+      ),
+    );
+    try {
+      await db.transaction(
+        "rw",
+        db.documents,
+        db.snapshots,
+        db.preferences,
+        async () => {
+          if (
+            (await db.documents.bulkGet(records.map((r) => r.id))).some(
+              Boolean,
+            ) ||
+            (eventPreference && (await db.preferences.get(eventPreference.key)))
+          )
+            throw new Error(
+              "An event import would replace existing data. Import a separate fork instead.",
+            );
+          await db.documents.bulkAdd(records);
+          await db.snapshots.bulkAdd(
+            records.map((record) =>
+              snapshotFor(record, "Imported event competition"),
+            ),
+          );
+          if (eventPreference) await db.preferences.add(eventPreference);
+        },
+      );
+    } catch (error) {
+      storageError(error);
+    }
+    for (const record of records) notify(record.id, record.revision);
+    return documents;
   },
 
   async save(
@@ -629,8 +694,22 @@ export const repository = {
     notify(id, -1);
   },
 
-  async markBackup(id: string): Promise<void> {
-    await db.documents.update(id, { lastBackupAt: new Date().toISOString() });
+  async markBackup(id: string, exportedRevision: number): Promise<void> {
+    await db.transaction("rw", db.documents, async () => {
+      const record = await db.documents.get(id);
+      if (!record) throw new Error("Tournament not found on this device.");
+      if (
+        !Number.isInteger(exportedRevision) ||
+        exportedRevision < 1 ||
+        exportedRevision > record.revision
+      )
+        throw new Error("The backup revision does not match a saved revision.");
+      if ((record.lastBackupRevision ?? 0) > exportedRevision) return;
+      await db.documents.update(id, {
+        lastBackupAt: new Date().toISOString(),
+        lastBackupRevision: exportedRevision,
+      });
+    });
     notify(id, -1);
   },
 

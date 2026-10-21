@@ -17,6 +17,7 @@ import {
   publicProjection,
   remapRecipeReferences,
 } from "./index";
+import { recipePresentation } from "./recipe-presentation";
 
 const recipeSchema = z
   .object({
@@ -127,16 +128,7 @@ export async function encodeStageRecipe(input: Tournament): Promise<string> {
       resources: resources.map(({ id, name }) => ({ id, name })),
       rules: tournament.rules,
       theme,
-      presentation: {
-        ...tournament.presentation,
-        sponsors: [],
-        scenes: tournament.presentation.scenes.map((scene) => ({
-          ...scene,
-          id: crypto.randomUUID(),
-          title: "",
-          text: "",
-        })),
-      },
+      presentation: recipePresentation(tournament.presentation, participants),
     }),
   );
 }
@@ -183,6 +175,9 @@ export async function decodeStageRecipe(code: string): Promise<Tournament> {
     }));
   tournament.rules = recipe.rules;
   tournament.theme = recipe.theme;
-  tournament.presentation = recipe.presentation;
+  tournament.presentation = recipePresentation(
+    recipe.presentation,
+    participants,
+  );
   return validateTournament(tournament);
 }

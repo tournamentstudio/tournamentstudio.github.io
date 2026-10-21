@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Plus,
   Trash2,
@@ -16,6 +16,7 @@ import {
   type RosterMember,
 } from "../domain/types";
 import { Field, Modal, Notice, ErrorText } from "../components/ui";
+import { Pagination, usePagination } from "../components/Pagination";
 import { exportCSV, downloadBlob } from "../export";
 import { useI18n } from "../i18n";
 import { ParticipantLocationFields } from "./ParticipantLocationFields";
@@ -42,7 +43,33 @@ export function Participants({ tournament: doc, onChange }: EditorProps) {
   const [adminFilter, setAdminFilter] = useState("all");
   const [importNote, setImportNote] = useState("");
   const importSequence = useRef(0);
-  const queue = waitingList(doc.participants);
+  const queue = useMemo(
+    () => waitingList(doc.participants),
+    [doc.participants],
+  );
+  const filtered = useMemo(
+    () =>
+      (adminFilter === "waiting" ? queue : doc.participants)
+        .filter((p) =>
+          p.name
+            .normalize("NFKC")
+            .toLocaleLowerCase(locale)
+            .includes(search.normalize("NFKC").toLocaleLowerCase(locale)),
+        )
+        .filter(
+          (p) =>
+            adminFilter === "all" ||
+            adminFilter === "waiting" ||
+            (adminFilter === "unpaid"
+              ? organizerRecord(p).payment === "unpaid"
+              : organizerRecord(p).eligibility === adminFilter),
+        ),
+    [adminFilter, queue, doc.participants, search, locale],
+  );
+  const { visible, pagination } = usePagination(
+    filtered,
+    JSON.stringify([doc.id, search, adminFilter]),
+  );
   const hasDraw = doc.matches.length > 0;
   function save(p: Participant) {
     const issue = participantAvailabilityError(p, locale);
@@ -246,6 +273,7 @@ export function Participants({ tournament: doc, onChange }: EditorProps) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t("Search entrants...", "جستجوی شرکت‌کنندگان...")}
+            type="search"
             aria-label={t("Search entrants", "جستجوی شرکت‌کنندگان")}
           />
         </div>
@@ -279,127 +307,119 @@ export function Participants({ tournament: doc, onChange }: EditorProps) {
             </tr>
           </thead>
           <tbody>
-            {(adminFilter === "waiting" ? queue : doc.participants)
-              .filter((p) =>
-                p.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()),
-              )
-              .filter(
-                (p) =>
-                  adminFilter === "all" ||
-                  adminFilter === "waiting" ||
-                  (adminFilter === "unpaid"
-                    ? organizerRecord(p).payment === "unpaid"
-                    : organizerRecord(p).eligibility === adminFilter),
-              )
-              .map((p) => (
-                <tr key={p.id}>
-                  <td>
-                    <span className="seed-number">{p.seed}</span>
-                  </td>
-                  <td>
-                    <div className="entrant-cell">
-                      <span className="avatar">
-                        {p.logo ? (
-                          <img
-                            src={p.logo}
-                            alt=""
-                            width={36}
-                            height={36}
-                            style={{ objectFit: "contain" }}
-                          />
-                        ) : (
-                          p.name.slice(0, 2)
-                        )}
-                      </span>
-                      <div>
-                        <bdi>{p.name}</bdi>
-                        <small>
-                          <bdi>
-                            {[p.organization, p.region]
-                              .filter(Boolean)
-                              .join(" · ")}
-                          </bdi>
-                        </small>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span className="muted">
-                      {p.roster.length || t("No roster", "بدون ترکیب")}
-                    </span>
-                  </td>
-                  <td>
-                    <span
-                      className={`badge ${p.status === "active" ? "status-ready" : ""}`}
-                    >
-                      {p.status === "active"
-                        ? t("Active", "فعال")
-                        : p.status === "withdrawn"
-                          ? t("Withdrawn", "کناره‌گیری")
-                          : t("Disqualified", "محروم")}
-                    </span>
-                  </td>
-                  <td>
-                    <input
-                      type="checkbox"
-                      aria-label={`${t("Check in", "پذیرش")} ${p.name}`}
-                      checked={p.checkedIn}
-                      onChange={(e) =>
-                        save({ ...p, checkedIn: e.target.checked })
-                      }
-                    />
-                  </td>
-                  <td>
-                    <div className="form-stack" style={{ gap: 4 }}>
-                      <small>
-                        {organizerRecord(p).registration === "waiting"
-                          ? `${t("Waiting", "انتظار")} #${queue.findIndex((item) => item.id === p.id) + 1}`
-                          : organizerRecord(p).registration === "rejected"
-                            ? t("Rejected", "ردشده")
-                            : t("Approved", "تأییدشده")}
-                      </small>
-                      <small>
-                        {organizerRecord(p).payment === "paid"
-                          ? t("Paid", "پرداخت شده")
-                          : organizerRecord(p).payment === "unpaid"
-                            ? t("Unpaid", "پرداخت نشده")
-                            : organizerRecord(p).payment === "waived"
-                              ? t("Waived", "معاف")
-                              : t("Payment not tracked", "پرداخت ثبت نشده")}
-                      </small>
-                      {organizerRecord(p).registration === "waiting" && (
-                        <button
-                          className="text-button"
-                          onClick={() => {
-                            const record = {
-                              ...organizerRecord(p),
-                              registration: "approved" as const,
-                            };
-                            delete record.queuedAt;
-                            save({
-                              ...p,
-                              metadata: { ...p.metadata, organizer: record },
-                            });
-                          }}
-                        >
-                          {t("Approve registration", "تأیید ثبت‌نام")}
-                        </button>
+            {visible.map((p) => (
+              <tr key={p.id}>
+                <td>
+                  <span className="seed-number">{p.seed}</span>
+                </td>
+                <td>
+                  <div className="entrant-cell">
+                    <span className="avatar">
+                      {p.logo ? (
+                        <img
+                          src={p.logo}
+                          alt=""
+                          width={36}
+                          height={36}
+                          style={{ objectFit: "contain" }}
+                        />
+                      ) : (
+                        p.name.slice(0, 2)
                       )}
+                    </span>
+                    <div>
+                      <bdi>{p.name}</bdi>
+                      <small>
+                        <bdi>
+                          {[p.organization, p.region]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </bdi>
+                      </small>
                     </div>
-                  </td>
-                  <td>
-                    <button
-                      className="text-button"
-                      onClick={() => setEditing(structuredClone(p))}
-                    >
-                      {t("Edit", "ویرایش")}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                  </div>
+                </td>
+                <td>
+                  <span className="muted">
+                    {p.roster.length || t("No roster", "بدون ترکیب")}
+                  </span>
+                </td>
+                <td>
+                  <span
+                    className={`badge ${p.status === "active" ? "status-ready" : ""}`}
+                  >
+                    {p.status === "active"
+                      ? t("Active", "فعال")
+                      : p.status === "withdrawn"
+                        ? t("Withdrawn", "کناره‌گیری")
+                        : t("Disqualified", "محروم")}
+                  </span>
+                </td>
+                <td>
+                  <input
+                    type="checkbox"
+                    aria-label={`${t("Check in", "پذیرش")} ${p.name}`}
+                    checked={p.checkedIn}
+                    onChange={(e) =>
+                      save({ ...p, checkedIn: e.target.checked })
+                    }
+                  />
+                </td>
+                <td>
+                  <div className="form-stack" style={{ gap: 4 }}>
+                    <small>
+                      {organizerRecord(p).registration === "waiting"
+                        ? `${t("Waiting", "انتظار")} #${queue.findIndex((item) => item.id === p.id) + 1}`
+                        : organizerRecord(p).registration === "rejected"
+                          ? t("Rejected", "ردشده")
+                          : t("Approved", "تأییدشده")}
+                    </small>
+                    <small>
+                      {organizerRecord(p).payment === "paid"
+                        ? t("Paid", "پرداخت شده")
+                        : organizerRecord(p).payment === "unpaid"
+                          ? t("Unpaid", "پرداخت نشده")
+                          : organizerRecord(p).payment === "waived"
+                            ? t("Waived", "معاف")
+                            : t("Payment not tracked", "پرداخت ثبت نشده")}
+                    </small>
+                    {organizerRecord(p).registration === "waiting" && (
+                      <button
+                        className="text-button"
+                        onClick={() => {
+                          const record = {
+                            ...organizerRecord(p),
+                            registration: "approved" as const,
+                          };
+                          delete record.queuedAt;
+                          save({
+                            ...p,
+                            metadata: { ...p.metadata, organizer: record },
+                          });
+                        }}
+                      >
+                        {t("Approve registration", "تأیید ثبت‌نام")}
+                      </button>
+                    )}
+                  </div>
+                </td>
+                <td>
+                  <button
+                    className="text-button"
+                    onClick={() => setEditing(structuredClone(p))}
+                  >
+                    {t("Edit", "ویرایش")}
+                  </button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
+      <Pagination
+        pagination={pagination}
+        label={t("Participant pages", "صفحه‌های شرکت‌کنندگان")}
+      />
       {editing && (
         <Modal
           title={t("Edit participant", "ویرایش شرکت‌کننده")}

@@ -1,0 +1,68 @@
+.draw-ceremony {
+  padding: clamp(1rem, 4vw, 2.5rem);
+  background-color: var(--theme-bg);
+  color: var(--theme-fg);
+  border: 1px solid color-mix(in srgb, var(--theme-fg) 20%, transparent);
+  border-radius: var(--theme-radius, 18px);
+  min-width: 0;
+}
+.draw-ceremony header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.draw-ceremony h2 {
+  font-size: clamp(1.25rem, 3vw, 2rem);
+  overflow-wrap: anywhere;
+}
+.draw-reveal-card {
+  display: grid;
+  place-content: center;
+  gap: 1rem;
+  text-align: center;
+  min-height: 15rem;
+  margin-block: 1.5rem;
+  border: 2px solid var(--theme-accent);
+  border-radius: var(--theme-radius, 18px);
+  padding: 2rem;
+  background: var(--theme-card);
+  animation: draw-reveal-enter 0.45s ease-out;
+}
+.draw-reveal-card strong {
+  font-size: clamp(1.5rem, 5vw, 3.5rem);
+  overflow-wrap: anywhere;
+}
+.draw-ceremony .field {
+  max-width: 20rem;
+  margin-top: 1rem;
+}
+.draw-ceremony .field > span,
+.draw-ceremony .eyebrow {
+  color: var(--theme-fg);
+}
+.draw-ceremony:fullscreen {
+  overflow: auto;
+  border-radius: 0;
+  min-height: 100dvh;
+}
+.draw-ceremony li {
+  overflow-wrap: anywhere;
+  padding-block: 0.3rem;
+}
+@keyframes draw-reveal-enter {
+  from {
+    opacity: 0.25;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .draw-reveal-card {
+    animation: none;
+  }
+}

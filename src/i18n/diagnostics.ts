@@ -6,6 +6,10 @@ import { diagnosticTranslations } from "./diagnostic-messages";
 import { generatedMatchLabel } from "./match-labels";
 import { tabularTranslations } from "./tabular-messages";
 import { portableTranslations } from "./portable-messages";
+import { backgroundTranslations } from "./background-messages";
+import { themeTranslations } from "./theme-messages";
+import { interactionTranslations } from "./interaction-messages";
+import { collectionTranslations } from "./collection-messages";
 import {
   advancementTranslations,
   diagnosticTemplates,
@@ -16,6 +20,10 @@ const messages = {
   ...advancementTranslations,
   ...tabularTranslations,
   ...portableTranslations,
+  ...backgroundTranslations,
+  ...themeTranslations,
+  ...interactionTranslations,
+  ...collectionTranslations,
 };
 const terms: Record<string, string> = {
   meetings: "تعداد دیدارها",

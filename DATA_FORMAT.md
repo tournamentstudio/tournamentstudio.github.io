@@ -553,3 +553,15 @@ The XLSX reader uses bounded ZIP expansion and native XML parsing for the first 
 ## Visual archive
 
 Export Studio writes standalone SVG files with embedded local font data, a versioned slide manifest, and a static HTML viewer in a ZIP. Every scene first receives the public projection. Lists are paginated and output sizes are bounded. Files represent the current saved view; animation clocks and later scores do not run inside the archive.
+
+## Event packages and display extensions
+
+`.tsevent` files contain a `TSE1` compressed transport envelope with a checksum, an encryption flag and a payload. The payload is either an authenticated package or `{version:1,collection,tournaments}`. Each event and tournament hash is checked before preview. Limits are 64 competitions, 32 divisions, 2,048 directory members and the shared 16 MiB expanded/12 MiB compressed transport bounds. File input is capped at 24 MiB. Import forks tournament IDs, remaps event links and stores the whole bundle transactionally. Public files omit private event notes and adjustment reasons, plus all fields excluded by the tournament public projection.
+
+The collection document contains its revision/hash, title, season, theme, archive state, directory, divisions, competition links, placement awards and reasoned adjustments. Competition links select a final ranking stage, weight, explicit entrant bindings and optional shared venue names. Equal names have no identity semantics. Ties share the average award of occupied positions. Incomplete/group-only ranking stages are excluded; movement previews reject a tie crossing the selected cutoff.
+
+Theme files accept versions 1 and 2. Version 2 adds the optional strict `theme.design` object. Presentation scenes may carry participant/match targets, and presentation settings may contain an overlay configuration. Recipes remap participant targets and discard match targets that do not exist in the reconstructed competition.
+
+`TSK1:<key>:TS1:<encrypted transport>` includes a 32-character URL-safe key representing 24 random bytes. The inner payload must be encrypted; a plaintext envelope in a TSK1 wrapper is invalid. Anyone possessing the complete code has the key.
+
+`TSQ1:<partHash>:<packageHash>:<index>/<count>:<chunk>` frames carry an ordered piece of an existing portable code. SHA-256 part hashes cover the package hash, index/count and chunk. The whole-package digest covers the reconstructed code. Non-final chunks are 900 characters; the final chunk has 1 to 900 characters. At most 128 parts and 115,200 code characters are accepted. Mixed packages and conflicting duplicates fail. A matching duplicate is ignored. Complete reconstruction still passes the normal schema/decryption preview. QR ZIPs contain numbered PNGs and a manifest, and must be extracted before image import.

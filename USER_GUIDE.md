@@ -672,9 +672,9 @@ packets. A fork gets a new identity and cannot accept the organizer's updates.
 Do not fork a spectator copy if you intend to apply those updates.
 
 If the code is large, use a `.tourney` file. The Share Center warns about long
-links and only generates a QR when its payload is short enough. Most larger
-tournaments will not fit the QR limit. Scan supported QR links with the device's
-camera; the app does not include a camera scanner.
+links and only generates a single QR when its payload is short enough. Multipart
+QR export divides supported larger codes into numbered images. The importer
+can read QR images locally or start a camera scan after an explicit action.
 
 With encryption, send the secret separately. Anyone with both the full payload
 and the secret can read it. Encryption does not prove who sent the package.
@@ -828,3 +828,25 @@ In **Share Center**, leave **Include saved revisions (up to 50)** enabled to car
 Recipes now include the entire stage graph, with fresh numbered entrants. Generate each stage when its inputs are ready. Private names, results and coordinates are left out.
 
 For private update packets, select encryption and enter a separate secret. On a divergent local copy, review each operation against the saved base, local state and incoming value. Select the changes to retain, preview the resulting bracket, then confirm. Corrections that affect played matches need a further impact confirmation. Blocked structural edits can be saved as the sender's separate fork. A merge creates a new local revision, so later sender packets may also need review.
+
+## Organize an event or season
+
+Open Events & seasons and create an event. Add a secret if it will include protected competitions. Link tournaments from the local library and select the final stage used for ranking. A group stage alone is not a final event ranking; select its playoff stage when available.
+
+Under Competition links, map recurring participants to the same directory member. Equal names are kept separate until you make this choice. Set competition weights and placement awards to combine different games. Points adjustments require a reason. Promotion/relegation preview waits for every linked final stage and refuses a tie at a cutoff. It produces a plan without moving tournament entrants.
+
+Use shared venue names for physical resources used by several competitions. The shared schedule checks venue, referee and mapped-entrant rest conflicts, including possible entrants in later matches. Edit the source tournament to resolve a conflict. The table shows up to 1,000 conflicts per pass; fix the listed problems and check again.
+
+Event presentation shows filtered public standings and branding. Download printable event creates a standalone HTML file. Download event package includes all linked competitions; private packages need a secret. Import event previews the package and creates independent copies. Duplicate for next season keeps rules and entrants while resetting results, schedules and adjustments.
+
+## Reuse designs and transfer without a shared browser
+
+In Theme Studio, save a named personal design, then apply or duplicate it in another tournament. Images are excluded unless you opt in. Choose a bracket layout and use the design controls for card, table, gradient and text styles. Presentation offers participant introductions, semifinal/final introductions, trophy scenes and a broadcast overlay editor. Export transparent PNG/SVG overlays or use a chroma background for window capture.
+
+The transfer assistant chooses an export for your purpose and privacy choice. Embedded-key links contain their own secret, so anyone holding one can open it. For larger codes, export numbered QR parts. The recipient can scan parts in any order, or extract the ZIP and select the PNG images together. Image and camera scans fill the ordinary import form; preview it before saving.
+
+Storage Health can enable local backup reminders. They appear while the app is open and can be snoozed for a day. The History comparison shows public fields by default; reveal private fields only when appropriate for your local session.
+
+## Draw ceremonies and tailored creation
+
+Format Advisor can prefill a group or Swiss competition with playoffs, including qualifier counts, match time and resources. Review the estimates before creating the tournament. In a valid group or knockout draw preview, open the draw ceremony to reveal the existing preview order. Use Next, Previous, Replay or auto rotation. The ceremony does not randomize again or change saved results.

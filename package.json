@@ -20,6 +20,8 @@
   "dependencies": {
     "@fontsource-variable/inter": "*",
     "@fontsource-variable/vazirmatn": "*",
+    "@zxing/browser": "^0.2.1",
+    "@zxing/library": "^0.23.0",
     "dexie": "^4.0.0",
     "fflate": "^0.8.2",
     "lucide-react": "*",

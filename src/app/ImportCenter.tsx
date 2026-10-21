@@ -18,6 +18,7 @@ import { generateStage } from "../engine";
 import { Field, Modal, Notice, ErrorText } from "../components/ui";
 import { Bracket } from "../components/Bracket";
 import { useI18n } from "../i18n";
+import { QRImport } from "./QRImport";
 export function ImportCenter({
   initialCode = "",
   current,
@@ -274,6 +275,13 @@ export function ImportCenter({
               aria-label={t("Import code", "کد ورود")}
             />
           </Field>
+          <QRImport
+            onCode={(value) => {
+              setText(value);
+              setFile(undefined);
+              setError(undefined);
+            }}
+          />
           <Field
             label={t(
               "Separate secret, if encrypted",

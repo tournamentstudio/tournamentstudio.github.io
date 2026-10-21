@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  advancedSceneTypes,
+  overlaySchema,
+  themeDesignSchema,
+} from "./display-options";
 import type { JsonValue, Tournament } from "./types";
 import { advancementErrors } from "./advancement";
 import { locationSchema } from "./geography";
@@ -332,6 +337,7 @@ export const rulesSchema = z
 
 export const themeSchema = z
   .object({
+    design: themeDesignSchema.optional(),
     preset: z.string().min(1).max(100),
     accent: color.optional(),
     background: color.optional(),
@@ -356,6 +362,7 @@ export const presentationSchema = z
           .object({
             id,
             type: z.enum([
+              ...advancedSceneTypes,
               "title",
               "participants",
               "bracket",
@@ -377,6 +384,8 @@ export const presentationSchema = z
             title: shortText,
             duration: z.number().min(1).max(86400),
             text: z.string().max(10000),
+            participantIds: z.array(id).max(LIMITS.participants).optional(),
+            matchId: id.optional(),
           })
           .strict(),
       )
@@ -386,6 +395,7 @@ export const presentationSchema = z
     showScores: z.boolean(),
     transition: z.enum(["fade", "none"]),
     sponsors: z.array(shortText).max(100),
+    overlay: overlaySchema.optional(),
   })
   .strict();
 

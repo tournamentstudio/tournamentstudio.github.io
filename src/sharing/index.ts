@@ -23,6 +23,7 @@ import {
   sha256,
 } from "../security/codec";
 import { decryptJson, encryptJson } from "../security/crypto";
+import { recipePresentation } from "./recipe-presentation";
 
 export { sha256 } from "../security/codec";
 export { createRecoverySecret } from "../security/crypto";
@@ -281,6 +282,8 @@ export async function decodeCode(
   code: string,
   secret?: string,
 ): Promise<Tournament> {
+  if (code.trimStart().startsWith("TSK1:"))
+    return (await import("./embedded")).decodeEmbeddedCode(code);
   return unwrapPackage(await decodeTransport("TS1", code), secret);
 }
 
@@ -631,15 +634,7 @@ async function encodeLegacyRecipe(tournament: Tournament): Promise<string> {
     participantReferences: "positions",
     rules: tournament.rules,
     theme,
-    presentation: {
-      ...tournament.presentation,
-      sponsors: [],
-      scenes: tournament.presentation.scenes.map((scene) => ({
-        ...scene,
-        title: "",
-        text: "",
-      })),
-    },
+    presentation: recipePresentation(tournament.presentation, references),
   });
 }
 
@@ -727,7 +722,15 @@ async function decodeLegacyRecipe(code: string): Promise<Tournament> {
     throw new Error("Venue references require a venue-restricted recipe.");
   tournament.rules = recipe.rules;
   tournament.theme = recipe.theme;
-  tournament.presentation = recipe.presentation;
+  tournament.presentation = recipePresentation(
+    recipe.presentation,
+    new Map(
+      tournament.participants.map((participant, index) => [
+        `slot-${index + 1}`,
+        participant.id,
+      ]),
+    ),
+  );
   return validateTournament(tournament);
 }
 

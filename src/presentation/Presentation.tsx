@@ -13,8 +13,18 @@ import { getStandings } from "../engine";
 import { encodeCode, publicProjection } from "../sharing";
 import { getTheme, themeStyle } from "../themes";
 import "./presentation.css";
+import { AdvancedSceneContent, type AdvancedScene } from "./advanced-scenes";
+import { BroadcastOverlay } from "./BroadcastOverlay";
 
 export const sceneTypes: { id: SceneType; en: string; fa: string }[] = [
+  {
+    id: "introduction",
+    en: "Participant introductions",
+    fa: "معرفی شرکت‌کنندگان",
+  },
+  { id: "semifinal", en: "Semifinal introduction", fa: "معرفی نیمه‌نهایی" },
+  { id: "final-intro", en: "Final introduction", fa: "معرفی فینال" },
+  { id: "trophy", en: "Trophy celebration", fa: "جشن قهرمانی" },
   { id: "title", en: "Opening title", fa: "عنوان آغازین" },
   { id: "participants", en: "Participants", fa: "شرکت‌کنندگان" },
   { id: "bracket", en: "Tournament bracket", fa: "جدول مسابقات" },
@@ -486,6 +496,18 @@ function SceneContent({
         </div>
       );
     }
+    case "introduction":
+    case "semifinal":
+    case "final-intro":
+    case "trophy":
+      return (
+        <AdvancedSceneContent
+          tournament={tournament}
+          scene={scene as AdvancedScene}
+          locale={locale}
+          elapsed={elapsed}
+        />
+      );
     case "qr":
       return <QRScene tournament={tournament} locale={locale} />;
     case "break":
@@ -559,7 +581,11 @@ export function Presentation({
     const key = (event: KeyboardEvent) => {
       if (
         event.target instanceof HTMLInputElement ||
-        event.target instanceof HTMLSelectElement
+        event.target instanceof HTMLSelectElement ||
+        event.target instanceof HTMLTextAreaElement ||
+        (event.target instanceof HTMLElement &&
+          (event.target.isContentEditable ||
+            (event.target.closest("button, a") && event.key !== "Escape")))
       )
         return;
       if (event.key === "Escape") onExit();
@@ -584,57 +610,96 @@ export function Presentation({
   }, [onExit, scenes.length]);
   return (
     <div
-      className={`presentation-shell themed ${safe.theme.reducedMotion ? "motion-reduced" : ""}`}
+      className={`presentation-shell themed ${safe.presentation.overlay?.enabled ? "broadcast-shell" : ""} ${safe.theme.reducedMotion ? "motion-reduced" : ""}`}
       style={themeStyle(safe.theme)}
       data-pattern={getTheme(safe.theme.preset).pattern}
       dir={locale === "fa" ? "rtl" : "ltr"}
     >
-      <div className="presentation-topline">
-        <span>TournaStudio</span>
-        <span>{safe.title}</span>
-        <span>
-          {t("LOCAL DISPLAY", "نمایش محلی")} · {t("Rev.", "نسخه")}{" "}
-          {safe.revision}
-        </span>
-      </div>
-      <main
-        className={`presentation-scene ${safe.presentation.transition === "fade" ? "scene-fade" : ""}`}
-        style={{ aspectRatio: safe.presentation.aspect.replace(":", "/") }}
-        key={scene.id}
-      >
-        {!["title", "champion", "break", "announcement"].includes(
-          scene.type,
-        ) && (
-          <header className="presentation-scene-heading">
-            <p>{safe.title}</p>
-            <h1>{scene.title || sceneLabel(scene.type, locale)}</h1>
-          </header>
-        )}
-        <SceneContent
+      {safe.presentation.overlay?.enabled ? (
+        <BroadcastOverlay
           tournament={safe}
-          scene={scene}
+          settings={safe.presentation.overlay}
           locale={locale}
-          elapsed={elapsed}
         />
-      </main>
+      ) : (
+        <>
+          <div className="presentation-topline">
+            <span>TournaStudio</span>
+            <span>{safe.title}</span>
+            <span>
+              {t("LOCAL DISPLAY", "نمایش محلی")} · {t("Rev.", "نسخه")}{" "}
+              {safe.revision}
+            </span>
+          </div>
+          {safe.theme.design?.sponsorPosition === "top" &&
+            safe.presentation.sponsors.some(Boolean) && (
+              <div className="presentation-sponsor-band">
+                {safe.presentation.sponsors.filter(Boolean).map((name, i) => (
+                  <bdi key={i}>{name}</bdi>
+                ))}
+              </div>
+            )}
+          <main
+            className={`presentation-scene ${safe.presentation.transition === "fade" ? "scene-fade" : ""}`}
+            style={{ aspectRatio: safe.presentation.aspect.replace(":", "/") }}
+            key={scene.id}
+          >
+            {![
+              "title",
+              "champion",
+              "break",
+              "announcement",
+              "introduction",
+              "semifinal",
+              "final-intro",
+              "trophy",
+            ].includes(scene.type) && (
+              <header className="presentation-scene-heading">
+                <p>{safe.title}</p>
+                <h1>{scene.title || sceneLabel(scene.type, locale)}</h1>
+              </header>
+            )}
+            <SceneContent
+              tournament={safe}
+              scene={scene}
+              locale={locale}
+              elapsed={elapsed}
+            />
+          </main>
+          {safe.theme.design?.sponsorPosition !== "top" &&
+            safe.presentation.sponsors.some(Boolean) && (
+              <div className="presentation-sponsor-band">
+                {safe.presentation.sponsors.filter(Boolean).map((name, i) => (
+                  <bdi key={i}>{name}</bdi>
+                ))}
+              </div>
+            )}
+        </>
+      )}
       <nav
         className="presentation-controls"
         aria-label={t("Presentation controls", "کنترل‌های نمایش")}
       >
         <button
           type="button"
+          disabled={safe.presentation.overlay?.enabled}
           onClick={() => step(-1)}
           aria-label={t("Previous scene", "نمای قبلی")}
         >
           ←
         </button>
-        <button type="button" onClick={() => setPlaying(!playing)}>
+        <button
+          type="button"
+          disabled={safe.presentation.overlay?.enabled}
+          onClick={() => setPlaying(!playing)}
+        >
           {playing
             ? t("Pause rotation", "توقف چرخش")
             : t("Play playlist", "پخش فهرست")}
         </button>
         <button
           type="button"
+          disabled={safe.presentation.overlay?.enabled}
           onClick={() => step(1)}
           aria-label={t("Next scene", "نمای بعدی")}
         >

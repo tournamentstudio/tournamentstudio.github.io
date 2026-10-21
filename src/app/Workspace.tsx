@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import {
   Trophy,
   Users,
@@ -35,6 +35,7 @@ import {
 import { Bracket } from "../components/Bracket";
 import { StandingsTable } from "../components/StandingsTable";
 import { ErrorText, Empty } from "../components/ui";
+import { Pagination, usePagination } from "../components/Pagination";
 import { Participants } from "./Participants";
 import { MatchControl } from "./MatchControl";
 import { Structure } from "./Structure";
@@ -114,7 +115,13 @@ export function Workspace({
   const [search, setSearch] = useState("");
   const [error, setError] = useState<unknown>();
   const [stageId, setStageId] = useState(doc.stages[0]?.id ?? "");
-  const [limit, setLimit] = useState(60);
+  const participants = useMemo(
+    () =>
+      new Map(
+        doc.participants.map((participant) => [participant.id, participant]),
+      ),
+    [doc.participants],
+  );
   const currentMatch = doc.matches.find((m) => m.id === matchId);
   const played = doc.matches.filter((m) => m.status === "completed");
   const playable = doc.matches.filter(
@@ -124,20 +131,26 @@ export function Workspace({
     (m) => m.status === "ready" || m.status === "live",
   );
   const champion = getChampion(doc);
-  const filtered = doc.matches.filter(
-    (m) =>
-      (filter === "all" ||
-        (filter === "ready"
-          ? m.status === "ready" || m.status === "live"
-          : m.status === filter)) &&
-      (!search ||
-        m.slots.some((s) =>
-          doc.participants
-            .find((p) => p.id === s.participantId)
-            ?.name.toLocaleLowerCase()
-            .includes(search.toLocaleLowerCase()),
-        )),
+  const filtered = useMemo(
+    () =>
+      doc.matches.filter(
+        (m) =>
+          (filter === "all" ||
+            (filter === "ready"
+              ? m.status === "ready" || m.status === "live"
+              : m.status === filter)) &&
+          (!search ||
+            m.slots.some((s) =>
+              participants
+                .get(s.participantId ?? "")
+                ?.name.toLocaleLowerCase()
+                .includes(search.toLocaleLowerCase()),
+            )),
+      ),
+    [doc.matches, filter, search, participants],
   );
+  const { visible: visibleMatches, pagination: matchPagination } =
+    usePagination(filtered, JSON.stringify([doc.id, filter, search]));
   function present() {
     window.open(
       `${location.pathname}#/present/${doc.id}`,
@@ -184,7 +197,7 @@ export function Workspace({
           </span>
         </div>
         {m.slots.map((slot, i) => {
-          const p = doc.participants.find((x) => x.id === slot.participantId);
+          const p = participants.get(slot.participantId ?? "");
           return (
             <div
               className={`match-entrant ${p && m.result?.winnerIds.includes(p.id) ? "winner" : ""}`}
@@ -466,7 +479,6 @@ export function Workspace({
                       className={filter === id ? "selected" : ""}
                       onClick={() => {
                         setFilter(id);
-                        setLimit(60);
                       }}
                     >
                       {t(en, fa)}
@@ -481,6 +493,7 @@ export function Workspace({
                       "جستجوی شرکت‌کننده...",
                     )}
                     aria-label={t("Search matches", "جستجوی دیدارها")}
+                    type="search"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
@@ -489,16 +502,8 @@ export function Workspace({
               {filtered.length ? (
                 <>
                   <div className="match-grid">
-                    {filtered.slice(0, limit).map(matchCard)}
+                    {visibleMatches.map(matchCard)}
                   </div>
-                  {filtered.length > limit && (
-                    <button
-                      className="button secondary"
-                      onClick={() => setLimit(limit + 60)}
-                    >
-                      {t("Load more matches", "دیدارهای بیشتر")}
-                    </button>
-                  )}
                 </>
               ) : (
                 <Empty
@@ -510,6 +515,10 @@ export function Workspace({
                   )}
                 </Empty>
               )}
+              <Pagination
+                pagination={matchPagination}
+                label={t("Match pages", "صفحه‌های دیدارها")}
+              />
             </div>
           )}
           {tab === "bracket" && (

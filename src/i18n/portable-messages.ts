@@ -1,4 +1,12 @@
 export const portableTranslations: Record<string, string> = {
+  "An event import needs at most 64 distinct tournaments.":
+    "ورود یک رویداد حداکثر ۶۴ مسابقات متفاوت را می‌پذیرد.",
+  "Invalid event storage record.": "رکورد ذخیره رویداد معتبر نیست.",
+  "An event import would replace existing data. Import a separate fork instead.":
+    "ورود این رویداد داده‌های موجود را جایگزین می‌کند. یک نسخه جداگانه وارد کنید.",
+  "The backup revision does not match a saved revision.":
+    "نسخه پشتیبان با هیچ نسخه ذخیره‌شده‌ای مطابقت ندارد.",
+  "Tournament not found on this device.": "مسابقات روی این دستگاه پیدا نشد.",
   "The embedded-key code is too large.":
     "حجم کد دارای کلید داخلی بیش از حد مجاز است.",
   "The embedded-key link is malformed or incomplete.":

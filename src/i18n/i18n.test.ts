@@ -28,6 +28,20 @@ const files = [
   "src/sharing/recipes.ts",
   "src/sharing/merge.ts",
   "src/sharing/packets.ts",
+  "src/sharing/embedded.ts",
+  "src/sharing/history-diff.ts",
+  "src/themes/library.ts",
+  "src/workers/client.ts",
+  "src/app/structure/manual-config.ts",
+  "src/app/advisor-plans.ts",
+  "src/sharing/multipart.ts",
+  "src/sharing/qr-reader.ts",
+  "src/app/QRImport.tsx",
+  "src/collections/model.ts",
+  "src/collections/storage.ts",
+  "src/collections/transport.ts",
+  "src/collections/rankings.ts",
+  "src/collections/schedule.ts",
 ];
 
 function diagnosticLiterals(path: string) {

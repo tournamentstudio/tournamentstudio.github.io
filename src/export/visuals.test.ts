@@ -91,14 +91,14 @@ describe("public graphics", () => {
     const svg = scoreboardSVG(t, t.matches[0].id, "fa");
     expect(svg).not.toContain("\uFFFD");
     const firstCardHeight = Number(
-      svg.match(/<rect x="80" y="175" width="1440" height="(\d+)"/)?.[1],
+      svg.match(/<rect x="80" y="[\d.]+" width="1440" height="([\d.]+)"/)?.[1],
     );
     expect(firstCardHeight).toBeGreaterThanOrEqual(
       55 +
-        (wrapVisualText(t.participants[0].name, Math.floor(1100 / (38 * 0.62)))
+        (wrapVisualText(t.participants[0].name, Math.floor(1100 / (52 * 0.62)))
           .length -
           1) *
-          57 +
+          78 +
         12,
     );
     const symbol = String.fromCodePoint(0x1f989);
@@ -147,7 +147,12 @@ describe("portable presentation files", () => {
     for (const scene of t.presentation.scenes)
       expect(pages.some((page) => page.sceneId === scene.id)).toBe(true);
     expect(pages.every((page) => page.svg.startsWith("<svg"))).toBe(true);
-    expect(pages.filter((page) => page.sceneId === "1")).toHaveLength(2);
+    const participantsId = t.presentation.scenes.find(
+      (scene) => scene.type === "participants",
+    )!.id;
+    expect(
+      pages.filter((page) => page.sceneId === participantsId),
+    ).toHaveLength(2);
   });
   it("exports only selected scenes and rejects an empty selection", async () => {
     const t = fixture();

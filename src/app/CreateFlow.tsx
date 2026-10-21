@@ -24,15 +24,18 @@ import { GameIdentity, ThemeMotif } from "../themes/ThemeMotif";
 import "./game-experience.css";
 import { Field, ErrorText, Notice } from "../components/ui";
 import { useI18n, formatName } from "../i18n";
+import type { AdvisorPlan } from "./advisor-plans";
 
 export function CreateFlow({
   template,
   initialFormat,
+  initialPlan,
   onCancel,
   onCreate,
 }: {
   template?: string;
   initialFormat?: FormatId;
+  initialPlan?: AdvisorPlan;
   onCancel: () => void;
   onCreate: (t: Tournament, secret?: string) => Promise<void>;
 }) {
@@ -41,24 +44,30 @@ export function CreateFlow({
   const [title, setTitle] = useState("");
   const [sport, setSport] = useState(template ?? "generic");
   const [format, setFormat] = useState<FormatId>(
-    initialFormat ??
+    initialPlan?.format ??
+      initialFormat ??
       (template === "esports"
         ? "double-elimination"
         : template === "football" || template === "gol-ya-pooch"
           ? "groups"
           : "single-elimination"),
   );
-  const [count, setCount] = useState(template === "football" ? 16 : 8);
+  const [count, setCount] = useState(
+    initialPlan?.count ?? (template === "football" ? 16 : 8),
+  );
   const [playoffs, setPlayoffs] = useState(
-    template === "football" || template === "gol-ya-pooch",
+    initialPlan?.playoffs ??
+      (template === "football" || template === "gol-ya-pooch"),
   );
   const [names, setNames] = useState("");
   const [theme, setTheme] = useState(
     () =>
       sports.find((preset) => preset.id === template)?.theme ?? "minimal-light",
   );
-  const [groups, setGroups] = useState(template === "gol-ya-pooch" ? 2 : 4);
-  const [rounds, setRounds] = useState(5);
+  const [groups, setGroups] = useState(
+    initialPlan?.groupCount ?? (template === "gol-ya-pooch" ? 2 : 4),
+  );
+  const [rounds, setRounds] = useState(initialPlan?.rounds ?? 5);
   const [advanced, setAdvanced] = useState(false);
   const [seed, setSeed] = useState("tournastudio-2026");
   const [random, setRandom] = useState(false);
@@ -119,6 +128,16 @@ export function CreateFlow({
       );
       doc.locale = locale;
       doc.theme.preset = theme;
+      if (initialPlan) {
+        doc.schedule.matchMinutes = initialPlan.matchMinutes;
+        doc.schedule.resources = Array.from(
+          { length: initialPlan.resources },
+          (_, index) => ({
+            id: uid(),
+            name: `${t("Playing resource", "زمین یا میز")} ${index + 1}`,
+          }),
+        );
+      }
       doc.stages[0].name = t("Main stage", "مرحله اصلی");
       doc.stages[0].config = {
         ...doc.stages[0].config,
@@ -156,8 +175,14 @@ export function CreateFlow({
               stageId: doc.stages[0].id,
               count:
                 format === "groups"
-                  ? 2
-                  : Math.min(8, 2 ** Math.floor(Math.log2(actualCount))),
+                  ? Math.min(
+                      initialPlan?.qualifiers ?? 2,
+                      Math.floor(actualCount / groups),
+                    )
+                  : Math.min(
+                      initialPlan?.qualifiers ?? 8,
+                      2 ** Math.floor(Math.log2(actualCount)),
+                    ),
               perGroup: format === "groups",
             },
           ],

@@ -6,6 +6,7 @@ import { useI18n } from "../i18n";
 import type { Tournament } from "../domain/types";
 import { StatusControl } from "./Rules";
 import type { EditorProps } from "./Participants";
+import { BackupReminderSettings } from "./BackupReminders";
 
 export function StorageHealth({ entries }: { entries: LibraryEntry[] }) {
   const { t, date } = useI18n();
@@ -93,6 +94,7 @@ export function StorageHealth({ entries }: { entries: LibraryEntry[] }) {
         </button>
         {answer && <Notice>{answer}</Notice>}
       </section>
+      <BackupReminderSettings />
       <section className="panel">
         <h3>{t("Backup record", "سوابق پشتیبان")}</h3>
         <div className="table-scroll">
