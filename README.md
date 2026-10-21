@@ -19,6 +19,7 @@ The application is a static React and TypeScript bundle hosted on GitHub Pages. 
 - Knockout pot draws with region and organization separation through selected winners and losers rounds, protected seed positions, explicit qualifier slots, and a BYE preview.
 - Independent grand-final, reset and third-place separation checks, with a preview that rejects impossible combinations before matches are generated.
 - Minimum and maximum opponent distances using manually entered city or club coordinates, with independent round and final targets.
+- Venue-distance limits for selected knockout matches, with saved venue assignments that scheduling preserves.
 - Multi-entrant free-for-all heats, time trials, Grand Prix points, gauntlets, and an adjacent-challenge ladder.
 - Schedules with multiple resources, rest periods, referee conflicts, and CSV or calendar export.
 
@@ -115,7 +116,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for contracts and [FEATURES.md](FEATURES.
 
 There is no hosted registration service, account system, payment processing, cloud storage, or cross-device live collaboration. Registration and scorekeeper responses are explicit file exchanges.
 
-Some requested capabilities remain unfinished: road travel and venue-distance rules, full placement brackets, two-legged ties, full season/event records, prediction brackets, XLSX, slide-file exports, advanced broadcast overlays, and parts of the theme editor. Distances are spherical estimates between entrant bases, calculated locally without address lookup. Public snapshots omit coordinates; private backups retain them. Affiliation protection for a grand final or reset requires distinct labels for all entrants because any pair can reach those matches. Distance protection requires every entrant pair to meet the selected interval. Placement separation covers the single-elimination third-place match. Counts are capped at 512 entrants and 20,000 matches per document. A 512-entrant round robin exceeds the match cap; the limit is not a promise that every format supports the same field size.
+Some requested capabilities remain unfinished: road travel and cost optimization, full placement brackets, two-legged ties, full season/event records, prediction brackets, XLSX, slide-file exports, advanced broadcast overlays, and parts of the theme editor. Distances are spherical estimates between entrant bases or from a base to a selected venue, calculated locally without address lookup. Venue rules reserve eligible entrants for match slots, including walkovers; they do not estimate actual trips. Public snapshots omit coordinates; private backups retain them. Affiliation protection for a grand final or reset requires distinct labels for all entrants because any pair can reach those matches. Distance protection requires every entrant pair to meet the selected interval. Placement separation covers the single-elimination third-place match. Counts are capped at 512 entrants and 20,000 matches per document. A 512-entrant round robin exceeds the match cap; the limit is not a promise that every format supports the same field size.
 
 Modern Chromium, Firefox, and WebKit are the browser targets. PWA installation and persistent-storage permission vary by browser. A secure context is required for crypto and service workers; HTTPS and localhost qualify.
 

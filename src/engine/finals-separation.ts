@@ -23,7 +23,7 @@ export function canMeetInThirdPlace(
 }
 
 export function prepareFinalsSeparation(
-  draw: Extract<KnockoutDrawConfig, { version: 4 | 5 }>,
+  draw: Extract<KnockoutDrawConfig, { version: 4 | 5 | 6 }>,
   participantIds: string[],
   participants: Map<string, Participant>,
 ): { issues: GroupDrawIssue[]; thirdPlace: ThirdPlaceRule[] } {

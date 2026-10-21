@@ -144,6 +144,17 @@ export type KnockoutDistanceRule = {
   losersThroughRound: number;
   finals: KnockoutFinalTarget[];
 };
+export type KnockoutVenueTarget = {
+  bracket: "winners" | "losers" | "final" | "reset" | "placement";
+  round: number;
+  index: number;
+};
+export type KnockoutVenueRule = {
+  resourceId: string;
+  minKm?: number;
+  maxKm?: number;
+  targets: KnockoutVenueTarget[];
+};
 export type KnockoutDrawConfig = KnockoutDrawFields &
   (
     | { version: 1 }
@@ -189,6 +200,20 @@ export type KnockoutDrawConfig = KnockoutDrawFields &
         }[];
         finalsSeparation: KnockoutFinalRule[];
         distance: KnockoutDistanceRule;
+      }
+    | {
+        version: 6;
+        separation: {
+          field: "region" | "organization";
+          throughRound: number;
+        }[];
+        losersSeparation: {
+          field: "region" | "organization";
+          throughRound: number;
+        }[];
+        finalsSeparation: KnockoutFinalRule[];
+        distance?: KnockoutDistanceRule;
+        venueRules: KnockoutVenueRule[];
       }
   );
 export interface KnockoutDrawPreview {
@@ -359,6 +384,7 @@ export interface Resource {
   name: string;
   availableFrom?: string;
   availableUntil?: string;
+  location?: { latitude: number; longitude: number };
 }
 export interface ScheduleSettings {
   startAt: string;

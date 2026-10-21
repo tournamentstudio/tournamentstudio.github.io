@@ -85,11 +85,27 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
     !!knockoutDraft &&
     JSON.stringify(knockoutDraft.value) !==
       JSON.stringify(stage.config.knockoutDraw ?? null);
+  function knockoutBasis(item: Stage) {
+    return JSON.stringify({
+      stage: groupDrawBasis(item),
+      entrants: doc.participants.map(
+        ({ id, seed, status, region, organization, location }) => ({
+          id,
+          seed,
+          status,
+          region,
+          organization,
+          location,
+        }),
+      ),
+      resources: doc.schedule.resources,
+    });
+  }
   const knockoutStale =
     !!stage &&
     knockoutDirty &&
     !!knockoutDraft &&
-    knockoutDraft.base !== groupDrawBasis(stage);
+    knockoutDraft.base !== knockoutBasis(stage);
   const anyDrawDirty = drawDirty || knockoutDirty;
   const anyDraft =
     Object.keys(drawDrafts).some((id) => {
@@ -561,8 +577,7 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
                         ...current,
                         [stage.id]: {
                           value,
-                          base:
-                            current[stage.id]?.base ?? groupDrawBasis(stage),
+                          base: current[stage.id]?.base ?? knockoutBasis(stage),
                         },
                       }));
                   }}

@@ -166,6 +166,19 @@ export function publicProjection(tournament: Tournament): Tournament {
       durationMinutes: match.durationMinutes,
       metadata: publicMetadata(match.metadata, "match"),
     })),
+    schedule: {
+      ...source.schedule,
+      resources: source.schedule.resources.map((resource) => ({
+        id: resource.id,
+        name: resource.name,
+        ...(resource.availableFrom !== undefined
+          ? { availableFrom: resource.availableFrom }
+          : {}),
+        ...(resource.availableUntil !== undefined
+          ? { availableUntil: resource.availableUntil }
+          : {}),
+      })),
+    },
     presentation: structuredClone(source.presentation),
   };
 }
@@ -453,6 +466,23 @@ const recipeSchema = z
     competitionFormat: formatSchema,
     config: stageConfigSchema,
     participantReferences: z.literal("positions").optional(),
+    venueResources: z
+      .array(
+        z
+          .object({
+            id: z.string().min(1).max(160),
+            name: z.string().min(1).max(240),
+          })
+          .strict(),
+      )
+      .min(1)
+      .max(64)
+      .refine(
+        (resources) =>
+          new Set(resources.map((resource) => resource.id)).size ===
+          resources.length,
+      )
+      .optional(),
     rules: rulesSchema,
     theme: themeSchema,
     presentation: presentationSchema,
@@ -471,16 +501,41 @@ export async function encodeRecipe(tournament: Tournament): Promise<string> {
       `slot-${index + 1}`,
     ]),
   );
+  const config = remapRecipeReferences(
+    publicProjection(tournament).stages[0].config,
+    references,
+  );
+  const venueResources =
+    config.knockoutDraw?.version === 6
+      ? [
+          ...new Set(
+            config.knockoutDraw.venueRules.map((rule) => rule.resourceId),
+          ),
+        ].map((id, index) => ({
+          sourceId: id,
+          id: `venue-${index + 1}`,
+          name: `Venue ${index + 1}`,
+        }))
+      : undefined;
+  if (config.knockoutDraw?.version === 6 && venueResources)
+    config.knockoutDraw.venueRules = config.knockoutDraw.venueRules.map(
+      (rule) => ({
+        ...rule,
+        resourceId: venueResources.find(
+          (resource) => resource.sourceId === rule.resourceId,
+        )!.id,
+      }),
+    );
   return encodeTransport("TSR1", {
     format: "tournastudio-recipe",
     version: 1,
     count: tournament.participants.length,
     sport: tournament.sport,
     competitionFormat: stage.format,
-    config: remapRecipeReferences(
-      publicProjection(tournament).stages[0].config,
-      references,
-    ),
+    config,
+    ...(venueResources
+      ? { venueResources: venueResources.map(({ id, name }) => ({ id, name })) }
+      : {}),
     participantReferences: "positions",
     rules: tournament.rules,
     theme,
@@ -556,6 +611,28 @@ export async function decodeRecipe(code: string): Promise<Tournament> {
           ),
         )
       : recipe.config;
+  if (tournament.stages[0].config.knockoutDraw?.version === 6) {
+    if (!recipe.venueResources)
+      throw new Error("A venue-restricted recipe needs venue references.");
+    tournament.schedule.resources = recipe.venueResources.map((resource) => ({
+      id: crypto.randomUUID(),
+      name: resource.name,
+    }));
+    const resources = new Map(
+      recipe.venueResources.map((resource, index) => [
+        resource.id,
+        tournament.schedule.resources[index].id,
+      ]),
+    );
+    tournament.stages[0].config.knockoutDraw.venueRules =
+      tournament.stages[0].config.knockoutDraw.venueRules.map((rule) => {
+        const resourceId = resources.get(rule.resourceId);
+        if (!resourceId)
+          throw new Error("Recipe contains an unknown venue reference.");
+        return { ...rule, resourceId };
+      });
+  } else if (recipe.venueResources)
+    throw new Error("Venue references require a venue-restricted recipe.");
   tournament.rules = recipe.rules;
   tournament.theme = recipe.theme;
   tournament.presentation = recipe.presentation;

@@ -22,7 +22,7 @@ export function KnockoutDistanceRestrictions({
   onChange: (value: KnockoutDrawConfig) => void;
 }) {
   const { t, locale } = useI18n();
-  const distance = value.version === 5 ? value.distance : undefined;
+  const distance = "distance" in value ? value.distance : undefined;
   const double = stage.format === "double-elimination";
   const winnerRounds = Math.ceil(Math.log2(Math.max(2, entrantCount)));
   const loserRounds = double ? Math.max(0, winnerRounds * 2 - 2) : 0;

@@ -293,7 +293,7 @@ uses the [Haversine formula](https://scikit-learn.org/stable/modules/generated/s
 with the fixed policy radius 6371.0088 km. Longitude differences wrap across the
 dateline, identical poles have zero distance, and the Haversine value is clamped
 to [0, 1] before taking its inverse. This approximates the shortest surface arc
-on a sphere. It does not calculate roads, travel time, terrain or venue distance.
+on a sphere. It does not calculate roads, travel time or terrain.
 Threshold comparisons use unrounded values; displayed distances are rounded.
 
 `knockout-distance-haversine-fnv1a-mulberry32-v5` computes an incompatibility
@@ -322,6 +322,45 @@ and any saved matches. A public copy therefore needs new base locations before
 regeneration. Full private packages preserve locations. The existing canonical
 form omits absent fields, so adding support for locations does not change hashes
 of older documents. Versions 1 through 4 keep their draw policies.
+
+Version 6 adds venue eligibility as a per-entrant restriction on opening-match
+positions. Each rule references an existing schedule resource, distance bounds
+and exact `{bracket, round, index}` match targets. Resource coordinates use the
+same strict schema and Haversine policy as participant bases. Up to 64 rules and
+1024 distinct targets are accepted. Optional opponent-distance rules and all
+earlier affiliation, pot, seed and qualifier restrictions remain active.
+
+`knockout-venue-haversine-fnv1a-mulberry32-v6` derives reachability from the
+actual elimination graph for each opening position and two entrant variants:
+a regular entrant, and a BYE recipient who cannot lose the opening match.
+Winner and loser edges propagate possible paths to every selected venue. An
+entrant outside a venue's bound loses every opening position that can reach
+that target. This is eligibility for a match slot, including automatic advances,
+not an estimate of journeys taken. It covers both final matches and third place
+without inventing extra routes or rerouting earned finalists.
+
+Fixed positions are checked before search. When pair restrictions concern only
+the opening round, the v6 solver matches entrant pairs and incrementally assigns
+those pairs and BYEs to eligible venue positions using augmenting paths. This
+checks venue capacity during pairing instead of waiting for a complete draw.
+Later-round pair restrictions use the joint path solver with venue domains.
+Both retain the 100,000-node and 20,000,000-work limits and return no partial draw
+on exhaustion. Generation assigns each target's resource ID.
+The concrete-bracket validator follows original source paths even after
+scores populate downstream slots; past results cannot silently remove an entrant
+from eligibility checks. Scheduling checks these distances again, reserves the
+assigned resource and its time window, and retains venue assignments on BYEs
+without allocating playing time. The schedule table locks these resource
+selectors. Referenced resources cannot be deleted through the editor. Coordinate
+changes preserve results and surface conflicts instead of changing the bracket.
+
+Public resource serialization uses an explicit allowlist that excludes venue
+coordinates. Portable public rules and saved matches still reference resource
+IDs and public names. Recipes replace venue identities with placeholders and
+rebind them to fresh resource IDs on import. Existing recipe representations
+remain unchanged when no venue rules exist. Structure drafts include participant
+and resource data in their stale-state check; schedule drafts require a reload
+after another revision changes the document.
 
 The editor follows the same draft, preview, revalidation and draw-lock rules as
 group drawing, with previews of protected winners sections, lower rounds and

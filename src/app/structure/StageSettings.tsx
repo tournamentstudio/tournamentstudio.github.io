@@ -47,10 +47,13 @@ export function StageSettings({
   const draw = stage.config.knockoutDraw;
   const finals =
     draw && "finalsSeparation" in draw ? draw.finalsSeparation : [];
-  const distance = draw?.version === 5 ? draw.distance : undefined;
+  const distance = draw && "distance" in draw ? draw.distance : undefined;
+  const venues =
+    draw?.version === 6 ? draw.venueRules.flatMap((rule) => rule.targets) : [];
   const hasLosers =
     (!!draw && "losersSeparation" in draw && !!draw.losersSeparation.length) ||
-    !!distance?.losersThroughRound;
+    !!distance?.losersThroughRound ||
+    venues.some((target) => target.bracket === "losers");
   const hasFinals =
     finals.some((rule) =>
       rule.targets.some(
@@ -59,13 +62,18 @@ export function StageSettings({
     ) ||
     !!distance?.finals.some(
       (target) => target === "grand-final" || target === "reset",
+    ) ||
+    venues.some(
+      (target) => target.bracket === "final" || target.bracket === "reset",
     );
   const hasReset =
     finals.some((rule) => rule.targets.includes("reset")) ||
-    !!distance?.finals.includes("reset");
+    !!distance?.finals.includes("reset") ||
+    venues.some((target) => target.bracket === "reset");
   const hasThirdPlace =
     finals.some((rule) => rule.targets.includes("third-place")) ||
-    !!distance?.finals.includes("third-place");
+    !!distance?.finals.includes("third-place") ||
+    venues.some((target) => target.bracket === "placement");
   return (
     <aside className="structure-settings">
       <div className="section-heading">

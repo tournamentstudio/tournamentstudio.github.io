@@ -7,24 +7,68 @@ import {
   WandSparkles,
 } from "lucide-react";
 import { uid } from "../domain/types";
+import type { ScheduleSettings } from "../domain/types";
+import { validateTournament } from "../domain/validate";
+import { assignedKnockoutVenue } from "../engine/venue-distance";
 import { autoSchedule, detectConflicts, estimateDuration } from "../scheduling";
 import { exportCalendar, exportCSV } from "../export";
 import { Field, Notice, ErrorText } from "../components/ui";
 import { useI18n } from "../i18n";
 import type { EditorProps } from "./Participants";
+import { ResourceLocationFields } from "./ResourceLocationFields";
 
 export function Schedule({ tournament: doc, onChange }: EditorProps) {
   const { t, locale } = useI18n();
-  const [settings, setSettings] = useState(structuredClone(doc.schedule));
+  const [draft, setDraft] = useState<{
+    revision: number;
+    settings: ScheduleSettings;
+  }>();
+  const settings = draft?.settings ?? doc.schedule;
+  const stale = !!draft && draft.revision !== doc.revision;
+  function setSettings(value: ScheduleSettings) {
+    setDraft({ revision: draft?.revision ?? doc.revision, settings: value });
+  }
   const [error, setError] = useState<unknown>();
-  const conflicts = detectConflicts(doc);
+  const conflicts = detectConflicts(doc, locale);
   const estimate = estimateDuration({ ...doc, schedule: settings });
-  function generate() {
+  const referencedResources = new Set([
+    ...doc.matches.flatMap((match) =>
+      match.resourceId ? [match.resourceId] : [],
+    ),
+    ...doc.stages.flatMap((stage) =>
+      stage.config.knockoutDraw?.version === 6
+        ? stage.config.knockoutDraw.venueRules.map((rule) => rule.resourceId)
+        : [],
+    ),
+  ]);
+  function saveSettings(generate: boolean) {
     try {
+      if (stale)
+        throw new Error(
+          t(
+            "Reload the changed schedule before saving.",
+            "پیش از ذخیره، برنامه تغییرکرده را بازخوانی کنید.",
+          ),
+        );
+      if (
+        [...referencedResources].some(
+          (id) => !settings.resources.some((resource) => resource.id === id),
+        )
+      )
+        throw new Error(
+          t(
+            "A resource used by a draw or saved match cannot be removed.",
+            "منبعی که در قرعه یا دیدار ذخیره‌شده استفاده شده قابل حذف نیست.",
+          ),
+        );
+      const next = validateTournament({ ...doc, schedule: settings });
       onChange(
-        autoSchedule({ ...doc, schedule: settings }),
-        t("Schedule matches", "زمان‌بندی دیدارها"),
+        generate ? autoSchedule(next, locale) : next,
+        generate
+          ? t("Schedule matches", "زمان‌بندی دیدارها")
+          : t("Save schedule settings", "ذخیره تنظیمات برنامه"),
       );
+      setDraft(undefined);
       setError(undefined);
     } catch (e) {
       setError(e);
@@ -62,8 +106,37 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
         </div>
       </div>
       <ErrorText error={error} />
+      {stale && (
+        <Notice danger>
+          <p>
+            {t(
+              "The tournament changed while these settings were being edited. Reload the saved settings before applying this draft.",
+              "هنگام ویرایش این تنظیمات، مسابقات تغییر کرده است. پیش از اعمال پیش‌نویس، تنظیمات ذخیره‌شده را بازخوانی کنید.",
+            )}
+          </p>
+          <button
+            className="button secondary"
+            onClick={() => {
+              setDraft(undefined);
+              setError(undefined);
+            }}
+          >
+            {t("Reload schedule settings", "بازخوانی تنظیمات برنامه")}
+          </button>
+        </Notice>
+      )}
       <div className="schedule-layout">
-        <aside className="panel">
+        <form
+          className="panel"
+          onSubmit={(event) => {
+            event.preventDefault();
+            saveSettings(
+              (event.nativeEvent as SubmitEvent).submitter?.getAttribute(
+                "value",
+              ) === "generate",
+            );
+          }}
+        >
           <h3>{t("Schedule setup", "تنظیم برنامه")}</h3>
           <Field
             label={t(
@@ -115,6 +188,7 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
             </h4>
             <button
               className="icon-button"
+              type="button"
               title={t("Add resource", "افزودن منبع")}
               onClick={() =>
                 setSettings({
@@ -136,6 +210,8 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
             <div className="resource-edit" key={r.id}>
               <input
                 aria-label={t("Resource name", "نام منبع")}
+                required
+                maxLength={240}
                 value={r.name}
                 onChange={(e) =>
                   setSettings({
@@ -148,7 +224,17 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
               />
               <button
                 className="icon-button"
+                type="button"
                 aria-label={t("Remove resource", "حذف منبع")}
+                disabled={referencedResources.has(r.id)}
+                title={
+                  referencedResources.has(r.id)
+                    ? t(
+                        "Used by a draw or saved match",
+                        "در قرعه یا دیدار ذخیره‌شده استفاده شده",
+                      )
+                    : undefined
+                }
                 onClick={() =>
                   setSettings({
                     ...settings,
@@ -158,6 +244,23 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
               >
                 <Trash2 size={15} />
               </button>
+              <ResourceLocationFields
+                key={`${doc.revision}:${r.id}`}
+                label={r.name}
+                value={r.location}
+                onChange={(location) => {
+                  setSettings({
+                    ...settings,
+                    resources: settings.resources.map((resource) => {
+                      if (resource.id !== r.id) return resource;
+                      const next = { ...resource };
+                      if (location) next.location = location;
+                      else delete next.location;
+                      return next;
+                    }),
+                  });
+                }}
+              />
               <details>
                 <summary>{t("Availability", "دسترسی")}</summary>
                 <Field label={t("Available from", "در دسترس از")}>
@@ -201,7 +304,20 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
               </details>
             </div>
           ))}
-          <button className="button primary full-width" onClick={generate}>
+          <button
+            type="submit"
+            value="save"
+            className="button secondary full-width"
+            disabled={stale}
+          >
+            {t("Save schedule settings", "ذخیره تنظیمات برنامه")}
+          </button>
+          <button
+            type="submit"
+            value="generate"
+            className="button primary full-width"
+            disabled={stale}
+          >
             <WandSparkles size={16} />
             {t("Generate schedule", "ساخت برنامه")}
           </button>
@@ -243,7 +359,7 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
               "حداقل زمان از تقسیم زمان بازی بر منابع محاسبه می‌شود. استراحت و وابستگی صعود می‌توانند آن را افزایش دهند.",
             )}
           </p>
-        </aside>
+        </form>
         <div>
           {conflicts.length > 0 ? (
             <Notice danger>
@@ -328,6 +444,14 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
                         <select
                           aria-label={`${t("Resource", "منبع")} ${m.label}`}
                           value={m.resourceId ?? ""}
+                          disabled={
+                            !!assignedKnockoutVenue(
+                              doc.stages.find(
+                                (stage) => stage.id === m.stageId,
+                              )!,
+                              m,
+                            )
+                          }
                           onChange={(e) => {
                             const next = structuredClone(doc);
                             next.matches.find(
@@ -345,6 +469,17 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
                             </option>
                           ))}
                         </select>
+                        {assignedKnockoutVenue(
+                          doc.stages.find((stage) => stage.id === m.stageId)!,
+                          m,
+                        ) && (
+                          <small className="table-subline">
+                            {t(
+                              "Venue fixed by draw rules. Reset the unplayed stage to change it.",
+                              "محل با قوانین قرعه ثابت شده است. برای تغییر، مرحله بازی‌نشده را بازنشانی کنید.",
+                            )}
+                          </small>
+                        )}
                       </td>
                       <td>
                         <input

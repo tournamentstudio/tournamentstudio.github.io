@@ -13,6 +13,7 @@ export interface KnockoutPathsInput {
   losersSeparation: SeparationRule[];
   thirdPlaceSeparation?: ThirdPlaceRule[];
   distance?: DistanceConstraint;
+  venueAllowed?: Map<string, Uint8Array>;
   encounters: Uint8Array;
   seed: string;
   nodeLimit: number;
@@ -96,6 +97,7 @@ export function solveKnockoutPaths(input: KnockoutPathsInput): {
     );
   };
   const allowed = (id: string, match: number): boolean => {
+    if (input.venueAllowed && !input.venueAllowed.get(id)![match]) return false;
     if (!openingAllowed(id, match)) return false;
     for (const [other, position] of placed)
       for (const rule of rules) {

@@ -13,8 +13,8 @@ export function KnockoutDistancePreview({
   preview: KnockoutDrawPreview;
 }) {
   const { t, locale } = useI18n();
-  if (value?.version !== 5 || !preview.ready) return null;
-  const distance = value.distance;
+  const distance = value && "distance" in value ? value.distance : undefined;
+  if (!distance || !preview.ready) return null;
   const formatLimit = (limit: number) =>
     limit.toLocaleString(locale, {
       maximumSignificantDigits: 21,

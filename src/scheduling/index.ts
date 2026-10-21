@@ -1,4 +1,9 @@
-import type { Match, Tournament } from "../domain/types";
+import type { Locale, Match, Tournament } from "../domain/types";
+import { knockoutDrawIssueText } from "../domain/knockout-draw";
+import {
+  assignedKnockoutVenue,
+  validateKnockoutVenueDistances,
+} from "../engine/venue-distance";
 
 const minutes = 60000;
 const playable = (match: Match) =>
@@ -31,8 +36,22 @@ function possibleEntrants(tournament: Tournament): Map<string, Set<string>> {
   return memo;
 }
 
-export function autoSchedule(input: Tournament): Tournament {
+export function autoSchedule(
+  input: Tournament,
+  locale: Locale = input.locale,
+): Tournament {
   const tournament = structuredClone(input);
+  const venueIssues = tournament.stages.flatMap((stage) =>
+    tournament.matches.some((match) => match.stageId === stage.id)
+      ? validateKnockoutVenueDistances(tournament, stage)
+      : [],
+  );
+  if (venueIssues.length)
+    throw new Error(
+      venueIssues
+        .map((issue) => knockoutDrawIssueText(issue, locale))
+        .join(" "),
+    );
   const { resources, restMinutes, matchMinutes } = tournament.schedule;
   const start = Date.parse(tournament.schedule.startAt);
   if (!Number.isFinite(start))
@@ -100,6 +119,7 @@ export function autoSchedule(input: Tournament): Tournament {
     const stage = tournament.stages.find(
       (stage) => stage.id === match.stageId,
     )!;
+    const fixedVenue = assignedKnockoutVenue(stage, match);
     const dependencies = match.slots.flatMap((slot) =>
       slot.source ? [slot.source.matchId] : [],
     );
@@ -122,7 +142,8 @@ export function autoSchedule(input: Tournament): Tournament {
           : start,
       );
       delete match.scheduledAt;
-      delete match.resourceId;
+      if (fixedVenue) match.resourceId = fixedVenue;
+      else delete match.resourceId;
       continue;
     }
     const ids = [...(possible.get(match.id) ?? [])];
@@ -149,6 +170,7 @@ export function autoSchedule(input: Tournament): Tournament {
     if (!Number.isFinite(matchDuration) || matchDuration <= 0)
       throw new Error("Every match needs a positive duration.");
     const options = resources
+      .filter((resource) => !fixedVenue || resource.id === fixedVenue)
       .map((resource) => ({
         resource,
         at: Math.max(earliest, resourceReady.get(resource.id)!),
@@ -189,8 +211,32 @@ export function autoSchedule(input: Tournament): Tournament {
   return tournament;
 }
 
-export function detectConflicts(tournament: Tournament): string[] {
-  const conflicts: string[] = [];
+export function detectConflicts(
+  tournament: Tournament,
+  locale: Locale = tournament.locale,
+): string[] {
+  const conflicts: string[] = tournament.stages.flatMap((stage) =>
+    tournament.matches.some((match) => match.stageId === stage.id)
+      ? validateKnockoutVenueDistances(tournament, stage).map((issue) =>
+          knockoutDrawIssueText(issue, locale),
+        )
+      : [],
+  );
+  for (const match of tournament.matches) {
+    const stage = tournament.stages.find((item) => item.id === match.stageId);
+    const assigned = stage && assignedKnockoutVenue(stage, match);
+    if (assigned && match.resourceId !== assigned) {
+      const name =
+        tournament.schedule.resources.find(
+          (resource) => resource.id === assigned,
+        )?.name ?? assigned;
+      conflicts.push(
+        locale === "fa"
+          ? `${match.label}: محل تعیین‌شده در قوانین قرعه (${name}) حفظ نشده است.`
+          : `${match.label} must use the venue assigned by its draw rule (${name}).`,
+      );
+    }
+  }
   const possible = possibleEntrants(tournament);
   const matches = tournament.matches.filter(
     (match) => playable(match) && match.scheduledAt,

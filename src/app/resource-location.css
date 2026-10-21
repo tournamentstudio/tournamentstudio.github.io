@@ -1,0 +1,33 @@
+.resource-location {
+  min-width: 0;
+  grid-column: 1 / -1;
+  margin: 14px 0 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.resource-location legend {
+  max-width: 100%;
+  padding-inline: 4px;
+  font-size: 0.85rem;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.resource-location p,
+.resource-location .field,
+.resource-location .button,
+.resource-location .text-button {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.8;
+}
+.resource-location p {
+  font-size: 0.8rem;
+}
+.resource-location .button {
+  white-space: normal;
+  height: auto;
+}
+.resource-location .two-columns {
+  grid-template-columns: minmax(0, 1fr);
+}

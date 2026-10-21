@@ -424,6 +424,7 @@ export const tournamentSchema = z
                 name: shortText,
                 availableFrom: timestamp.optional(),
                 availableUntil: timestamp.optional(),
+                location: locationSchema.optional(),
               })
               .strict(),
           )

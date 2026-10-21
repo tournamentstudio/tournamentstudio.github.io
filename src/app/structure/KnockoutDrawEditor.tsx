@@ -23,6 +23,8 @@ import { KnockoutFinalsRestrictions } from "./KnockoutFinalsRestrictions";
 import { KnockoutFinalsPreview } from "./KnockoutFinalsPreview";
 import { KnockoutDistanceRestrictions } from "./KnockoutDistanceRestrictions";
 import { KnockoutDistancePreview } from "./KnockoutDistancePreview";
+import { KnockoutVenueRestrictions } from "./KnockoutVenueRestrictions";
+import { KnockoutVenuePreview } from "./KnockoutVenuePreview";
 import { greatCircleDistanceKm } from "../../engine/geographic-distance";
 import "./draw.css";
 
@@ -203,6 +205,13 @@ export function KnockoutDrawEditor({
               entrantCount={entrants.length}
               onChange={onDraft}
             />
+            <KnockoutVenueRestrictions
+              value={value}
+              stage={stage}
+              entrantCount={entrants.length}
+              resources={tournament.schedule.resources}
+              onChange={onDraft}
+            />
             <p className="muted">
               {t(
                 "Round numbers count every bracket round, including rounds with BYEs. Preview validates the current entrant labels; changing labels after a draw does not move saved matches.",
@@ -303,6 +312,11 @@ export function KnockoutDrawEditor({
           <KnockoutLosersPreview value={value} preview={currentPreview} />
           <KnockoutFinalsPreview value={value} preview={currentPreview} />
           <KnockoutDistancePreview value={value} preview={currentPreview} />
+          <KnockoutVenuePreview
+            value={value}
+            preview={currentPreview}
+            resources={tournament.schedule.resources}
+          />
           <div className="draw-group-grid">
             {Array.from(
               { length: currentPreview.slots.length / 2 },
@@ -362,16 +376,20 @@ export function KnockoutDrawEditor({
                           );
                         })}
                     </ol>
-                    {value?.version === 5 && left && right && (
-                      <p className="draw-pair-distance">
-                        {t("Base distance", "فاصله پایگاه‌ها")}:{" "}
-                        {greatCircleDistanceKm(left, right).toLocaleString(
-                          locale,
-                          { maximumFractionDigits: 1 },
-                        )}{" "}
-                        {t("km", "کیلومتر")}
-                      </p>
-                    )}
+                    {value &&
+                      "distance" in value &&
+                      value.distance &&
+                      left &&
+                      right && (
+                        <p className="draw-pair-distance">
+                          {t("Base distance", "فاصله پایگاه‌ها")}:{" "}
+                          {greatCircleDistanceKm(left, right).toLocaleString(
+                            locale,
+                            { maximumFractionDigits: 1 },
+                          )}{" "}
+                          {t("km", "کیلومتر")}
+                        </p>
+                      )}
                   </section>
                 );
               },

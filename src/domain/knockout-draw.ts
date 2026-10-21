@@ -2,6 +2,11 @@ import { z } from "zod";
 import type { GroupDrawIssue, Locale, Stage, Tournament } from "./types";
 import { groupDrawSchema } from "./draw";
 import { MAX_DISTANCE_KM } from "./geography";
+import {
+  isKnockoutVenueTarget,
+  knockoutVenueRuleSchema,
+  knockoutVenueTargetKey,
+} from "./knockout-venue";
 
 const drawFields = {
   pots: groupDrawSchema.shape.pots,
@@ -112,6 +117,34 @@ export const knockoutDrawSchema = z.discriminatedUnion("version", [
         .max(2),
       finalsSeparation: z.array(finalsRule).max(2),
       distance: knockoutDistanceSchema,
+    })
+    .strict(),
+  z
+    .object({
+      version: z.literal(6),
+      ...drawFields,
+      separation: z.array(separationRule).max(2),
+      losersSeparation: z
+        .array(
+          separationRule.extend({
+            throughRound: z.number().int().min(1).max(16),
+          }),
+        )
+        .max(2),
+      finalsSeparation: z.array(finalsRule).max(2),
+      distance: knockoutDistanceSchema.optional(),
+      venueRules: z
+        .array(knockoutVenueRuleSchema)
+        .min(1)
+        .max(64)
+        .refine((rules) => {
+          const targets = rules.flatMap((rule) =>
+            rule.targets.map(knockoutVenueTargetKey),
+          );
+          return (
+            targets.length <= 1024 && new Set(targets).size === targets.length
+          );
+        }),
     })
     .strict(),
 ]);
@@ -290,6 +323,34 @@ const messages: Record<string, [string, string]> = {
     "No draw keeps every possible protected pairing within the distance range while satisfying the other rules, fixed slots, and BYE recipients. Change the rules or draw order.",
     "هیچ قرعه‌ای فاصله همه رویارویی‌های ممکن در بازی‌های محافظت‌شده را همراه با سایر قوانین، جایگاه‌های ثابت و دریافت‌کنندگان استراحت در محدوده انتخاب‌شده نگه نمی‌دارد. قوانین یا ترتیب قرعه را تغییر دهید.",
   ],
+  venueMissing: [
+    "A venue-distance rule references a missing venue.",
+    "یک قانون فاصله از محل به محلی اشاره می‌کند که وجود ندارد.",
+  ],
+  venueTarget: [
+    "A selected venue match does not exist in this bracket. Review the match targets after changing entrant counts or stage settings.",
+    "بازی انتخاب‌شده برای محل در این جدول وجود ندارد. پس از تغییر تعداد شرکت‌کنندگان یا تنظیمات مرحله، بازی‌های هدف را بررسی کنید.",
+  ],
+  venueLocation: [
+    "Enter valid latitude and longitude for venue {0} before applying venue-distance restrictions.",
+    "پیش از اعمال محدودیت فاصله از محل، عرض و طول جغرافیایی معتبر برای محل {0} وارد کنید.",
+  ],
+  venueFixed: [
+    "The fixed position for {0} can reach a venue outside its permitted distance range. Change its fixed position or venue rule.",
+    "جایگاه ثابت {0} می‌تواند به محلی خارج از محدوده فاصله مجاز برسد. جایگاه ثابت یا قانون محل را تغییر دهید.",
+  ],
+  venueNoPosition: [
+    "No opening position keeps {0} within every reachable venue's permitted distance range. Change the venues, limits, or target matches.",
+    "هیچ جایگاه آغازینی فاصله {0} را در محدوده مجاز همه محل‌های قابل دسترس نگه نمی‌دارد. محل‌ها، محدوده‌ها یا بازی‌های هدف را تغییر دهید.",
+  ],
+  venueInfeasible: [
+    "No draw satisfies the venue distances together with the other rules, fixed slots, and BYE recipients. Change the rules or draw order.",
+    "هیچ قرعه‌ای فاصله از محل‌ها را همراه با سایر قوانین، جایگاه‌های ثابت و دریافت‌کنندگان استراحت رعایت نمی‌کند. قوانین یا ترتیب قرعه را تغییر دهید.",
+  ],
+  venueDistance: [
+    "{0} can reach venue {1}, but its distance of {2} km is outside the selected range. Reset the unplayed draw or change the venue rule.",
+    "{0} می‌تواند به محل {1} برسد، اما فاصله {2} کیلومتری آن خارج از محدوده انتخاب‌شده است. قرعه بدون نتیجه را بازنشانی کنید یا قانون محل را تغییر دهید.",
+  ],
 };
 
 export function knockoutDrawIssueText(
@@ -355,7 +416,8 @@ export function knockoutDrawErrors(
   if (
     parsed.data.version === 3 ||
     parsed.data.version === 4 ||
-    parsed.data.version === 5
+    parsed.data.version === 5 ||
+    parsed.data.version === 6
   ) {
     const { losersSeparation } = parsed.data;
     if (losersSeparation.length && stage.format !== "double-elimination")
@@ -366,7 +428,11 @@ export function knockoutDrawErrors(
     )
       add("duplicateLosersSeparation");
   }
-  if (parsed.data.version === 4 || parsed.data.version === 5) {
+  if (
+    parsed.data.version === 4 ||
+    parsed.data.version === 5 ||
+    parsed.data.version === 6
+  ) {
     const { finalsSeparation } = parsed.data;
     if (
       new Set(finalsSeparation.map((rule) => rule.field)).size !==
@@ -378,7 +444,9 @@ export function knockoutDrawErrors(
       add("duplicateFinalsSeparation");
     const targets = new Set([
       ...finalsSeparation.flatMap((rule) => rule.targets),
-      ...(parsed.data.version === 5 ? parsed.data.distance.finals : []),
+      ...(parsed.data.version === 5 || parsed.data.version === 6
+        ? (parsed.data.distance?.finals ?? [])
+        : []),
     ]);
     if (
       (targets.has("grand-final") || targets.has("reset")) &&
@@ -394,11 +462,41 @@ export function knockoutDrawErrors(
       add("thirdPlaceUnavailable");
   }
   if (
-    parsed.data.version === 5 &&
-    parsed.data.distance.losersThroughRound > 0 &&
+    (parsed.data.version === 5 || parsed.data.version === 6) &&
+    (parsed.data.distance?.losersThroughRound ?? 0) > 0 &&
     stage.format !== "double-elimination" &&
     !issues.some((issue) => issue.code === "losersFormat")
   )
     add("losersFormat");
+  if (parsed.data.version === 6) {
+    const resources = new Set(
+      tournament.schedule.resources.map((resource) => resource.id),
+    );
+    const hasMatches = tournament.matches.some(
+      (match) => match.stageId === stage.id,
+    );
+    for (const rule of parsed.data.venueRules) {
+      if (!resources.has(rule.resourceId)) add("venueMissing");
+      if (
+        rule.targets.some((target) => {
+          if (!stage.sources.length || hasMatches)
+            return !isKnockoutVenueTarget(
+              stage,
+              stage.participantIds.length,
+              target,
+            );
+          return (
+            (target.bracket === "placement" &&
+              (stage.format !== "single-elimination" ||
+                !stage.config.thirdPlace)) ||
+            (["losers", "final", "reset"].includes(target.bracket) &&
+              stage.format !== "double-elimination") ||
+            (target.bracket === "reset" && !stage.config.grandFinalReset)
+          );
+        })
+      )
+        add("venueTarget");
+    }
+  }
   return issues;
 }

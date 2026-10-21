@@ -311,6 +311,62 @@ participant-list importer does not import coordinates. Full tournament JSON and
 private archives preserve them. **Remove base location**, followed by saving the
 participant, clears that entrant's stored coordinates.
 
+### Assign venues with distance limits
+
+Use **Venue distance** to assign a court, table or room to specific knockout
+matches and limit the distance from entrants' bases to that venue. Each selected
+match reserves a venue for every entrant who could reach its slots. The policy
+includes automatic advances and walkovers, even when no match is played. It
+does not estimate actual trips or choose a venue automatically.
+
+1. In **Schedule**, add the courts, tables or rooms you need. Under each resource,
+   choose **Add venue location** and enter its latitude and longitude in decimal
+   degrees. Choose **Save schedule settings**. Both coordinates are required
+   when location entry is enabled. A resource already used by a draw or saved
+   match cannot be removed while that reference remains.
+2. Enter each active participant's base coordinates in **Participants**.
+3. In **Structure**, reset an unplayed draw if necessary, open **Configure knockout
+   draw**, then choose **Add venue restriction** under **Venue distance**.
+4. Select a venue, enter a minimum distance, maximum distance, or both, and select
+   its match targets. Choose a bracket round to find the desired matches. A match
+   can belong to only one venue rule. Finals, enabled resets and third-place
+   matches are also available for their supported formats.
+5. Preview the draw, inspect **Verified venue assignments**, apply the rules and
+   generate the draw. The engine keeps pots, seed protection, BYE recipients,
+   affiliation rules and opponent-distance rules active together. An impossible
+   combination produces an error; search exhaustion means feasibility is unknown.
+6. Generate the schedule. Selected matches keep their venue and its availability
+   window. Their resource selector is locked in the schedule table. To change a
+   venue rule, reset an unplayed stage and revise its draw rules. Played results
+   are never removed by changing a resource coordinate.
+
+See the [verified venue preview](docs/screenshots/knockout-venue.png) for two
+regional venues assigned to separate knockout matches.
+
+For example, give two quarterfinal matches a western venue and the other two an
+eastern venue, each with a 500 km maximum. Each quarterfinal can contain only
+entrants eligible for its assigned venue. Later matches need their own targets
+if their venues should also be restricted. A final normally needs a venue that
+every entrant can reach within its limits. A smaller bound cannot be repaired by
+changing seeds when all entrants could reach that final.
+
+Bounds use the same spherical calculation as opponent distances. Both endpoints
+are included, zero is valid, and blank means no bound on that side. The range is
+0 to 20016 km. Different venue rules can have different bounds. No road distances,
+travel times or total travel budgets are calculated.
+
+Changing a participant or venue coordinate does not move saved matches. Schedule
+conflicts report any broken venue rule, and automatic scheduling refuses to use
+invalid distances. Checks retain the original possible paths even after results
+are recorded, so an eliminated entrant is not silently exempted from the saved
+rule. Edits from another tab invalidate an open draw or schedule draft; reload
+the confirmed settings before applying further changes.
+
+Public snapshots retain venue names, rules and assignments, but omit entrant and
+venue coordinates. Private archives preserve them. Recipes create numbered venue
+placeholders and need new coordinates. Venue rules use version 6; update older
+copies of the app before importing these rules.
+
 ## Build groups followed by playoffs
 
 For sixteen teams in four groups:

@@ -15,6 +15,11 @@ Absent locations remain absent, preserving older canonical documents. This
 field represents an organizer-entered competition base and is excluded from
 public projections and recipes. Private packages retain it.
 
+Schedule resources may also contain an optional strict `location` with the same
+coordinate schema. Venue coordinates are omitted from public projections and
+recipes. Resource IDs, names and availability remain public. Private packages
+preserve the complete resource object.
+
 Stage configuration and metadata can preserve safe JSON extensions. Extensions cannot contain executable values. Unknown top-level properties are rejected, rather than silently discarded. Unknown schema versions fail with an instruction to keep the source file and update the application. There is no earlier published schema to migrate.
 
 Validation checks duplicate entity IDs, entrant references, winner identities, match sources, and cycles in stage and match dependencies. Scoring legality and pairing rules are checked separately by the competition engine.
@@ -321,6 +326,52 @@ representation and draw algorithm. Public packages retain distance rules and
 generated matches but omit coordinates, so regeneration needs new locations.
 Private packages and private updates retain both; recipes retain only the rules.
 
+Version 6 adds required `venueRules` and makes the opponent `distance` optional:
+
+```json
+{
+  "version": 6,
+  "pots": [],
+  "restrictions": [],
+  "protectedSeeds": 0,
+  "separation": [],
+  "losersSeparation": [],
+  "finalsSeparation": [],
+  "venueRules": [{
+    "resourceId": "west-court",
+    "maxKm": 500,
+    "targets": [{ "bracket": "winners", "round": 2, "index": 0 }]
+  }]
+}
+```
+
+There must be 1 to 64 venue rules and at most 1024 total targets. Each rule needs
+an existing schedule resource, at least one target and at least one inclusive
+`minKm` or `maxKm` bound from 0 to 20016 km. Minimum cannot exceed maximum. Zero
+remains distinct from an absent bound. A target has a bracket (`winners`,
+`losers`, `final`, `reset` or `placement`), a one-based round and zero-based match
+index. It must identify an actual match in the configured single/double bracket.
+No target can occur twice, including across different rules. Disabled optional
+matches and targets invalidated by a field-size change are rejected.
+
+Every active entrant and referenced venue needs coordinates to preview or
+generate the draw. All possible entrants in a selected match slot must satisfy
+its base-to-venue bound, including entrants receiving automatic advances.
+Recorded results do not weaken eligibility. Generation writes the selected
+resource ID to the target match, and scheduling preserves that assignment.
+Missing coordinates do not prevent importing public copies or scoring saved
+matches. Public copies need coordinates before scheduling or regenerating these
+draws. The algorithm identifier is `knockout-venue-haversine-fnv1a-mulberry32-v6`.
+Versions 1 through 5 retain their canonical representation and draw algorithm.
+
+Venue recipes add optional `venueResources` to the version 1 recipe envelope.
+This bounded list contains only unique IDs and names. Export replaces source
+resource identities and names with numbered venue placeholders, remaps the
+rules, and omits coordinates and availability. Import creates fresh resources
+and remaps every rule again. Missing, duplicate or unknown references fail;
+unknown fields such as coordinates in this recipe list also fail. Legacy recipes
+without venue rules retain their previous representation.
+
 `protectedSeeds` pins the first specified number of entrants in the selected
 draw order to their standard seed positions. For a field of `n`, the bracket
 has the next power-of-two slot count and exactly `slotCount - n` BYEs. The first
@@ -333,8 +384,8 @@ The optional object is validated on import and retained by public snapshots,
 files, encrypted backups and updates. Pot names and affiliations remain public.
 Recipes remap its pot references to new entrant IDs, without carrying names or
 affiliations. Absent fields remain absent in older documents and their hashes.
-Unknown rule versions are rejected. A release that supports only versions 1 to 4
-rejects version 5 instead of ignoring its distance rules. Earlier releases
+Unknown rule versions are rejected. A release that supports only versions 1 to 5
+rejects version 6 instead of ignoring its venue rules. Earlier releases
 from before knockout-rule validation may preserve the entire object as extension
 data without enforcing it; update the app before regenerating a shared tournament
 that uses it.

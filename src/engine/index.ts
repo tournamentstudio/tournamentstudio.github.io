@@ -13,6 +13,7 @@ import { groupDrawErrors, groupDrawIssueText } from "../domain/draw";
 import { previewAdvancement } from "./advancement";
 import { previewGroupDraw } from "./group-draw";
 import { previewKnockoutDraw } from "./knockout-draw";
+import { assignedKnockoutVenue } from "./venue-distance";
 import {
   knockoutDrawErrors,
   knockoutDrawIssueText,
@@ -38,6 +39,7 @@ export {
   KNOCKOUT_PATHS_ALGORITHM,
   KNOCKOUT_FINALS_ALGORITHM,
   KNOCKOUT_DISTANCE_ALGORITHM,
+  KNOCKOUT_VENUE_ALGORITHM,
   KNOCKOUT_DRAW_NODE_LIMIT,
   KNOCKOUT_DRAW_WORK_LIMIT,
 } from "./knockout-draw";
@@ -189,6 +191,11 @@ export function generateStage(input: Tournament, stageId: string): Tournament {
           )
         : previewAdvancement(tournament, stage.id).bracketSlots,
     );
+    if (stage.config.knockoutDraw?.version === 6)
+      for (const match of matches) {
+        const resourceId = assignedKnockoutVenue(stage, match);
+        if (resourceId) match.resourceId = resourceId;
+      }
   }
   if (stage.format === "gauntlet") matches = gauntlet(stage, ids);
   if (stage.format === "round-robin") matches = roundRobin(stage, ids);

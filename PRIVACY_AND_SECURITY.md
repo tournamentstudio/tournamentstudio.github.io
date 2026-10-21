@@ -46,6 +46,7 @@ The projection removes:
 - Referee names, private match notes, and hand-by-hand referee logs.
 - Team rosters, check-in state, tags, and custom participant metadata.
 - Participant base coordinates, including latitude and longitude.
+- Venue coordinates attached to courts, tables or rooms.
 - Tournament private metadata, correction recovery data, description, and audit history.
 - Unrecognized stage configuration extensions and arbitrary match or stage metadata.
 
@@ -61,6 +62,16 @@ draw. Private snapshots, archives and private updates retain coordinates; privat
 updates are plaintext. Encryption does not change the selected public/private
 scope. Rules and saved match pairings remain visible and may reveal that entrants
 meet the chosen distance criteria.
+
+Venue-distance rules retain the venue identifier, its public name, match targets
+and bounds in public copies. The resource projection omits its coordinates.
+Public copies can show and score saved matches, but automatic scheduling or
+regeneration of a venue-restricted bracket requires the missing coordinates.
+Private backups and private updates retain venue coordinates; private updates
+remain plaintext. Recipes replace venue names and identifiers with placeholders
+and create new resource identifiers on import. They require coordinates before
+previewing a venue-restricted draw. No address lookup or device-location request
+is performed.
 
 Presentation text is intentionally public. A secret typed into a team name, tournament title, sponsor name, or announcement is public content. The application cannot infer that an organizer has placed a secret in a public field.
 
