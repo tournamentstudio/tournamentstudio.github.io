@@ -13,7 +13,7 @@ import { assignedKnockoutVenue } from "../engine/venue-distance";
 import { autoSchedule, detectConflicts, estimateDuration } from "../scheduling";
 import { exportCalendar, exportCSV } from "../export";
 import { Field, Notice, ErrorText } from "../components/ui";
-import { useI18n } from "../i18n";
+import { useI18n, generatedMatchLabel, localizedDiagnostic } from "../i18n";
 import type { EditorProps } from "./Participants";
 import { ResourceLocationFields } from "./ResourceLocationFields";
 
@@ -366,7 +366,7 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
               <b>{t("Schedule conflicts", "تعارض برنامه")}</b>
               <ul>
                 {conflicts.map((c, i) => (
-                  <li key={i}>{c}</li>
+                  <li key={i}>{localizedDiagnostic(c, locale)}</li>
                 ))}
               </ul>
             </Notice>
@@ -397,7 +397,7 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
                   .map((m) => (
                     <tr key={m.id}>
                       <td>
-                        <b>{m.label}</b>
+                        <b>{generatedMatchLabel(m, locale)}</b>
                         <small className="table-subline">
                           {m.slots
                             .map(
@@ -412,7 +412,7 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
                       <td>
                         <input
                           type="datetime-local"
-                          aria-label={`${t("Start", "شروع")} ${m.label}`}
+                          aria-label={`${t("Start", "شروع")} ${generatedMatchLabel(m, locale)}`}
                           value={
                             m.scheduledAt
                               ? new Date(
@@ -442,7 +442,7 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
                       </td>
                       <td>
                         <select
-                          aria-label={`${t("Resource", "منبع")} ${m.label}`}
+                          aria-label={`${t("Resource", "منبع")} ${generatedMatchLabel(m, locale)}`}
                           value={m.resourceId ?? ""}
                           disabled={
                             !!assignedKnockoutVenue(
@@ -483,7 +483,7 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
                       </td>
                       <td>
                         <input
-                          aria-label={`${t("Referee", "داور")} ${m.label}`}
+                          aria-label={`${t("Referee", "داور")} ${generatedMatchLabel(m, locale)}`}
                           defaultValue={m.referee ?? ""}
                           onBlur={(e) => {
                             if (e.target.value === (m.referee ?? "")) return;

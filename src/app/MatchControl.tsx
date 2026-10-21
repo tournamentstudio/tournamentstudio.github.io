@@ -13,7 +13,7 @@ import type { Match, Tournament, Outcome, MatchResult } from "../domain/types";
 import { uid } from "../domain/types";
 import { getCorrectionImpact, recordResult } from "../engine";
 import { Field, Notice, ErrorText, Modal } from "../components/ui";
-import { useI18n } from "../i18n";
+import { useI18n, generatedMatchLabel, groupLabel } from "../i18n";
 import { getTheme, themeStyle } from "../themes";
 import { GameIdentity, ThemeMotif } from "../themes/ThemeMotif";
 import "./game-experience.css";
@@ -167,20 +167,23 @@ export function MatchControl({
           )}
         </div>
         <div className="match-modal-subtitle">
-          {match.label} · {t("Round", "دور")} {match.round}
-          {match.group && ` · ${match.group}`}
+          {generatedMatchLabel(match, locale)} · {t("Round", "دور")}{" "}
+          {match.round}
+          {match.group && ` · ${groupLabel(match.group, locale)}`}
         </div>
         <ErrorText error={error} />
         {doc.sport === "gol-ya-pooch" && (
           <div className="segmented">
             <button
               className={!detailed ? "selected" : ""}
+              aria-pressed={!detailed}
               onClick={() => setDetailed(false)}
             >
               {t("Quick scorekeeping", "امتیازدهی سریع")}
             </button>
             <button
               className={detailed ? "selected" : ""}
+              aria-pressed={detailed}
               onClick={() => setDetailed(true)}
             >
               <ShieldCheck size={15} />
@@ -333,7 +336,7 @@ export function MatchControl({
               </p>
               <ul>
                 {impact.map((m) => (
-                  <li key={m.id}>{m.label}</li>
+                  <li key={m.id}>{generatedMatchLabel(m, locale)}</li>
                 ))}
               </ul>
             </Notice>
@@ -394,7 +397,7 @@ function RefereeMode({
   onChange: (t: Tournament, a: string) => void;
   onScores: (s: number[]) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const ids = match.slots.map((s) => s.participantId!).filter(Boolean);
   const [concealing, setConcealing] = useState(ids[0] ?? "");
   const [secret, setSecret] = useState(match.private?.concealedPosition ?? "");
@@ -601,6 +604,7 @@ function RefereeMode({
               <strong>+{h.points}</strong>
               <button
                 className="text-button"
+                aria-label={`${t("Undo hand", "واگرد دست")} ${(i + 1).toLocaleString(locale)}`}
                 disabled={Boolean(match.result)}
                 onClick={() => {
                   const next = structuredClone(doc);

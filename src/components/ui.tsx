@@ -1,6 +1,14 @@
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import {
+  Children,
+  cloneElement,
+  isValidElement,
+  useEffect,
+  useId,
+  useRef,
+  type ReactNode,
+} from "react";
 import { X, AlertCircle, ArrowUpRight } from "lucide-react";
-import { useI18n } from "../i18n";
+import { localizedDiagnostic, useI18n } from "../i18n";
 
 export function Modal({
   title,
@@ -18,14 +26,47 @@ export function Modal({
   const { t } = useI18n();
   useEffect(() => {
     const dialog = ref.current;
+    const opener =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
     dialog?.showModal();
-    return () => dialog?.close();
+    return () => {
+      dialog?.close();
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
+    };
   }, []);
   return (
     <dialog
       ref={ref}
       className={`modal ${wide ? "modal-wide" : ""}`}
       aria-labelledby={id}
+      aria-modal="true"
+      onKeyDown={(event) => {
+        if (event.key !== "Tab" || event.defaultPrevented) return;
+        const controls = [
+          ...event.currentTarget.querySelectorAll<HTMLElement>(
+            "a[href], button, input, select, textarea, summary, [tabindex]",
+          ),
+        ].filter(
+          (control) =>
+            control.tabIndex >= 0 &&
+            !control.matches(":disabled") &&
+            !control.closest("[inert]") &&
+            control.getClientRects().length > 0 &&
+            getComputedStyle(control).visibility !== "hidden",
+        );
+        const first = controls[0],
+          last = controls.at(-1);
+        const active = document.activeElement;
+        if (event.shiftKey && active === first && last) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && active === last && first) {
+          event.preventDefault();
+          first.focus();
+        }
+      }}
       onCancel={(e) => {
         e.preventDefault();
         onClose();
@@ -34,11 +75,12 @@ export function Modal({
       <div className="modal-heading">
         <h2 id={id}>{title}</h2>
         <button
+          type="button"
           className="icon-button"
           aria-label={t("Close dialog", "بستن پنجره")}
           onClick={onClose}
         >
-          <X size={20} />
+          <X size={20} aria-hidden="true" />
         </button>
       </div>
       {children}
@@ -54,11 +96,37 @@ export function Field({
   children: ReactNode;
   hint?: string;
 }) {
+  const hintId = useId();
+  const labelId = useId();
+  const describedChildren = Children.map(children, (child) => {
+    if (
+      !isValidElement<{
+        "aria-describedby"?: string;
+        "aria-label"?: string;
+        "aria-labelledby"?: string;
+      }>(child) ||
+      typeof child.type !== "string" ||
+      !["input", "select", "textarea"].includes(child.type)
+    )
+      return child;
+    return cloneElement(child, {
+      ...(!child.props["aria-label"] && !child.props["aria-labelledby"]
+        ? { "aria-labelledby": labelId }
+        : {}),
+      ...(hint
+        ? {
+            "aria-describedby": [child.props["aria-describedby"], hintId]
+              .filter(Boolean)
+              .join(" "),
+          }
+        : {}),
+    });
+  });
   return (
     <label className="field">
-      <span>{label}</span>
-      {children}
-      {hint && <small>{hint}</small>}
+      <span id={labelId}>{label}</span>
+      {describedChildren}
+      {hint && <small id={hintId}>{hint}</small>}
     </label>
   );
 }
@@ -74,7 +142,7 @@ export function Empty({
   return (
     <div className="empty-state">
       <div className="empty-mark">
-        <ArrowUpRight />
+        <ArrowUpRight aria-hidden="true" />
       </div>
       <h3>{title}</h3>
       {children && <p>{children}</p>}
@@ -94,16 +162,15 @@ export function Notice({
       className={`notice ${danger ? "notice-danger" : ""}`}
       role={danger ? "alert" : undefined}
     >
-      <AlertCircle size={18} />
+      <AlertCircle size={18} aria-hidden="true" />
       <div>{children}</div>
     </div>
   );
 }
 export function ErrorText({ error }: { error: unknown }) {
+  const { locale } = useI18n();
   return error ? (
-    <Notice danger>
-      {error instanceof Error ? error.message : String(error)}
-    </Notice>
+    <Notice danger>{localizedDiagnostic(error, locale)}</Notice>
   ) : null;
 }
 export function Confirm({
@@ -124,10 +191,11 @@ export function Confirm({
     <Modal title={title} onClose={onClose}>
       <div className="confirm-body">{message}</div>
       <div className="modal-actions">
-        <button className="button secondary" onClick={onClose}>
+        <button type="button" className="button secondary" onClick={onClose}>
           {t("Cancel", "انصراف")}
         </button>
         <button
+          type="button"
           className={`button ${destructive ? "danger" : "primary"}`}
           onClick={() => {
             onConfirm();

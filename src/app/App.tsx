@@ -33,8 +33,10 @@ import {
   publicProjection,
   exportArchive,
   downloadFile,
+  type ArchiveRevision,
   type TournamentPatch,
 } from "../sharing";
+import type { MergeSelection } from "./PatchMergeReview";
 import { LocaleContext, useI18n } from "../i18n";
 import { Modal, Field, ErrorText, Confirm, Notice } from "../components/ui";
 import { Home } from "./Home";
@@ -377,6 +379,7 @@ function Studio({
     value: Tournament,
     mode: "save" | "fork" | "replace",
     vaultSecret?: string,
+    revisions: ArchiveRevision[] = [],
   ) {
     const current = session.current,
       epoch = sessionEpoch.current;
@@ -401,6 +404,13 @@ function Studio({
         current.doc.revision,
         t("Replace from imported snapshot", "جایگزینی از تصویر وارد شده"),
         current.secret,
+      );
+    } else if (revisions.length) {
+      saved = await repository.createWithHistory(
+        value,
+        revisions,
+        vaultSecret,
+        mode === "fork",
       );
     } else
       saved = await repository.create(
@@ -429,6 +439,29 @@ function Studio({
     if (epoch !== sessionEpoch.current) return;
     openDocument(updated, current.secret);
     setToast(t("Update applied", "به‌روزرسانی اعمال شد"));
+  }
+  async function mergePatch(
+    packet: TournamentPatch,
+    selection: MergeSelection,
+  ) {
+    const current = session.current,
+      epoch = sessionEpoch.current;
+    if (!current.doc)
+      throw new Error(
+        t("Open a tournament first.", "ابتدا مسابقات را باز کنید."),
+      );
+    const updated = await repository.mergeUpdate(
+      current.doc.id,
+      packet,
+      selection.selected,
+      selection.expectedHash,
+      selection.confirmInvalidate,
+      current.secret,
+    );
+    await refresh();
+    if (epoch !== sessionEpoch.current) return;
+    openDocument(updated, current.secret);
+    setToast(t("Selected changes applied", "تغییرهای انتخاب‌شده اعمال شد"));
   }
   async function action(
     entryId: string,
@@ -900,12 +933,14 @@ function Studio({
           key={importCode}
           initialCode={importCode}
           current={doc}
+          currentSecret={secret}
           onClose={() => {
             setImportOpen(false);
             setImportCode("");
           }}
           onImport={imported}
           onPatch={patch}
+          onMerge={mergePatch}
         />
       )}
       {purgeId && (

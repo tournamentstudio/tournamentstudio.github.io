@@ -47,3 +47,6 @@ const statuses: Record<TournamentStatus, [string, string]> = {
 };
 export const statusName = (id: TournamentStatus, locale: Locale = "en") =>
   statuses[id]?.[locale === "fa" ? 1 : 0] ?? id;
+
+export { localizedDiagnostic } from "./diagnostics";
+export { generatedMatchLabel, groupLabel } from "./match-labels";

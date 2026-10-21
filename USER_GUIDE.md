@@ -32,7 +32,8 @@ format there.
 
 Use **My tournaments** to search names, switch between grid and list views, sort
 by recent activity or name, and filter favorites, in-progress tournaments or
-trash. The action menu on a card can duplicate, favorite or move it to trash.
+trash. Sport and format filters narrow the list further. The action menu on a
+card can duplicate, favorite or move it to trash.
 
 Duplicates have a new tournament identity and are independent copies. Moving a
 tournament to trash is reversible. **Delete forever** is a separate confirmed
@@ -46,9 +47,9 @@ finished.
 ## Add and edit participants
 
 In **Participants**, choose **Add entrants** and paste one name per line.
-**Import list** accepts TXT, a simple first-column CSV, or a JSON array of names
-or objects with a `name` field. Review the resulting names before adding them.
-XLSX and CSV files with multiline quoted fields are not supported by this importer.
+**Import list** accepts TXT, quoted multiline CSV, JSON participant objects and
+the first worksheet of an XLSX file. Review the names and correct duplicates
+before confirming. Spreadsheet formulas must be replaced with values.
 
 Choose **Edit** beside an entrant to change its name, seed, region, organization or
 active/withdrawn/disqualified status. Team rosters can contain players, a captain,
@@ -680,13 +681,11 @@ and the secret can read it. Encryption does not prove who sent the package.
 
 ## Share a recipe
 
-**Create recipe** creates a `TSR1` code with the first stage's settings, sport,
-rules and appearance defaults. Names, results, private notes and uploaded images
-are omitted. Importing it creates numbered entrants and a new tournament.
-
-Recipes are useful for reusing a starting format. They do not preserve every
-stage in a multi-stage event. Use a full snapshot or duplicate a local tournament
-when you need that structure.
+**Create recipe** creates a `TSR2` code with all stages, their connections, sport,
+rules and appearance defaults. Names, results, private notes, coordinates and
+uploaded images are omitted. Importing it creates numbered entrants and a new
+tournament. Older `TSR1` single-stage recipes still import. A destination stage
+can be drawn after its source results are ready.
 
 ## Apply later results with update packets
 
@@ -702,17 +701,18 @@ and whether its snapshot was public or private.
    update**.
 
 The app checks identity, exact revision and content hash before applying changes.
-A changed local copy, wrong snapshot scope, truncated packet or duplicate update
-is rejected. It does not silently overwrite local results.
+A wrong snapshot scope, truncated packet or duplicate update is rejected.
+It does not silently overwrite local results.
 
-If copies diverged, keep the local version and ask for a new full snapshot. Import
-that snapshot as a separate copy/fork to compare manually, or replace the current
-document only after reviewing and confirming. There is no selective merge editor.
+If copies diverged, review the base, local and incoming values and select the
+changes to retain. Preview the bracket before applying them. Blocked structural
+changes can be saved as the sender's separate fork. Corrections affecting played
+matches need explicit confirmation.
 If the old base has aged out of the fifty-revision local history, send a fresh
 full snapshot.
 
-Private update packets are not encrypted and may contain referee information.
-Use an encrypted full backup when the transfer needs confidentiality.
+Private update packets may contain referee information. Select update encryption
+and share its secret separately when the transfer needs confidentiality.
 
 ## Exchange registrations without a server
 
@@ -798,7 +798,7 @@ revision. Do not assume an edit reached another display until its save succeeds.
 Use the language control in the application header to switch between English and
 Persian. Persian switches the interface to RTL, while `bdi` isolates mixed-script
 names. Bracket direction can also be changed using its own left/right control.
-Some engine diagnostics and generated match labels are still English.
+Generated match labels and known validation messages follow the selected language. An unexpected external error retains its original technical details after a localized explanation.
 
 Use Tab to move through controls. A focused match card opens with Enter or Space.
 The bracket's scroll region can be panned with arrow keys. Stage ordering and
@@ -810,3 +810,21 @@ editing already saves through the local repository.
 
 For the exact supported subset and remaining gaps, consult
 [FEATURES.md](FEATURES.md).
+
+## Organizer records and spreadsheets
+
+Open **Participants** and choose **Edit**. Add a local logo, set availability, or record registration, eligibility and payment decisions. Waiting-list, pending-review and unpaid filters help review those records. Approving registration removes someone from the queue; it does not modify a played draw or change participation status automatically.
+
+**Import list** accepts TXT, CSV, JSON and XLSX. Review the names before confirming; duplicate names can be corrected in the preview. CSV supports quoted names and roster JSON. XLSX reads the first worksheet and reports its name. Use text ISO dates for availability and replace spreadsheet formulas with values first. **Private XLSX** exports rosters and organizer records for offline administration; it omits image files.
+
+## Export graphics and slides
+
+**Export Studio** creates scoreboards, group tables, champion posters and presentation slide archives. Choose the match, stage or scenes, then inspect the preview. SVG keeps text and lines scalable; PNG has bounded dimensions. Standalone HTML can be opened and printed offline. Extract a slide ZIP and open its HTML viewer to move through the selected pages. The files are snapshots and do not receive new results.
+
+## Transfer history and review updates
+
+In **Share Center**, leave **Include saved revisions (up to 50)** enabled to carry recovery points inside a `.tourney` backup. Large images repeated through history may exceed the archive limit; export fewer separate recovery files or uncheck history for a current-only backup. A protected backup uses one secret for all included revisions.
+
+Recipes now include the entire stage graph, with fresh numbered entrants. Generate each stage when its inputs are ready. Private names, results and coordinates are left out.
+
+For private update packets, select encryption and enter a separate secret. On a divergent local copy, review each operation against the saved base, local state and incoming value. Select the changes to retain, preview the resulting bracket, then confirm. Corrections that affect played matches need a further impact confirmation. Blocked structural edits can be saved as the sender's separate fork. A merge creates a new local revision, so later sender packets may also need review.

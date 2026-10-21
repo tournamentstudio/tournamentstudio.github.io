@@ -18,7 +18,8 @@ import {
   CalendarDays,
   Layers3,
 } from "lucide-react";
-import { useI18n, statusName } from "../i18n";
+import { useI18n, statusName, formatName } from "../i18n";
+import { sports } from "../sports";
 import type { LibraryEntry } from "../persistence";
 import { Empty } from "../components/ui";
 
@@ -71,6 +72,8 @@ export function Home({
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
   const [sort, setSort] = useState("recent");
+  const [sportFilter, setSportFilter] = useState("");
+  const [formatFilter, setFormatFilter] = useState("");
   const [menu, setMenu] = useState<string>();
   const [list, setList] = useState(false);
   const favorites = entries
@@ -82,6 +85,9 @@ export function Home({
         (filter === "trash" ? !!e.trashedAt : !e.trashedAt) &&
         (filter !== "active" || e.status === "in-progress") &&
         (filter !== "favorites" || favorites.includes(e.id)) &&
+        (!sportFilter || e.sport === sportFilter) &&
+        (!formatFilter ||
+          e.formats?.some((format) => format === formatFilter)) &&
         e.title
           .toLocaleLowerCase(locale)
           .includes(query.toLocaleLowerCase(locale)),
@@ -283,6 +289,36 @@ export function Home({
             ))}
           </div>
           <div className="toolbar-end">
+            <select
+              aria-label={t("Filter by sport", "فیلتر ورزش")}
+              value={sportFilter}
+              onChange={(event) => setSportFilter(event.target.value)}
+            >
+              <option value="">{t("All sports", "همه ورزش‌ها")}</option>
+              {[...new Set(entries.map((entry) => entry.sport).filter(Boolean))]
+                .sort()
+                .map((id) => (
+                  <option key={id} value={id}>
+                    {locale === "fa"
+                      ? (sports.find((sport) => sport.id === id)?.fa ?? id)
+                      : (sports.find((sport) => sport.id === id)?.name ?? id)}
+                  </option>
+                ))}
+            </select>
+            <select
+              aria-label={t("Filter by format", "فیلتر قالب")}
+              value={formatFilter}
+              onChange={(event) => setFormatFilter(event.target.value)}
+            >
+              <option value="">{t("All formats", "همه قالب‌ها")}</option>
+              {[...new Set(entries.flatMap((entry) => entry.formats ?? []))]
+                .sort()
+                .map((id) => (
+                  <option key={id} value={id}>
+                    {formatName(id, locale)}
+                  </option>
+                ))}
+            </select>
             <div className="search-field">
               <Search size={16} />
               <input

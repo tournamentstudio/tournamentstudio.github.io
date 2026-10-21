@@ -30,9 +30,9 @@ These are defined local rulesets, not claims of federation certification. Swiss 
 
 ## At the tournament desk
 
-Quick Create accepts numbered entrants or pasted names. The workspace includes participant rosters, check-in, match control, standings, a stage graph, schedules, statistics, rules, themes, presentation, portable sharing, offline registration/result exchange, revision history, and vault settings.
+Quick Create accepts numbered entrants or pasted names. The workspace includes participant rosters, local logo uploads, waiting lists, eligibility and payment-status records, participant availability, check-in, match control, standings, a stage graph, schedules, statistics, rules, themes, presentation, portable sharing, offline registration/result exchange, revision history, and vault settings.
 
-English and Persian labels, local Inter and Vazirmatn fonts, and RTL layouts are included. The interface is designed for desktop and phones. Some engine validation messages remain English. [FEATURES.md](FEATURES.md) records that limitation along with other partial features.
+English and Persian labels, local Inter and Vazirmatn fonts, and RTL layouts are included. The interface is designed for desktop and phones. Engine and import diagnostics have Persian display translations. [FEATURES.md](FEATURES.md) records supported behavior and remaining work.
 
 The 50 theme presets include game collections for all 14 activities. Original court diagrams, paddles, chess pieces, Persian geometry and other vector artwork sit on paper, wood, felt, tile and other material treatments. Theme Studio recommends related choices and lets you search the full catalog. The selected identity appears in creation, the workspace, match cards and scorekeeping.
 
@@ -78,10 +78,10 @@ Confirmed writes create a new revision inside an IndexedDB transaction. The last
 Share Center offers:
 
 - A public data-bearing snapshot link or `TS1` text code.
-- A full `.tourney` backup, optionally encrypted with a separate secret.
-- A `TSR1` recipe with structure and settings rather than results.
-- A `TSP1` update packet for an exact prior revision.
-- SVG and PNG brackets, CSV tables, calendar files, and print output. PDF uses the browser's Save as PDF option.
+- A full `.tourney` backup with optional saved revisions, encrypted together when a secret is selected.
+- A `TSR2` multi-stage recipe with structure and settings rather than names or results; older `TSR1` recipes still import.
+- A `TSP1` update packet with optional encryption, exact-base application, and an explicit review for divergent copies with a retained base.
+- Export Studio provides SVG/PNG scoreboards, standings and champion posters, standalone printable HTML, and slide archives with an offline viewer. Brackets, CSV, participant XLSX and calendar files are also available. PDF uses the browser's Save as PDF option.
 
 Snapshot links carry their data in the URL fragment. An arbitrary local ID cannot retrieve another person's tournament. Recipients have independent copies, and distributed snapshots cannot be revoked. A read-only preview does not prevent copying.
 
@@ -119,7 +119,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for contracts and [FEATURES.md](FEATURES.
 
 There is no hosted registration service, account system, payment processing, cloud storage, or cross-device live collaboration. Registration and scorekeeper responses are explicit file exchanges.
 
-Some requested capabilities remain unfinished: road travel and cost optimization, full placement brackets, two-legged ties, full season/event records, prediction brackets, XLSX, slide-file exports, advanced broadcast overlays, and parts of the theme editor. Distances are spherical estimates between entrant bases or from a base to a selected venue, calculated locally without address lookup. Venue rules reserve eligible entrants for match slots, including walkovers; they do not estimate actual trips. Public snapshots omit coordinates; private backups retain them. Affiliation protection for a grand final or reset requires distinct labels for all entrants because any pair can reach those matches. Distance protection requires every entrant pair to meet the selected interval. Placement separation covers the single-elimination third-place match. Counts are capped at 512 entrants and 20,000 matches per document. A 512-entrant round robin exceeds the match cap; the limit is not a promise that every format supports the same field size.
+Some requested capabilities remain unfinished: road travel and cost optimization, full placement brackets, two-legged ties, full season/event records, prediction brackets, advanced broadcast overlays, and parts of the theme editor. Distances are spherical estimates between entrant bases or from a base to a selected venue, calculated locally without address lookup. Venue rules reserve eligible entrants for match slots, including walkovers; they do not estimate actual trips. Public snapshots omit coordinates; private backups retain them. Affiliation protection for a grand final or reset requires distinct labels for all entrants because any pair can reach those matches. Distance protection requires every entrant pair to meet the selected interval. Placement separation covers the single-elimination third-place match. Counts are capped at 512 entrants and 20,000 matches per document. A 512-entrant round robin exceeds the match cap; the limit is not a promise that every format supports the same field size.
 
 Modern Chromium, Firefox, and WebKit are the browser targets. PWA installation and persistent-storage permission vary by browser. A secure context is required for crypto and service workers; HTTPS and localhost qualify.
 

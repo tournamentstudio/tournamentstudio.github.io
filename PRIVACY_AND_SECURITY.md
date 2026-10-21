@@ -59,7 +59,7 @@ update packets, recipes, standard participant CSV, bracket graphics and printed
 results omit the typed location field. A public copy can display and score its
 saved draw but needs new coordinates before regenerating a distance-restricted
 draw. Private snapshots, archives and private updates retain coordinates; private
-updates are plaintext. Encryption does not change the selected public/private
+updates can be encrypted with a separate secret. Encryption does not change the selected public/private
 scope. Rules and saved match pairings remain visible and may reveal that entrants
 meet the chosen distance criteria.
 
@@ -68,7 +68,7 @@ and bounds in public copies. The resource projection omits its coordinates.
 Public copies can show and score saved matches, but automatic scheduling or
 regeneration of a venue-restricted bracket requires the missing coordinates.
 Private backups and private updates retain venue coordinates; private updates
-remain plaintext. Recipes replace venue names and identifiers with placeholders
+can use separate-secret encryption. Recipes replace venue names and identifiers with placeholders
 and create new resource identifiers on import. They require coordinates before
 previewing a venue-restricted draw. No address lookup or device-location request
 is performed.
@@ -93,11 +93,11 @@ Snapshots do not sync across devices. Later changes require a new snapshot or an
 
 SHA-256 checksums detect incomplete or changed data. They do not authenticate the sender. The same limitation applies to registration responses and scorekeeper result proposals.
 
-Update packets must match the local tournament ID, base revision, and base hash. They are validated before a transaction and rejected on divergence or duplicate application. The previous revision remains available in local history, subject to the 50-snapshot retention limit.
+Update packets must match the local tournament ID, base revision, and base hash. They are validated before a transaction. Duplicate application is rejected. Divergent copies require the verified saved base and an explicit operation review; incompatible structural changes require a fork. The previous revision remains available in local history, subject to the 50-snapshot retention limit.
 
-Public updates omit private fields by using the public projection. Private update packets are plaintext. Use an encrypted complete archive instead if the update needs confidentiality.
+Public updates omit private fields by using the public projection. Private update packets include private data. Select update encryption and share the secret separately when confidentiality is needed.
 
-The application does not implement digital signatures, trusted referee identities, selective patch merging, or remote revocation.
+The application does not implement digital signatures, trusted referee identities or remote revocation.
 
 ## Imported files and assets
 
@@ -126,6 +126,14 @@ Core application scripts, fonts, icons, and styles are bundled. Uploaded content
 
 The vault has no independent cryptographic audit. This is an application-level protection for local documents, not protection against a compromised browser or device.
 
-Auto-lock on inactivity, trusted digital signatures, encrypted incremental packets, and embedded-key encrypted links are not implemented. Protected presentation windows need their own unlock state; a separate OBS browser process does not inherit another browser's data.
+Auto-lock on inactivity, trusted digital signatures and embedded-key encrypted links are not implemented. Protected presentation windows need their own unlock state; a separate OBS browser process does not inherit another browser's data.
 
 Use the explicit lock control when leaving a shared computer. Close other unlocked windows, keep software current, and retain tested backups with their correct secrets.
+
+## Organizer records and table files
+
+Waiting-list decisions, eligibility, payment status, availability and organizer notes live in participant metadata and are omitted from public projections. The private XLSX export intentionally includes these records and rosters. It does not process payments. Keep the file with other organizer backups.
+
+XLSX imports are limited to 2 MiB compressed and 8 MiB expanded across at most 100 ZIP entries. The reader refuses formulas, external relationships, macros, embedded objects, XML entities, unsafe paths and duplicate cells. Imported workbooks never execute code or load external links.
+
+A revision archive can contain private information deleted from the current tournament but retained in an older revision. The same archive encryption protects every included revision. Public visual exports use a fresh public projection and do not include the private revision table.

@@ -234,7 +234,7 @@ async function unwrapPackage(
   return tournament;
 }
 
-async function encodeTransport(
+export async function encodeTransport(
   prefix: string,
   payload: unknown,
 ): Promise<string> {
@@ -247,7 +247,10 @@ async function encodeTransport(
   return `${prefix}:${bytesToBase64(compressed)}.${checksum}`;
 }
 
-async function decodeTransport(prefix: string, raw: string): Promise<unknown> {
+export async function decodeTransport(
+  prefix: string,
+  raw: string,
+): Promise<unknown> {
   if (raw.length > LIMITS.compressedBytes * 2)
     throw new Error("The code is too large.");
   const code = raw.replace(/\s/g, "");
@@ -284,7 +287,7 @@ export async function decodeCode(
 const manifestSchema = z
   .object({
     format: z.literal("tournastudio-archive"),
-    version: z.literal(1),
+    version: z.union([z.literal(1), z.literal(2)]),
     document: z.enum(["tournament.json", "encrypted.json"]),
     hash: z.string().length(43),
     encrypted: z.boolean(),
@@ -295,13 +298,21 @@ const manifestSchema = z
 export async function exportArchive(
   tournament: Tournament,
   secret?: string,
+  revisions?: ArchiveRevision[],
 ): Promise<Uint8Array> {
   const packageValue = await snapshotPackage(tournament, true);
+  const payload =
+    revisions === undefined
+      ? packageValue
+      : {
+          format: "tournastudio-history-backup",
+          version: 1,
+          current: packageValue,
+          revisions: await validateArchiveRevisions(tournament, revisions),
+        };
   const document = strToU8(
     canonicalize(
-      secret
-        ? await encryptJson(packageValue, secret, "package")
-        : packageValue,
+      secret ? await encryptJson(payload, secret, "package") : payload,
     ),
   );
   if (document.length > LIMITS.documentBytes)
@@ -311,7 +322,7 @@ export async function exportArchive(
   const name = secret ? "encrypted.json" : "tournament.json";
   const manifest = {
     format: "tournastudio-archive",
-    version: 1,
+    version: revisions === undefined ? 1 : 2,
     document: name,
     hash: await sha256(document),
     encrypted: Boolean(secret),
@@ -440,6 +451,73 @@ export async function importArchive(
   input: Uint8Array | ArrayBuffer,
   secret?: string,
 ): Promise<Tournament> {
+  return (await importArchiveBundle(input, secret)).tournament;
+}
+
+export interface ArchiveRevision {
+  action: string;
+  tournament: Tournament;
+}
+export interface ArchiveBundle {
+  tournament: Tournament;
+  revisions: ArchiveRevision[];
+}
+const historyBackupSchema = z
+  .object({
+    format: z.literal("tournastudio-history-backup"),
+    version: z.literal(1),
+    current: packageSchema,
+    revisions: z
+      .array(
+        z
+          .object({ action: z.string().max(1000), tournament: z.unknown() })
+          .strict(),
+      )
+      .max(50),
+  })
+  .strict();
+
+export async function validateArchiveRevisions(
+  current: Tournament,
+  entries: { action: string; tournament: unknown }[],
+): Promise<ArchiveRevision[]> {
+  if (entries.length > 50)
+    throw new Error("A backup can contain at most 50 saved revisions.");
+  const seen = new Set<number>();
+  const revisions: ArchiveRevision[] = [];
+  for (const entry of entries) {
+    const tournament = validateTournament(entry.tournament);
+    if (
+      tournament.id !== current.id ||
+      tournament.revision > current.revision ||
+      seen.has(tournament.revision)
+    )
+      throw new Error(
+        "The backup contains a duplicate, unrelated, or future revision.",
+      );
+    if ((await hashDocument(tournament)) !== tournament.revisionHash)
+      throw new Error("A backup revision failed its integrity check.");
+    if (
+      tournament.revision === current.revision &&
+      tournament.revisionHash !== (await hashDocument(current))
+    )
+      throw new Error(
+        "The current backup revision does not match its document.",
+      );
+    if (typeof entry.action !== "string" || entry.action.length > 1000)
+      throw new Error("A backup revision has an invalid history label.");
+    seen.add(tournament.revision);
+    revisions.push({ action: entry.action, tournament });
+  }
+  return revisions.sort(
+    (left, right) => left.tournament.revision - right.tournament.revision,
+  );
+}
+
+export async function importArchiveBundle(
+  input: Uint8Array | ArrayBuffer,
+  secret?: string,
+): Promise<ArchiveBundle> {
   const entries = readArchive(new Uint8Array(input));
   if (!entries["manifest.json"])
     throw new Error("The archive manifest is missing.");
@@ -454,7 +532,21 @@ export async function importArchive(
     throw new Error("The archive content does not match its manifest.");
   if ((await sha256(document)) !== manifest.hash)
     throw new Error("The archive checksum does not match.");
-  return unwrapPackage(decode(document), secret);
+  let value = decode(document);
+  if (manifest.version === 1)
+    return { tournament: await unwrapPackage(value, secret), revisions: [] };
+  if (manifest.encrypted) {
+    if (!secret)
+      throw new Error("This package is encrypted. Enter its separate secret.");
+    value = await decryptJson(value, secret);
+  }
+  const backup = historyBackupSchema.parse(value);
+  const tournament = await unwrapPackage(backup.current);
+  const revisions = await validateArchiveRevisions(
+    tournament,
+    backup.revisions,
+  );
+  return { tournament, revisions };
 }
 
 const recipeSchema = z
@@ -489,7 +581,7 @@ const recipeSchema = z
   })
   .strict();
 
-export async function encodeRecipe(tournament: Tournament): Promise<string> {
+async function encodeLegacyRecipe(tournament: Tournament): Promise<string> {
   const stage = tournament.stages[0];
   if (!stage) throw new Error("Add a stage before exporting a recipe.");
   const theme = { ...tournament.theme };
@@ -551,7 +643,7 @@ export async function encodeRecipe(tournament: Tournament): Promise<string> {
   });
 }
 
-function remapRecipeReferences(
+export function remapRecipeReferences(
   source: Tournament["stages"][number]["config"],
   references: Map<string, string>,
 ): Tournament["stages"][number]["config"] {
@@ -589,7 +681,7 @@ function remapRecipeReferences(
   return config;
 }
 
-export async function decodeRecipe(code: string): Promise<Tournament> {
+async function decodeLegacyRecipe(code: string): Promise<Tournament> {
   const recipe = recipeSchema.parse(await decodeTransport("TSR1", code));
   const tournament = createTournament(
     "Imported recipe",
@@ -788,12 +880,40 @@ export async function applyPatch(
   return verified;
 }
 
-export async function encodePatch(patch: TournamentPatch): Promise<string> {
-  return encodeTransport("TSP1", patchSchema.parse(patch));
+export async function encodePatch(
+  patch: TournamentPatch,
+  secret?: string,
+): Promise<string> {
+  const value = patchSchema.parse(patch);
+  return encodeTransport(
+    "TSP1",
+    secret ? await encryptJson(value, secret, "package") : value,
+  );
 }
 
-export async function decodePatch(code: string): Promise<TournamentPatch> {
-  return patchSchema.parse(await decodeTransport("TSP1", code));
+export async function decodePatch(
+  code: string,
+  secret?: string,
+): Promise<TournamentPatch> {
+  let value = await decodeTransport("TSP1", code);
+  if (value && typeof value === "object" && "algorithm" in value) {
+    if (!secret)
+      throw new Error("This update is encrypted. Enter its separate secret.");
+    value = await decryptJson(value, secret);
+  }
+  return patchSchema.parse(value);
+}
+
+export async function encodeRecipe(tournament: Tournament): Promise<string> {
+  return tournament.stages.length === 1
+    ? encodeLegacyRecipe(tournament)
+    : (await import("./recipes")).encodeStageRecipe(tournament);
+}
+
+export async function decodeRecipe(code: string): Promise<Tournament> {
+  return code.replace(/\s/g, "").startsWith("TSR2:")
+    ? (await import("./recipes")).decodeStageRecipe(code)
+    : decodeLegacyRecipe(code);
 }
 
 export function transferAdvice(

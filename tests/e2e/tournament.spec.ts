@@ -374,7 +374,7 @@ test("reconstructs a public link in another browser profile and keeps edits inde
   }
 });
 
-test("applies a versioned update once and rejects duplicate and divergent copies", async ({
+test("applies an exact update once and requires review for divergent copies", async ({
   page,
   browser,
 }) => {
@@ -422,9 +422,18 @@ test("applies a versioned update once and rejects duplicate and divergent copies
       duplicate.getByRole("button", { name: "Apply verified update" }),
     ).toHaveCount(0);
     const conflict = await pasteImport(divergent, code);
-    await expect(conflict.getByRole("alert")).toContainText(
-      /diverg|base|revision/i,
-    );
+    await expect(
+      conflict.getByRole("heading", {
+        name: "Review divergent update",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      conflict.getByRole("button", {
+        name: "Preview selected changes",
+        exact: true,
+      }),
+    ).toBeDisabled();
     await expect(
       conflict.getByRole("button", { name: "Apply verified update" }),
     ).toHaveCount(0);

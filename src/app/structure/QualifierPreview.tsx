@@ -5,7 +5,7 @@ import type {
   WildcardTieBreaker,
 } from "../../domain/types";
 import { Notice } from "../../components/ui";
-import { useI18n } from "../../i18n";
+import { useI18n, localizedDiagnostic, groupLabel } from "../../i18n";
 
 export function QualifierPreview({
   tournament,
@@ -41,7 +41,7 @@ export function QualifierPreview({
         <Notice>
           <ul>
             {preview.issues.map((issue, index) => (
-              <li key={index}>{issue}</li>
+              <li key={index}>{localizedDiagnostic(issue, locale)}</li>
             ))}
           </ul>
         </Notice>
@@ -79,7 +79,7 @@ export function QualifierPreview({
             {!!source.issues.length && (
               <ul className="structure-preview-issues">
                 {source.issues.map((issue, index) => (
-                  <li key={index}>{issue}</li>
+                  <li key={index}>{localizedDiagnostic(issue, locale)}</li>
                 ))}
               </ul>
             )}
@@ -125,8 +125,10 @@ export function QualifierPreview({
                           <bdi>{name(candidate.participantId)}</bdi>
                         </th>
                         <td>
-                          {candidate.group ?? t("All", "همه")} /{" "}
-                          {number(candidate.rank)}
+                          {candidate.group
+                            ? groupLabel(candidate.group, locale)
+                            : t("All", "همه")}{" "}
+                          / {number(candidate.rank)}
                         </td>
                         <td>
                           {number(candidate.metrics.played)} /{" "}
@@ -146,7 +148,9 @@ export function QualifierPreview({
                             )}
                           </td>
                         ))}
-                        <td title={candidate.reason}>
+                        <td
+                          title={localizedDiagnostic(candidate.reason, locale)}
+                        >
                           {candidate.selected
                             ? t("Qualifies", "صعود می‌کند")
                             : candidate.excluded
@@ -155,7 +159,9 @@ export function QualifierPreview({
                                 ? t("Unresolved tie", "تساوی حل‌نشده")
                                 : t("Outside selection", "خارج از انتخاب")}
                           {candidate.reason && (
-                            <small>{candidate.reason}</small>
+                            <small>
+                              {localizedDiagnostic(candidate.reason, locale)}
+                            </small>
                           )}
                         </td>
                       </tr>

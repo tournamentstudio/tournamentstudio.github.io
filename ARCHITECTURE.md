@@ -563,3 +563,11 @@ mobile layout, and offline editing after closing and reopening a cached tab.
 The vault race test delays encryption, locks the workspace before the save
 finishes, waits for the committed revision, and verifies that unlocking is still
 required.
+
+## Organizer inputs and portable recovery
+
+Participant table adapters live in `src/app/participants` and the bounded SpreadsheetML codec in `src/tabular`. All inputs converge on the same participant schema and duplicate-name preview. Organizer administration remains private participant metadata, separate from competition eligibility and played draw state.
+
+The sharing layer supports multi-stage recipes and optional revision archives. Selective update review uses a verified common base and replays result operations through the competition engine. Persistence rechecks the current hash/revision before a transactional write. Imports with history commit document and snapshot records together; a quota failure leaves neither partial table behind.
+
+Visual exports use public projections before SVG composition, font embedding, rasterization or ZIP creation. Localization maps diagnostics and generated labels at display time without rewriting stored documents or changing hashes. Dialog focus handling and field descriptions are shared UI behavior.

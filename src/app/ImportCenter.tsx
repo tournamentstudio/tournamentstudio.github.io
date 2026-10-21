@@ -6,10 +6,14 @@ import {
   decodeCode,
   decodeRecipe,
   decodePatch,
-  importArchive,
+  importArchiveBundle,
   applyPatch,
+  type ArchiveRevision,
   type TournamentPatch,
 } from "../sharing";
+import { reviewPatch, type PatchReview } from "../sharing/merge";
+import { repository } from "../persistence";
+import { PatchMergeReview, type MergeSelection } from "./PatchMergeReview";
 import { generateStage } from "../engine";
 import { Field, Modal, Notice, ErrorText } from "../components/ui";
 import { Bracket } from "../components/Bracket";
@@ -17,19 +21,24 @@ import { useI18n } from "../i18n";
 export function ImportCenter({
   initialCode = "",
   current,
+  currentSecret,
   onClose,
   onImport,
   onPatch,
+  onMerge,
 }: {
   initialCode?: string;
   current?: Tournament;
+  currentSecret?: string;
   onClose: () => void;
   onImport: (
     t: Tournament,
     mode: "save" | "fork" | "replace",
     secret?: string,
+    revisions?: ArchiveRevision[],
   ) => Promise<void>;
   onPatch: (p: TournamentPatch) => Promise<void>;
+  onMerge: (p: TournamentPatch, selection: MergeSelection) => Promise<void>;
 }) {
   const { t, locale } = useI18n();
   const [text, setText] = useState(initialCode);
@@ -38,11 +47,19 @@ export function ImportCenter({
   const [protect, setProtect] = useState(false);
   const [preview, setPreview] = useState<Tournament>();
   const [patch, setPatch] = useState<TournamentPatch>();
+  const [revisions, setRevisions] = useState<ArchiveRevision[]>([]);
+  const [merge, setMerge] = useState<{
+    base: Tournament;
+    packet: TournamentPatch;
+    review: PatchReview;
+  }>();
   const [error, setError] = useState<unknown>();
   const [busy, setBusy] = useState(false);
   async function inspect(raw = text) {
     setBusy(true);
     setError(undefined);
+    setRevisions([]);
+    setMerge(undefined);
     try {
       if (raw.length > 24 * 1024 * 1024)
         throw new Error(
@@ -69,10 +86,12 @@ export function ImportCenter({
             ),
           );
         if (file.name.toLowerCase().endsWith(".tourney")) {
-          value = await importArchive(
+          const bundle = await importArchiveBundle(
             await file.arrayBuffer(),
             secret || undefined,
           );
+          value = bundle.tournament;
+          setRevisions(bundle.revisions);
           setPreview(value);
           setPatch(undefined);
           if (secret) setProtect(true);
@@ -90,12 +109,40 @@ export function ImportCenter({
               "ابتدا مسابقات گیرنده را باز کنید و سپس به‌روزرسانی را وارد کنید.",
             ),
           );
-        const packet = await decodePatch(code);
-        value = await applyPatch(current, packet);
+        const packet = await decodePatch(code, secret || undefined);
+        try {
+          value = await applyPatch(current, packet);
+        } catch (error) {
+          if (!(error instanceof Error) || !error.message.includes("diverged"))
+            throw error;
+          let base: Tournament;
+          try {
+            base = await repository.loadRevision(
+              current.id,
+              packet.baseRevision,
+              currentSecret,
+            );
+          } catch {
+            throw new Error(
+              t(
+                "The exact base revision is needed for conflict review. Restore a history backup as a separate copy, or request the sender's full snapshot.",
+                "برای بررسی تعارض به نسخه پایه دقیق نیاز است. پشتیبان تاریخچه را به‌صورت کپی جداگانه بازیابی کنید یا تصویر کامل داده را از فرستنده بخواهید.",
+              ),
+            );
+          }
+          setMerge({
+            base,
+            packet,
+            review: await reviewPatch(current, base, packet),
+          });
+          setPreview(undefined);
+          return;
+        }
         setPatch(packet);
-      } else if (code.replace(/\s/g, "").startsWith("TSR1:")) {
+      } else if (/^TSR[12]:/.test(code.replace(/\s/g, ""))) {
         value = await decodeRecipe(code);
-        value = generateStage(value, value.stages[0].id);
+        if (value.stages.length === 1)
+          value = generateStage(value, value.stages[0].id);
         setPatch(undefined);
       } else if (code.startsWith("{")) {
         value = parseTournament(code);
@@ -122,7 +169,8 @@ export function ImportCenter({
     setBusy(true);
     try {
       if (patch) await onPatch(patch);
-      else await onImport(preview, mode, protect ? secret : undefined);
+      else
+        await onImport(preview, mode, protect ? secret : undefined, revisions);
       onClose();
     } catch (e) {
       setError(e);
@@ -140,7 +188,29 @@ export function ImportCenter({
       onClose={onClose}
     >
       <ErrorText error={error} />
-      {!preview ? (
+      {merge && current ? (
+        <PatchMergeReview
+          key={`${merge.packet.id}:${current.revision}`}
+          current={current}
+          base={merge.base}
+          packet={merge.packet}
+          review={merge.review}
+          forkProtected={Boolean(currentSecret || secret)}
+          onBack={() => setMerge(undefined)}
+          onMerge={async (selection) => {
+            await onMerge(merge.packet, selection);
+            onClose();
+          }}
+          onFork={async (target) => {
+            await onImport(
+              target,
+              "fork",
+              currentSecret || secret || undefined,
+            );
+            onClose();
+          }}
+        />
+      ) : !preview ? (
         <>
           <div
             className="upload-zone"
@@ -201,7 +271,7 @@ export function ImportCenter({
               }}
               spellCheck={false}
               dir="ltr"
-              aria-label="Import code"
+              aria-label={t("Import code", "کد ورود")}
             />
           </Field>
           <Field
@@ -256,6 +326,14 @@ export function ImportCenter({
                   "این پیش‌نمایش فقط‌خواندنی است. هنوز چیزی در دستگاه ذخیره نشده است. کپی از فرستنده مستقل خواهد بود.",
                 )}
           </Notice>
+          {!!revisions.length && (
+            <Notice>
+              {t(
+                `${revisions.length} saved revisions are included. Save or fork restores them. Replace keeps the existing local history instead.`,
+                `این پشتیبان ${revisions.length} نسخه ذخیره‌شده دارد. ذخیره یا کپی، آن‌ها را بازیابی می‌کند. جایگزینی تاریخچه محلی فعلی را حفظ می‌کند.`,
+              )}
+            </Notice>
+          )}
           <div className="import-bracket">
             <Bracket tournament={preview} locale={locale} readOnly />
           </div>

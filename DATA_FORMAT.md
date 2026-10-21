@@ -337,11 +337,13 @@ Version 6 adds required `venueRules` and makes the opponent `distance` optional:
   "separation": [],
   "losersSeparation": [],
   "finalsSeparation": [],
-  "venueRules": [{
-    "resourceId": "west-court",
-    "maxKm": 500,
-    "targets": [{ "bracket": "winners", "round": 2, "index": 0 }]
-  }]
+  "venueRules": [
+    {
+      "resourceId": "west-court",
+      "maxKm": 500,
+      "targets": [{ "bracket": "winners", "round": 2, "index": 0 }]
+    }
+  ]
 }
 ```
 
@@ -469,7 +471,7 @@ The manifest contains:
 
 `manifest.json` is limited to 4 KiB. The document entry is limited to 16 MiB, including any encryption envelope overhead. The ZIP directory, footer, entry names, entry count, declared size, and actual decompressed size are checked. Duplicate entries, path traversal, extra files, multipart archives, ZIP comments, unsupported compression, and damaged containers are rejected.
 
-Archives contain the full current document and its audit entries. They do not contain the separate IndexedDB revision snapshot table. An old backup remains a recovery point, even after the browser trims its local snapshot history.
+Version 1 archives contain the current document and its audit entries. Version 2 archives can include up to 50 retained revision snapshots inside a `tournastudio-history-backup` envelope. Its `current` snapshot package and `revisions` array share the encryption envelope when encrypted. Each revision carries its action label and document; IDs, unique revision numbers and hashes are verified before one import transaction. Revision numbers cannot exceed the current document. Existing archive byte and file-count limits still apply to the entire backup. An old backup remains a recovery point after local history is trimmed.
 
 ## Encryption envelope
 
@@ -496,7 +498,7 @@ Secrets must contain 8 to 1024 characters. A longer random secret is preferable 
 
 `TSR1` uses the same compression and checksum framing as snapshot codes. A recipe contains the first stage's format and settings, entrant count, sport, scoring rules, theme settings, and presentation defaults. It omits participant names, matches, results, uploaded logos, backgrounds, sponsors, and scene text.
 
-Import creates new IDs and numbered entrants. Assigned groups, pairing restrictions, and manual qualifiers use `slot-1`, `slot-2`, and later participant positions, marked by `participantReferences: "positions"`. Import remaps these positions to the new entrant IDs. It rejects unknown positions. Older recipes without participant assignments remain supported. The import interface generates the stage from these settings. A recipe describes one starting stage, not a complete multi-stage template.
+Import creates new IDs and numbered entrants. Assigned groups, pairing restrictions, and manual qualifiers use `slot-1`, `slot-2`, and later participant positions, marked by `participantReferences: "positions"`. Import remaps these positions to the new entrant IDs. It rejects unknown positions. Older recipes without participant assignments remain supported. The legacy import interface generates the first stage from these settings. New exports use `TSR2`: all stages, stage dependencies, exact positions, wildcards, fixed slots and required venue placeholders are included. Stage and entrant identifiers are replaced with positional references, then new IDs on import. Names, uploaded images, results, private metadata and coordinates are excluded. Venue rules need replacement coordinates before a new constrained draw.
 
 ## Update packets
 
@@ -512,9 +514,9 @@ Operations use `set` or `remove`. Paths address an allowed top-level field, or a
 
 Changed matches are transferred individually. Adding, removing, or reordering entities transfers the affected collection to preserve ordering. The packet carries the target audit history when it changes.
 
-Application requires an exact tournament ID, revision, and base hash. The result is schema-validated and hashed before the write transaction. A duplicate target is rejected. Divergent local edits are rejected without replacing local data. There is no selective merge interface.
+Application requires an exact tournament ID, revision, and base hash. The result is schema-validated and hashed before the write transaction. A duplicate target is rejected. Divergent copies require the actual stored base with the packet's hash. Review compares each operation against base, local and incoming state. Selected changes create a new local revision. Match results replay through the engine; affected played/live matches require an impact confirmation. Generated structure removal and other blocked operations require a separate fork. A stale preview cannot overwrite a later local save.
 
-Use a public projection at both ends when generating spectator updates. Private update packets can include notes, rosters, and referee data. Patch codes are not encrypted; use a protected full archive when confidentiality is required.
+Use a public projection at both ends when generating spectator updates. Private update packets can include notes, rosters, and referee data. Patch codes can wrap the packet in the existing authenticated encryption envelope with `context: "package"`. Decryption precedes strict patch validation. The secret is supplied separately; unencrypted legacy codes remain supported.
 
 `repository.applyUpdate` keeps the packet's exact target revision and hash. A normal edit through `repository.save` creates a new local revision and will intentionally diverge from the sender's copy.
 
@@ -541,3 +543,13 @@ Dexie manages the `TournaStudio` IndexedDB database with schema version `1`:
 Standard snapshots are compressed. Protected snapshots contain encrypted envelopes. A document update and its revision snapshot commit in the same transaction. Writes compare the expected revision with the current saved revision. A stale writer receives a conflict instead of overwriting another tab.
 
 Restoring a snapshot creates a new revision. Trash is a reversible library flag. Permanent deletion requires a tournament to be in trash and removes both document and snapshots.
+
+## Participant tables
+
+CSV supports quoted fields, doubled quotes and embedded newlines. Headers include name, seed, shortName, kind, status, region, organization, checkedIn, roster, tags, availableFrom, availableUntil, registration, eligibility, payment and note. Roster cells contain a JSON array; tags use semicolons. Availability uses ISO timestamps. JSON imports preserve valid participant fields and safe metadata while assigning fresh participant and roster IDs.
+
+The XLSX reader uses bounded ZIP expansion and native XML parsing for the first worksheet. It reads inline/shared strings, numeric values and booleans. Formulas must be converted to values before import. Active content, external relationships, entity definitions and invalid paths are refused. The table is limited to 512 entrants plus a header and 64 columns. Dates for availability must be ISO text. Workbook exports use typed cells and explicit strings, so formula-looking names remain data. The implementation follows [SpreadsheetML cell definitions](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.cell).
+
+## Visual archive
+
+Export Studio writes standalone SVG files with embedded local font data, a versioned slide manifest, and a static HTML viewer in a ZIP. Every scene first receives the public projection. Lists are paginated and output sizes are bounded. Files represent the current saved view; animation clocks and later scores do not run inside the archive.

@@ -2,7 +2,7 @@ import { TrendingUp, Trophy, Target, Activity } from "lucide-react";
 import type { Tournament } from "../domain/types";
 import { getStandings } from "../engine";
 import { Empty } from "../components/ui";
-import { useI18n } from "../i18n";
+import { useI18n, generatedMatchLabel } from "../i18n";
 export function Statistics({ tournament: doc }: { tournament: Tournament }) {
   const { t, locale } = useI18n();
   const played = doc.matches.filter(
@@ -138,7 +138,7 @@ export function Statistics({ tournament: doc }: { tournament: Tournament }) {
           .slice(0, 20)
           .map((m) => (
             <div className="result-history-row" key={m.id}>
-              <span>{m.label}</span>
+              <span>{generatedMatchLabel(m, locale)}</span>
               <bdi>
                 {m.slots
                   .map(

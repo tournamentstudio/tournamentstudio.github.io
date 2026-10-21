@@ -21,10 +21,17 @@ import {
   BarChart3,
   BookOpen,
   ClipboardList,
+  Download,
 } from "lucide-react";
 import type { Tournament, Match } from "../domain/types";
 import { getChampion, advanceStage } from "../engine";
-import { useI18n, formatName, statusName } from "../i18n";
+import {
+  useI18n,
+  formatName,
+  statusName,
+  generatedMatchLabel,
+  groupLabel,
+} from "../i18n";
 import { Bracket } from "../components/Bracket";
 import { StandingsTable } from "../components/StandingsTable";
 import { ErrorText, Empty } from "../components/ui";
@@ -53,6 +60,9 @@ const ShareCenter = lazy(() =>
 const OfflineExchange = lazy(() =>
   import("./OfflineExchange").then((m) => ({ default: m.OfflineExchange })),
 );
+const ExportStudio = lazy(() =>
+  import("./ExportStudio").then((module) => ({ default: module.ExportStudio })),
+);
 const tabs = [
   { id: "overview", en: "Overview", fa: "نمای کلی", icon: LayoutDashboard },
   { id: "participants", en: "Participants", fa: "شرکت‌کنندگان", icon: Users },
@@ -66,6 +76,7 @@ const tabs = [
   { id: "theme", en: "Theme Studio", fa: "استودیو تم", icon: Palette },
   { id: "presentation", en: "Presentation", fa: "نمایش", icon: Monitor },
   { id: "share", en: "Share Center", fa: "مرکز اشتراک", icon: Share2 },
+  { id: "exports", en: "Export Studio", fa: "استودیو خروجی", icon: Download },
   {
     id: "registration",
     en: "Offline exchange",
@@ -155,7 +166,11 @@ export function Workspace({
         }
       >
         <div className="match-tile-meta">
-          <span>{m.group ?? m.label}</span>
+          <span>
+            {m.group
+              ? groupLabel(m.group, locale)
+              : generatedMatchLabel(m, locale)}
+          </span>
           <span className="badge">
             {m.status === "completed"
               ? t("Final", "نهایی")
@@ -604,6 +619,7 @@ export function Workspace({
           {tab === "share" && (
             <ShareCenter tournament={doc} secret={secret} onImport={onImport} />
           )}
+          {tab === "exports" && <ExportStudio tournament={doc} />}
           {tab === "registration" && (
             <OfflineExchange tournament={doc} onChange={onChange} />
           )}

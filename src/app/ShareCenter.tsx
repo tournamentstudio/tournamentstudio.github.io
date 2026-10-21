@@ -57,6 +57,9 @@ export function ShareCenter({
     Math.max(1, doc.revision - 1),
   );
   const [patchScope, setPatchScope] = useState<"public" | "private">("public");
+  const [includeHistory, setIncludeHistory] = useState(true);
+  const [encryptPatch, setEncryptPatch] = useState(false);
+  const [patchPassword, setPatchPassword] = useState("");
   const [outputLabel, setOutputLabel] = useState("");
   async function work(fn: () => Promise<void> | void) {
     setBusy(true);
@@ -92,7 +95,14 @@ export function ShareCenter({
       );
   }
   async function backup() {
-    const bytes = await exportArchive(doc, encrypt ? password : secret);
+    const revisions = includeHistory
+      ? await repository.exportHistory(doc.id, doc.revision, secret)
+      : undefined;
+    const bytes = await exportArchive(
+      doc,
+      encrypt ? password : secret,
+      revisions,
+    );
     downloadFile(bytes, `${doc.slug || "tournament"}.tourney`);
     await repository.markBackup(doc.id);
   }
@@ -109,7 +119,9 @@ export function ShareCenter({
       patchScope === "public" ? publicProjection(base) : base,
       patchScope === "public" ? publicProjection(doc) : doc,
     );
-    setCode(await encodePatch(packet));
+    setCode(
+      await encodePatch(packet, encryptPatch ? patchPassword : undefined),
+    );
     setLink("");
     setQr("");
     setOutputLabel(t("Update packet", "بسته به‌روزرسانی"));
@@ -229,10 +241,21 @@ export function ShareCenter({
           <h3>{t("A backup you can keep", "نسخه پشتیبان برای نگهداری")}</h3>
           <p>
             {t(
-              "Download a .tourney archive with the complete document, theme, entrant and venue coordinates, and audit history. Larger competitions travel best as files.",
-              "بایگانی .tourney با کل داده، تم، مختصات شرکت‌کنندگان و محل‌های بازی و تاریخچه دریافت کنید. مسابقات بزرگ بهتر است با فایل منتقل شوند.",
+              "Download a .tourney archive with the complete document, theme, coordinates, and saved revisions. The same secret protects every included revision. Larger competitions travel best as files.",
+              "بایگانی .tourney شامل کل داده، تم، مختصات و نسخه‌های ذخیره‌شده دریافت کنید. یک رمز از همه نسخه‌های موجود محافظت می‌کند. مسابقات بزرگ بهتر است با فایل منتقل شوند.",
             )}
           </p>
+          <label className="check-row">
+            <input
+              type="checkbox"
+              checked={includeHistory}
+              onChange={(event) => setIncludeHistory(event.target.checked)}
+            />
+            {t(
+              "Include saved revisions (up to 50)",
+              "شامل نسخه‌های ذخیره‌شده (تا ۵۰ نسخه)",
+            )}
+          </label>
           {secret && (
             <span className="badge">
               <LockKeyhole size={13} />
@@ -386,8 +409,8 @@ export function ShareCenter({
           <h3>{t("Send just the changes", "فقط تغییرات را بفرستید")}</h3>
           <p className="muted">
             {t(
-              "Create an update for a recipient with an exact older revision. Divergent copies are rejected safely.",
-              "برای گیرنده‌ای با نسخه قبلی دقیق بسته به‌روزرسانی بسازید. نسخه‌های متفاوت به‌صورت امن رد می‌شوند.",
+              "Create an update for a recipient with an older revision. Exact copies can apply it directly; divergent copies need the saved base revision and an explicit change review.",
+              "برای گیرنده دارای نسخه قبلی به‌روزرسانی بسازید. نسخه همسان مستقیم به‌روزرسانی می‌شود؛ نسخه متفاوت به نسخه پایه ذخیره‌شده و بررسی تغییرها نیاز دارد.",
             )}
           </p>
           <div className="two-columns">
@@ -416,7 +439,33 @@ export function ShareCenter({
               </select>
             </Field>
           </div>
-          {patchScope === "private" && (
+          <label className="check-row">
+            <input
+              type="checkbox"
+              checked={encryptPatch}
+              onChange={(event) => setEncryptPatch(event.target.checked)}
+            />
+            {t(
+              "Encrypt update with a separate secret",
+              "رمزگذاری به‌روزرسانی با رمز جداگانه",
+            )}
+          </label>
+          {encryptPatch && (
+            <Field
+              label={t(
+                "Update secret (8+ characters)",
+                "رمز به‌روزرسانی (حداقل ۸ نویسه)",
+              )}
+            >
+              <input
+                type="password"
+                autoComplete="new-password"
+                value={patchPassword}
+                onChange={(event) => setPatchPassword(event.target.value)}
+              />
+            </Field>
+          )}
+          {patchScope === "private" && !encryptPatch && (
             <Notice>
               {t(
                 "Private updates are not encrypted. Transfer the file through a trusted channel or use an encrypted full backup.",
@@ -426,7 +475,11 @@ export function ShareCenter({
           )}
           <button
             className="button secondary"
-            disabled={busy || doc.revision < 2}
+            disabled={
+              busy ||
+              doc.revision < 2 ||
+              (encryptPatch && patchPassword.length < 8)
+            }
             onClick={() => work(patch)}
           >
             {t("Generate update code", "ساخت کد به‌روزرسانی")}

@@ -1,5 +1,5 @@
 import Dexie, { type Table } from "dexie";
-import type { Tournament, TournamentStatus } from "../domain/types";
+import type { FormatId, Tournament, TournamentStatus } from "../domain/types";
 import { validateTournament } from "../domain/validate";
 import { canonicalize, compress, decompress, sha256 } from "../security/codec";
 import {
@@ -11,13 +11,17 @@ import {
   applyPatch,
   hashDocument,
   sealDocument,
+  validateArchiveRevisions,
+  type ArchiveRevision,
   type TournamentPatch,
 } from "../sharing";
+import { previewSelectivePatch } from "../sharing/merge";
 
 export interface LibraryEntry {
   id: string;
   title: string;
   sport: string;
+  formats?: FormatId[];
   status: TournamentStatus;
   updatedAt: string;
   revision: number;
@@ -123,6 +127,11 @@ function entryFor(
     id: tournament.id,
     title: protectedMode ? "Protected tournament" : tournament.title,
     sport: protectedMode ? "" : tournament.sport,
+    ...(!protectedMode
+      ? {
+          formats: [...new Set(tournament.stages.map((stage) => stage.format))],
+        }
+      : {}),
     status: protectedMode ? "draft" : tournament.status,
     revision: tournament.revision,
     updatedAt: tournament.updatedAt,
@@ -242,7 +251,20 @@ export const repository = {
         .reverse()
         .toArray();
       return records.map(
-        ({ payload: _payload, revisionHash: _revisionHash, ...entry }) => entry,
+        ({ payload, revisionHash: _revisionHash, ...entry }) => ({
+          ...entry,
+          ...(!entry.protected && !entry.formats
+            ? {
+                formats: [
+                  ...new Set(
+                    validateTournament(payload).stages.map(
+                      (stage) => stage.format,
+                    ),
+                  ),
+                ],
+              }
+            : {}),
+        }),
       );
     } catch (error) {
       return storageError(error);
@@ -318,6 +340,91 @@ export const repository = {
     return document;
   },
 
+  async exportHistory(
+    id: string,
+    expectedRevision: number,
+    secret?: string,
+  ): Promise<ArchiveRevision[]> {
+    const captured = await db.transaction(
+      "r",
+      db.documents,
+      db.snapshots,
+      async () => ({
+        current: await db.documents.get(id),
+        snapshots: await db.snapshots
+          .where("tournamentId")
+          .equals(id)
+          .toArray(),
+      }),
+    );
+    if (!captured.current || captured.current.revision !== expectedRevision)
+      throw new RevisionConflictError(
+        expectedRevision,
+        captured.current?.revision ?? -1,
+      );
+    const current = await openRecord(captured.current, secret);
+    const entries: ArchiveRevision[] = [];
+    for (const snapshot of captured.snapshots) {
+      const value = snapshot.protected
+        ? await decryptJson(snapshot.payload, secret!)
+        : decompress(snapshot.payload as Uint8Array);
+      const tournament = validateTournament(value);
+      const hash = snapshot.protected
+        ? await sha256(canonicalize(snapshot.payload))
+        : tournament.revisionHash;
+      if (hash !== snapshot.hash || snapshot.revision !== tournament.revision)
+        throw new Error("The stored revision failed its integrity check.");
+      entries.push({ action: snapshot.action, tournament });
+    }
+    return validateArchiveRevisions(current, entries);
+  },
+
+  async createWithHistory(
+    input: Tournament,
+    revisions: ArchiveRevision[],
+    secret?: string,
+    fork = false,
+  ): Promise<Tournament> {
+    let document = await sealDocument(input);
+    let history = await validateArchiveRevisions(document, revisions);
+    if (fork) {
+      const id = crypto.randomUUID();
+      document = await sealDocument({ ...document, id });
+      history = await Promise.all(
+        history.map(async (entry) => ({
+          action: entry.action,
+          tournament: await sealDocument({ ...entry.tournament, id }),
+        })),
+      );
+    }
+    const record = await prepareRecord(document, Boolean(secret), secret);
+    const snapshots: SnapshotRecord[] = [];
+    for (const entry of history) {
+      const prepared = await prepareRecord(
+        entry.tournament,
+        Boolean(secret),
+        secret,
+      );
+      snapshots.push(snapshotFor(prepared, entry.action));
+    }
+    if (!snapshots.some((snapshot) => snapshot.revision === record.revision))
+      snapshots.push(snapshotFor(record, "Restored backup"));
+    try {
+      await db.transaction("rw", db.documents, db.snapshots, async () => {
+        if (await db.documents.get(document.id))
+          throw new Error(
+            "A tournament with this ID already exists. Save a separate copy or explicitly replace it.",
+          );
+        await db.documents.add(record);
+        await db.snapshots.bulkPut(snapshots.slice(-50));
+      });
+    } catch (error) {
+      storageError(error);
+    }
+    notify(document.id, document.revision);
+    return document;
+  },
+
   async applyUpdate(
     id: string,
     patch: TournamentPatch,
@@ -334,6 +441,33 @@ export const repository = {
       "Applied update packet",
     );
     return next;
+  },
+
+  async mergeUpdate(
+    id: string,
+    patch: TournamentPatch,
+    selected: number[],
+    expectedHash: string,
+    confirmInvalidate: boolean,
+    secret?: string,
+  ): Promise<Tournament> {
+    const current = await repository.load(id, secret);
+    if ((await hashDocument(current)) !== expectedHash)
+      throw new Error(
+        "The local tournament changed after the merge preview. Review the update again.",
+      );
+    const base = await repository.loadRevision(id, patch.baseRevision, secret);
+    const preview = await previewSelectivePatch(current, base, patch, selected);
+    if (preview.affected.length && !confirmInvalidate)
+      throw new Error(
+        "Confirm the affected played matches before merging this update.",
+      );
+    return repository.save(
+      preview.tournament,
+      current.revision,
+      `Merged ${selected.length} selected update changes`,
+      secret,
+    );
   },
 
   async remove(id: string): Promise<void> {
