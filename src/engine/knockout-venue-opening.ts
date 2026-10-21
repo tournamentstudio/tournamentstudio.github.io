@@ -39,6 +39,14 @@ export function solveKnockoutVenueOpening(input: KnockoutPathsInput): {
   let work = input.participantIds.length * matches;
   let exploredNodes = 0;
   let exhausted = false;
+  const finish = (value: {
+    slots: (string | null)[] | null;
+    exploredNodes: number;
+    exhausted: boolean;
+  }) => {
+    input.onWork?.(work);
+    return value;
+  };
   const hasPosition = (a: string, b: string) => {
     const anchored = fixed.has(a) ? a : fixed.has(b) ? b : undefined;
     if (anchored) {
@@ -120,7 +128,7 @@ export function solveKnockoutVenueOpening(input: KnockoutPathsInput): {
     };
   });
   if (capacities.some((rule) => rule.used > rule.capacity))
-    return { slots: null, exploredNodes, exhausted };
+    return finish({ slots: null, exploredNodes, exhausted });
   const pairs: [number, number][] = [];
   const byes = input.participantIds.filter(
     (id) => input.byes.has(id) && !fixed.has(id),
@@ -176,7 +184,7 @@ export function solveKnockoutVenueOpening(input: KnockoutPathsInput): {
     .map((_, index) => index)
     .sort((a, b) => candidates[a].length - candidates[b].length || a - b))
     if (!visit(block, new Uint8Array(matches)))
-      return { slots: null, exploredNodes, exhausted };
+      return finish({ slots: null, exploredNodes, exhausted });
   journal.length = 0;
   const active = entrants.map(() => true);
   const degrees = neighbors.map((values) => values.length);
@@ -243,7 +251,7 @@ export function solveKnockoutVenueOpening(input: KnockoutPathsInput): {
     return false;
   };
   if (!search(entrants.length))
-    return { slots: null, exploredNodes, exhausted };
+    return finish({ slots: null, exploredNodes, exhausted });
   const blocks = [
     ...byes.map((id) => [id]),
     ...pairs.map(([a, b]) => [entrants[a], entrants[b]]),
@@ -260,5 +268,5 @@ export function solveKnockoutVenueOpening(input: KnockoutPathsInput): {
       slots[slots[preferred] === null ? preferred : preferred ^ 1] = id;
     }
   });
-  return { slots, exploredNodes, exhausted };
+  return finish({ slots, exploredNodes, exhausted });
 }

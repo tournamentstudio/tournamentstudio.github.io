@@ -317,7 +317,8 @@ Use **Venue distance** to assign a court, table or room to specific knockout
 matches and limit the distance from entrants' bases to that venue. Each selected
 match reserves a venue for every entrant who could reach its slots. The policy
 includes automatic advances and walkovers, even when no match is played. It
-does not estimate actual trips or choose a venue automatically.
+does not estimate actual trips. You can assign venues manually or use the
+automatic selection assistant described below.
 
 1. In **Schedule**, add the courts, tables or rooms you need. Under each resource,
    choose **Add venue location** and enter its latitude and longitude in decimal
@@ -366,6 +367,41 @@ Public snapshots retain venue names, rules and assignments, but omit entrant and
 venue coordinates. Private archives preserve them. Recipes create numbered venue
 placeholders and need new coordinates. Venue rules use version 6; update older
 copies of the app before importing these rules.
+
+### Let the assistant choose venues
+
+After entering entrant and venue coordinates, open **Automatic venue selection**
+in the knockout draw editor:
+
+1. Choose up to sixteen candidate venues and the unassigned match positions to
+   fill. You can select opening rounds, later rounds, losers brackets, finals,
+   resets or third place where the format supports them.
+2. Enter a minimum distance, maximum distance, or both. The same bounds apply to
+   this selection. Existing manual venue rules keep their own bounds.
+3. Leave **Check schedule availability** enabled to test a fresh schedule on a
+   temporary copy. This reschedules all generated matches for the check. It does
+   not reserve existing saved times, and it does not save any times or results.
+4. Choose **Find venue assignments**. Review the chosen venues, possible entrants,
+   distance ranges and opening pairings. If a schedule was found, its displayed
+   start, end and match count describe the selected stage only.
+5. Choose **Add suggestions to draw draft**, preview the knockout draw, apply its
+   rules, then generate the draw. Generate the schedule separately when ready.
+
+The assistant prefers smaller farthest-base distances among the candidates it
+checks. It may change the draw to find a valid assignment while retaining seeds,
+pots, qualifier positions and existing restrictions. It does not minimize total
+travel, and a venue may host several matches at different times. Selections
+become fixed venue rules; they are not automatically changed as results arrive.
+
+Search has fixed work limits. If it reaches one, feasibility is unknown. Try
+fewer matches or venues, or assign some matches manually. A failed schedule check
+means the greedy scheduler found no witness, not that every schedule is impossible.
+Other stages and their availability settings can affect the check. Changing the
+document or assistant inputs invalidates an old proposal. A stage with generated
+matches must be reset through the existing result-protection workflow first.
+
+See an [automatic venue proposal](docs/screenshots/automatic-venue.png) and its
+[Persian mobile view](docs/screenshots/automatic-venue-persian.png).
 
 ## Build groups followed by playoffs
 

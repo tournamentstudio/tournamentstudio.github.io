@@ -370,6 +370,52 @@ version that still represents the remaining settings.
 Public projections validate it explicitly, and recipes remap its pot entrant
 references instead of leaking or reusing original participant identifiers.
 
+### Automatic venue proposals
+
+`engine/automatic-venues.ts` accepts a transient set of candidate resource IDs,
+unassigned physical match targets and distance bounds. It checks single and
+double elimination, including lower paths, final/reset and third-place slots.
+Existing matches lock the target stage. Existing fixed venue rules and seeding
+constraints remain in each candidate configuration.
+
+The planner uses the v6 path reachability model and ranks candidates by the
+largest possible entrant-base distance, then stable resource ID. It first tries
+the preferred complete assignment, then backtracks over assignments and asks the
+draw solver to find compatible entrant positions. Partial assignments prune
+infeasible branches. Cached configurations avoid repeating preview and schedule
+checks. Complete alternatives cover nearby entrant groups in separate winners
+sections and a shared replacement venue when the preferred venue is closed.
+Every alternative passes the same draw validation. This is deterministic
+feasibility search, not a global travel optimum.
+
+Search permits at most 64 candidate previews and uses budgets of 100,000
+accumulated solver nodes and 20,000,000 solver work units, including the initial
+draw. Work is counted at solver checkpoints; bounded setup work can cross the
+threshold before the next check.
+The ordinary draw preview retains its previous default limits and output shape.
+A work limit returns unknown feasibility rather than silently relaxing restrictions.
+
+`scheduling/automatic-venues.ts` optionally rejects a full proposal when
+`generateStage` followed by `autoSchedule` cannot schedule a disposable clone.
+The check creates a fresh schedule for all generated matches. It does not reserve
+saved times, mutate results or write to storage. Only the proposed stage's time
+span and playable match count are displayed. Failure is not proof that no
+schedule exists, and unrelated stages can prevent a witness.
+
+The editor requires explicit proposal review, draft application and normal draw
+rule application. Its proposal basis includes the whole draft document and
+assistant inputs. Structure drafts also include schedule settings, participant
+availability, stages and matches, so later edits invalidate an accepted draft.
+Only ordinary v6 fixed rules persist. No candidate pool, search cache or scheduling
+witness is serialized, and no schema migration is needed.
+
+Local Node checks on 2026-10-21 verified 2,800 small exhaustive assignment cases,
+1,080 comparisons against the prior v1 to v6 previews, and 200 scheduling cases.
+A 512-entrant double-elimination proposal covering all 1,023 targets took 53 ms,
+or 202 ms with scheduling. A deliberately unavailable 16-venue case took 3.32
+seconds before reporting unknown feasibility. These are one-machine measurements,
+not timing guarantees; search limits do not establish a global optimum.
+
 ## Scores and standings
 
 Results support high scores, low scores, time values, manual decisions, completed

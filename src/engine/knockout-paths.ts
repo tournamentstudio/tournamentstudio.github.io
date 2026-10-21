@@ -18,6 +18,7 @@ export interface KnockoutPathsInput {
   seed: string;
   nodeLimit: number;
   workLimit: number;
+  onWork?: (work: number) => void;
 }
 
 /** Joint assignment keeps lower-path, upper-block, pot, and pinned-slot rules. */
@@ -86,6 +87,14 @@ export function solveKnockoutPaths(input: KnockoutPathsInput): {
   let work = 0;
   let exploredNodes = 0;
   let exhausted = false;
+  const finish = (value: {
+    slots: (string | null)[] | null;
+    exploredNodes: number;
+    exhausted: boolean;
+  }) => {
+    input.onWork?.(work);
+    return value;
+  };
   const openingAllowed = (id: string, match: number): boolean => {
     const current = occupants[match];
     return (
@@ -125,7 +134,7 @@ export function solveKnockoutPaths(input: KnockoutPathsInput): {
   for (let index = 0; index < entrants.length; index++) {
     for (let match = 0; match < matches; match++) {
       if (work >= workLimit)
-        return { slots: null, exploredNodes, exhausted: true };
+        return finish({ slots: null, exploredNodes, exhausted: true });
       work++;
       if (allowed(entrants[index], match)) {
         domains[index * matches + match] = 1;
@@ -225,12 +234,12 @@ export function solveKnockoutPaths(input: KnockoutPathsInput): {
     return false;
   };
   if (!search(entrants.length))
-    return { slots: null, exploredNodes, exhausted };
+    return finish({ slots: null, exploredNodes, exhausted });
   for (let match = 0; match < matches; match++)
     for (const id of occupants[match]) {
       if (placed.has(id)) continue;
       const preferred = match * 2 + (preferredSlot.get(id)! % 2);
       slots[slots[preferred] === null ? preferred : preferred ^ 1] = id;
     }
-  return { slots, exploredNodes, exhausted };
+  return finish({ slots, exploredNodes, exhausted });
 }

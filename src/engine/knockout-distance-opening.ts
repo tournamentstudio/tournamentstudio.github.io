@@ -51,6 +51,14 @@ export function solveKnockoutDistanceOpening(input: KnockoutPathsInput): {
   let exploredNodes = 0;
   let work = entrants.length * entrants.length;
   let exhausted = false;
+  const finish = (value: {
+    slots: (string | null)[] | null;
+    exploredNodes: number;
+    exhausted: boolean;
+  }) => {
+    input.onWork?.(work);
+    return value;
+  };
   const setActive = (index: number, enabled: boolean) => {
     active[index] = enabled;
     for (const neighbor of neighbors[index]) {
@@ -86,7 +94,7 @@ export function solveKnockoutDistanceOpening(input: KnockoutPathsInput): {
     return false;
   };
   if (!search(entrants.length))
-    return { slots: null, exploredNodes, exhausted };
+    return finish({ slots: null, exploredNodes, exhausted });
   const emptyMatch = (preferred: number) => {
     const first = preferred - (preferred % 2);
     if (slots[first] === null && slots[first + 1] === null) return first;
@@ -117,5 +125,5 @@ export function solveKnockoutDistanceOpening(input: KnockoutPathsInput): {
       slots[slot ^ 1] = second;
     }
   }
-  return { slots, exploredNodes, exhausted };
+  return finish({ slots, exploredNodes, exhausted });
 }

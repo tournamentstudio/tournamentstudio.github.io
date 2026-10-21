@@ -1,15 +1,13 @@
-import { useState } from "react";
-import { Trash2, X } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import type {
   KnockoutVenueRule,
   KnockoutVenueTarget,
   Resource,
 } from "../../domain/types";
 import { MAX_DISTANCE_KM } from "../../domain/geography";
-import { knockoutVenueTargetKey } from "../../engine/venue-distance";
 import { Field, Notice } from "../../components/ui";
 import { useI18n } from "../../i18n";
-import { venueRoundLabel, venueTargetLabel } from "./knockout-venue-label";
+import { KnockoutVenueTargets } from "./KnockoutVenueTargets";
 export function KnockoutVenueRuleEditor({
   rule,
   index,
@@ -28,21 +26,6 @@ export function KnockoutVenueRuleEditor({
   onRemove: () => void;
 }) {
   const { t, locale } = useI18n();
-  const groupKey = (target: KnockoutVenueTarget) =>
-    `${target.bracket}:${target.round}`;
-  const groups = [
-    ...new Map(catalog.map((target) => [groupKey(target), target])).values(),
-  ];
-  const [selectedGroup, setSelectedGroup] = useState(
-    groups[0] ? groupKey(groups[0]) : "",
-  );
-  const shownGroup = groups.some((target) => groupKey(target) === selectedGroup)
-    ? selectedGroup
-    : groups[0]
-      ? groupKey(groups[0])
-      : "";
-  const visible = catalog.filter((target) => groupKey(target) === shownGroup);
-  const selected = new Set(rule.targets.map(knockoutVenueTargetKey));
   const resource = resources.find((item) => item.id === rule.resourceId);
   const inputIssues = [
     ...(rule.minKm === undefined && rule.maxKm === undefined
@@ -89,17 +72,6 @@ export function KnockoutVenueRuleEditor({
     if (text === "") delete next[key];
     else next[key] = Number(text);
     onChange(next);
-  }
-  function toggle(target: KnockoutVenueTarget, checked: boolean) {
-    onChange({
-      ...rule,
-      targets: checked
-        ? [...rule.targets, target]
-        : rule.targets.filter(
-            (item) =>
-              knockoutVenueTargetKey(item) !== knockoutVenueTargetKey(target),
-          ),
-    });
   }
   return (
     <section
@@ -198,125 +170,12 @@ export function KnockoutVenueRuleEditor({
           />
         </Field>
       </div>
-      <details className="draw-venue-picker" open>
-        <summary>
-          {t("Choose matches", "انتخاب دیدارها")} (
-          {rule.targets.length.toLocaleString(locale)})
-        </summary>
-        <Field label={t("Bracket round", "دور جدول")}>
-          <select
-            value={shownGroup}
-            onChange={(event) => setSelectedGroup(event.target.value)}
-          >
-            {groups.map((target) => (
-              <option key={groupKey(target)} value={groupKey(target)}>
-                {venueRoundLabel(target, locale)}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <div className="button-row">
-          <button
-            type="button"
-            className="text-button"
-            disabled={
-              !visible.some(
-                (target) =>
-                  !taken.has(knockoutVenueTargetKey(target)) &&
-                  !selected.has(knockoutVenueTargetKey(target)),
-              )
-            }
-            onClick={() =>
-              onChange({
-                ...rule,
-                targets: [
-                  ...rule.targets,
-                  ...visible.filter(
-                    (target) =>
-                      !taken.has(knockoutVenueTargetKey(target)) &&
-                      !selected.has(knockoutVenueTargetKey(target)),
-                  ),
-                ],
-              })
-            }
-          >
-            {t("Select available matches in round", "انتخاب دیدارهای آزاد دور")}
-          </button>
-          <button
-            type="button"
-            className="text-button"
-            disabled={
-              !visible.some((target) =>
-                selected.has(knockoutVenueTargetKey(target)),
-              )
-            }
-            onClick={() =>
-              onChange({
-                ...rule,
-                targets: rule.targets.filter(
-                  (target) => groupKey(target) !== shownGroup,
-                ),
-              })
-            }
-          >
-            {t("Clear round selection", "پاک کردن انتخاب‌های دور")}
-          </button>
-        </div>
-        <div className="draw-venue-targets">
-          {visible.map((target) => {
-            const key = knockoutVenueTargetKey(target);
-            return (
-              <label className="check-row" key={key}>
-                <input
-                  type="checkbox"
-                  checked={selected.has(key)}
-                  disabled={taken.has(key) && !selected.has(key)}
-                  onChange={(event) => toggle(target, event.target.checked)}
-                />
-                <span>
-                  {venueTargetLabel(target, locale)}
-                  {taken.has(key) && (
-                    <small>
-                      {t(
-                        "Assigned by another venue rule",
-                        "اختصاص‌یافته با قانون محل بازی دیگر",
-                      )}
-                    </small>
-                  )}
-                </span>
-              </label>
-            );
-          })}
-        </div>
-      </details>
-      <ul className="draw-venue-selection">
-        {rule.targets.map((target) => {
-          const key = knockoutVenueTargetKey(target);
-          const valid = catalog.some(
-            (item) => knockoutVenueTargetKey(item) === key,
-          );
-          return (
-            <li key={key}>
-              <span>
-                {venueTargetLabel(target, locale)}
-                {!valid && (
-                  <strong>
-                    {t("Outside this bracket", "خارج از این جدول")}
-                  </strong>
-                )}
-              </span>
-              <button
-                type="button"
-                className="icon-button"
-                aria-label={`${t("Remove", "حذف")} ${venueTargetLabel(target, locale)}`}
-                onClick={() => toggle(target, false)}
-              >
-                <X size={16} />
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      <KnockoutVenueTargets
+        targets={rule.targets}
+        catalog={catalog}
+        taken={taken}
+        onChange={(targets) => onChange({ ...rule, targets })}
+      />
     </section>
   );
 }

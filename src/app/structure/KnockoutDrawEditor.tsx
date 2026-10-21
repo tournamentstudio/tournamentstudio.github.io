@@ -25,6 +25,7 @@ import { KnockoutDistanceRestrictions } from "./KnockoutDistanceRestrictions";
 import { KnockoutDistancePreview } from "./KnockoutDistancePreview";
 import { KnockoutVenueRestrictions } from "./KnockoutVenueRestrictions";
 import { KnockoutVenuePreview } from "./KnockoutVenuePreview";
+import { AutomaticVenueAssistant } from "./AutomaticVenueAssistant";
 import { greatCircleDistanceKm } from "../../engine/geographic-distance";
 import "./draw.css";
 
@@ -210,6 +211,13 @@ export function KnockoutDrawEditor({
               stage={stage}
               entrantCount={entrants.length}
               resources={tournament.schedule.resources}
+              onChange={onDraft}
+            />
+            <AutomaticVenueAssistant
+              tournament={draftDocument}
+              stage={stage}
+              value={value}
+              entrantCount={entrants.length}
               onChange={onDraft}
             />
             <p className="muted">

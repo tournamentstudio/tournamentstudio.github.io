@@ -42,11 +42,20 @@ export const KNOCKOUT_VENUE_ALGORITHM =
 export const KNOCKOUT_DRAW_NODE_LIMIT = 100000;
 export const KNOCKOUT_DRAW_WORK_LIMIT = 20000000;
 
+export interface KnockoutDrawSearchBudget {
+  nodeLimit?: number;
+  workLimit?: number;
+  onWork?: (work: number) => void;
+}
+
 /** Draw versions retain their own pairing policy and deterministic algorithm. */
 export function previewKnockoutDraw(
   tournament: Tournament,
   stageId: string,
+  budget: KnockoutDrawSearchBudget = {},
 ): KnockoutDrawPreview {
+  const nodeLimit = budget.nodeLimit ?? KNOCKOUT_DRAW_NODE_LIMIT;
+  const workLimit = budget.workLimit ?? KNOCKOUT_DRAW_WORK_LIMIT;
   const stage = tournament.stages.find((item) => item.id === stageId);
   const issueDetails: GroupDrawIssue[] = [];
   let participantIds: string[] = [];
@@ -521,8 +530,9 @@ export function previewKnockoutDraw(
         ...(venues ? { venueAllowed: venues.allowed } : {}),
         encounters,
         seed: stage.config.seed,
-        nodeLimit: KNOCKOUT_DRAW_NODE_LIMIT,
-        workLimit: KNOCKOUT_DRAW_WORK_LIMIT,
+        nodeLimit,
+        workLimit,
+        onWork: budget.onWork,
       });
       exploredNodes = solved.exploredNodes;
       if (!solved.slots) {
@@ -549,8 +559,9 @@ export function previewKnockoutDraw(
       preferredSlot,
       separation,
       seed: stage.config.seed,
-      nodeLimit: KNOCKOUT_DRAW_NODE_LIMIT,
-      workLimit: KNOCKOUT_DRAW_WORK_LIMIT,
+      nodeLimit,
+      workLimit,
+      onWork: budget.onWork,
     });
     exploredNodes = solved.exploredNodes;
     if (!solved.slots) {
@@ -594,10 +605,7 @@ export function previewKnockoutDraw(
   };
   const search = (remaining: number): boolean => {
     if (!remaining) return true;
-    if (
-      exploredNodes >= KNOCKOUT_DRAW_NODE_LIMIT ||
-      work >= KNOCKOUT_DRAW_WORK_LIMIT
-    ) {
+    if (exploredNodes >= nodeLimit || work >= workLimit) {
       exhausted = true;
       return false;
     }
@@ -622,7 +630,9 @@ export function previewKnockoutDraw(
     }
     return false;
   };
-  if (!search(entrants.length)) {
+  const solved = search(entrants.length);
+  budget.onWork?.(work);
+  if (!solved) {
     add(exhausted ? "exhausted" : "infeasible");
     return result();
   }

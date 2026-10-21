@@ -89,16 +89,20 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
     return JSON.stringify({
       stage: groupDrawBasis(item),
       entrants: doc.participants.map(
-        ({ id, seed, status, region, organization, location }) => ({
+        ({ id, seed, status, region, organization, location, metadata }) => ({
           id,
           seed,
           status,
           region,
           organization,
           location,
+          availableFrom: metadata.availableFrom,
+          availableUntil: metadata.availableUntil,
         }),
       ),
-      resources: doc.schedule.resources,
+      schedule: doc.schedule,
+      stages: doc.stages,
+      matches: doc.matches,
     });
   }
   const knockoutStale =

@@ -22,6 +22,7 @@ The application is a static React and TypeScript bundle hosted on GitHub Pages. 
 - Independent grand-final, reset and third-place separation checks, with a preview that rejects impossible combinations before matches are generated.
 - Minimum and maximum opponent distances using manually entered city or club coordinates, with independent round and final targets.
 - Venue-distance limits for selected knockout matches, with saved venue assignments that scheduling preserves.
+- Automatic venue proposals from a candidate pool, with all-path distance checks and an optional schedule preview before applying fixed assignments.
 - Multi-entrant free-for-all heats, time trials, Grand Prix points, gauntlets, and an adjacent-challenge ladder.
 - Schedules with multiple resources, rest periods, referee conflicts, and CSV or calendar export.
 

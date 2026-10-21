@@ -16,6 +16,7 @@ interface SeparationInput {
   seed: string;
   nodeLimit: number;
   workLimit: number;
+  onWork?: (work: number) => void;
 }
 
 /**
@@ -90,6 +91,14 @@ export function solveKnockoutSeparation(input: SeparationInput): {
   let work = 0;
   let exploredNodes = 0;
   let exhausted = false;
+  const finish = (value: {
+    slots: (string | null)[] | null;
+    exploredNodes: number;
+    exhausted: boolean;
+  }) => {
+    input.onWork?.(work);
+    return value;
+  };
   entrants.forEach((id, index) => {
     for (let match = 0; match < matches; match++) {
       work++;
@@ -190,7 +199,7 @@ export function solveKnockoutSeparation(input: SeparationInput): {
     return false;
   };
   if (!search(entrants.length))
-    return { slots: null, exploredNodes, exhausted };
+    return finish({ slots: null, exploredNodes, exhausted });
   for (let match = 0; match < matches; match++) {
     for (const id of occupants[match]) {
       if (!indexById.has(id)) continue;
@@ -198,5 +207,5 @@ export function solveKnockoutSeparation(input: SeparationInput): {
       slots[slots[preferred] === null ? preferred : preferred ^ 1] = id;
     }
   }
-  return { slots, exploredNodes, exhausted };
+  return finish({ slots, exploredNodes, exhausted });
 }

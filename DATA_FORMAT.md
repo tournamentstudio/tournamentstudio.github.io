@@ -390,6 +390,14 @@ from before knockout-rule validation may preserve the entire object as extension
 data without enforcing it; update the app before regenerating a shared tournament
 that uses it.
 
+Automatic venue selection is an editor operation. Its candidate pool and
+availability preference are temporary; applying a proposal writes ordinary
+version 6 `venueRules`. Existing bounds and targets remain intact, and matching
+resource/bound rules may receive more targets. A proposal does not add a new
+persisted algorithm version, resource identity or schedule entry. Public
+projections still omit coordinates, private backups retain them, and recipes
+replace venue identities and require new coordinates before a new draw.
+
 ## Canonical form and hashes
 
 JSON object keys are sorted recursively; array order remains significant. Optional properties with `undefined` values are omitted in the same way as `JSON.stringify`. Non-finite numbers and unsafe object keys are rejected.
