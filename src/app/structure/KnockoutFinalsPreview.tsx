@@ -13,7 +13,13 @@ export function KnockoutFinalsPreview({
   preview: KnockoutDrawPreview;
 }) {
   const { t } = useI18n();
-  if (value?.version !== 4 || !preview.ready) return null;
+  if (
+    !value ||
+    !("finalsSeparation" in value) ||
+    !value.finalsSeparation.length ||
+    !preview.ready
+  )
+    return null;
   const names = {
     "grand-final": t("Grand final", "فینال بزرگ"),
     reset: t("Reset final", "فینال تکراری"),

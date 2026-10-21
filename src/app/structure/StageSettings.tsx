@@ -45,18 +45,27 @@ export function StageSettings({
 }: Props) {
   const { t, locale } = useI18n();
   const draw = stage.config.knockoutDraw;
-  const finals = draw?.version === 4 ? draw.finalsSeparation : [];
+  const finals =
+    draw && "finalsSeparation" in draw ? draw.finalsSeparation : [];
+  const distance = draw?.version === 5 ? draw.distance : undefined;
   const hasLosers =
-    !!draw && "losersSeparation" in draw && !!draw.losersSeparation.length;
-  const hasFinals = finals.some((rule) =>
-    rule.targets.some(
+    (!!draw && "losersSeparation" in draw && !!draw.losersSeparation.length) ||
+    !!distance?.losersThroughRound;
+  const hasFinals =
+    finals.some((rule) =>
+      rule.targets.some(
+        (target) => target === "grand-final" || target === "reset",
+      ),
+    ) ||
+    !!distance?.finals.some(
       (target) => target === "grand-final" || target === "reset",
-    ),
-  );
-  const hasReset = finals.some((rule) => rule.targets.includes("reset"));
-  const hasThirdPlace = finals.some((rule) =>
-    rule.targets.includes("third-place"),
-  );
+    );
+  const hasReset =
+    finals.some((rule) => rule.targets.includes("reset")) ||
+    !!distance?.finals.includes("reset");
+  const hasThirdPlace =
+    finals.some((rule) => rule.targets.includes("third-place")) ||
+    !!distance?.finals.includes("third-place");
   return (
     <aside className="structure-settings">
       <div className="section-heading">

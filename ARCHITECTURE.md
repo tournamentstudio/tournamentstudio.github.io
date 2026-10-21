@@ -286,12 +286,48 @@ node/work budgets apply; exhaustion returns unknown feasibility and no slots.
 Final policies require their actual stage format and enabled match settings.
 There is no generator for other placement matches and no final-time reseeding.
 
+Version 5 adds an inclusive distance interval and independent match targets.
+Participant `location` fields are optional strict latitude/longitude objects.
+All active entrants need them when drawing with distance rules. The computation
+uses the [Haversine formula](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.pairwise.haversine_distances.html)
+with the fixed policy radius 6371.0088 km. Longitude differences wrap across the
+dateline, identical poles have zero distance, and the Haversine value is clamped
+to [0, 1] before taking its inverse. This approximates the shortest surface arc
+on a sphere. It does not calculate roads, travel time, terrain or venue distance.
+Threshold comparisons use unrounded values; displayed distances are rounded.
+
+`knockout-distance-haversine-fnv1a-mulberry32-v5` computes an incompatibility
+graph for entrant pairs outside the chosen interval. Distance is not a label:
+A can be near B and B near C while A and C are far apart. The solver keeps these
+pairwise edges instead of converting locations into transitive groups.
+An incompatible pair loses positions where it can meet through a selected
+winners or losers round, or in third place. The existing encounter predicates
+account for exact drop paths and BYEs. A grand-final/reset target, or protection
+through either bracket's final, requires every entrant pair to be within range.
+Those universal conflicts fail before search. Pot membership, affiliation rules,
+fixed qualifiers and seed protection remain active in the same draw.
+
+When all active rules concern only the opening round, v5 first finds compatible
+entrant pairs with a bounded most-constrained-first matching search, then fits
+them around fixed slots and the exact BYE recipients. This avoids exploring
+equivalent placements of every potential pair across empty opening matches.
+Later-round targets use the joint path solver. Both searches retain the
+100,000-node and 20,000,000-work limits and distinguish exhausted search from
+proved infeasibility. Candidate order is deterministic, with no claim of uniform
+sampling over all valid draws. Earlier draw versions keep their existing search.
+
+The distance graph is recomputed, not persisted in tournament metadata.
+Coordinates stay out of public projections and recipes, which retain the rules
+and any saved matches. A public copy therefore needs new base locations before
+regeneration. Full private packages preserve locations. The existing canonical
+form omits absent fields, so adding support for locations does not change hashes
+of older documents. Versions 1 through 4 keep their draw policies.
+
 The editor follows the same draft, preview, revalidation and draw-lock rules as
 group drawing, with previews of protected winners sections, lower rounds and
-selected final targets. The optional configuration stays absent in legacy
-documents, and version 1, 2 and 3 documents retain their original draw algorithm
-and hashes. Removing final targets restores the earliest rule version that
-still represents the remaining settings.
+selected final and distance targets. The optional configuration stays absent in
+legacy documents. Removing distance or final rules restores the earliest rule
+version that still represents the remaining settings.
 Public projections validate it explicitly, and recipes remap its pot entrant
 references instead of leaking or reusing original participant identifiers.
 
@@ -427,6 +463,12 @@ repeated labels, and 16.43 ms with third-place, opening restrictions and two pot
 together. The respective generation calls took 10.99, 16.76 and 19.11 ms. A
 duplicate-label final rule was rejected in 0.57 ms before search. These Node
 measurements cover preview and generation, not scoring every match or rendering.
+
+A v5 opening-round check placed equally spaced equatorial bases under a maximum
+distance of 12,000 km. The 128, 256 and 512 entrant previews took 3.54, 8.62 and
+30.37 ms respectively, visiting one pairing node per played opening match.
+These are local Node measurements for that case, not worst-case bounds. Constraint
+combinations can still exhaust the bounded search and return unknown feasibility.
 
 The initial production bundle also passed `npx playwright test`: 36 cases across
 Chromium, Firefox, and WebKit in 1.5 minutes. Each browser ran 12 workflows,

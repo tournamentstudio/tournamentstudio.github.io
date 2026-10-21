@@ -56,6 +56,7 @@ export interface Participant {
   status: "active" | "withdrawn" | "disqualified";
   region?: string;
   organization?: string;
+  location?: { latitude: number; longitude: number };
   logo?: string;
   roster: RosterMember[];
   tags: string[];
@@ -136,6 +137,13 @@ export type KnockoutFinalRule = {
   field: "region" | "organization";
   targets: KnockoutFinalTarget[];
 };
+export type KnockoutDistanceRule = {
+  minKm?: number;
+  maxKm?: number;
+  winnersThroughRound: number;
+  losersThroughRound: number;
+  finals: KnockoutFinalTarget[];
+};
 export type KnockoutDrawConfig = KnockoutDrawFields &
   (
     | { version: 1 }
@@ -168,6 +176,19 @@ export type KnockoutDrawConfig = KnockoutDrawFields &
           throughRound: number;
         }[];
         finalsSeparation: KnockoutFinalRule[];
+      }
+    | {
+        version: 5;
+        separation: {
+          field: "region" | "organization";
+          throughRound: number;
+        }[];
+        losersSeparation: {
+          field: "region" | "organization";
+          throughRound: number;
+        }[];
+        finalsSeparation: KnockoutFinalRule[];
+        distance: KnockoutDistanceRule;
       }
   );
 export interface KnockoutDrawPreview {

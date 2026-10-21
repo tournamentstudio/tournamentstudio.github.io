@@ -10,15 +10,27 @@ export function withSeparationRules(
   separation: SeparationRule[],
   losersSeparation: SeparationRule[],
   restrictions = value.restrictions,
-  finalsSeparation: KnockoutFinalRule[] = value.version === 4
+  finalsSeparation: KnockoutFinalRule[] = "finalsSeparation" in value
     ? value.finalsSeparation
     : [],
+  distance:
+    | Extract<KnockoutDrawConfig, { version: 5 }>["distance"]
+    | null = value.version === 5 ? value.distance : null,
 ): KnockoutDrawConfig {
   const base = {
     pots: value.pots,
     restrictions,
     protectedSeeds: value.protectedSeeds,
   };
+  if (distance)
+    return {
+      version: 5,
+      ...base,
+      separation,
+      losersSeparation,
+      finalsSeparation,
+      distance,
+    };
   if (finalsSeparation.length)
     return {
       version: 4,
@@ -32,4 +44,18 @@ export function withSeparationRules(
   return separation.length
     ? { version: 2, ...base, separation }
     : { version: 1, ...base };
+}
+
+export function withDistanceRule(
+  value: KnockoutDrawConfig,
+  distance: Extract<KnockoutDrawConfig, { version: 5 }>["distance"] | null,
+): KnockoutDrawConfig {
+  return withSeparationRules(
+    value,
+    value.version === 1 ? [] : value.separation,
+    "losersSeparation" in value ? value.losersSeparation : [],
+    value.restrictions,
+    "finalsSeparation" in value ? value.finalsSeparation : [],
+    distance,
+  );
 }

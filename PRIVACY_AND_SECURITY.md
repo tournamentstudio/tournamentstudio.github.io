@@ -45,10 +45,22 @@ The projection removes:
 - Match `private` fields, including a concealed object's position.
 - Referee names, private match notes, and hand-by-hand referee logs.
 - Team rosters, check-in state, tags, and custom participant metadata.
+- Participant base coordinates, including latitude and longitude.
 - Tournament private metadata, correction recovery data, description, and audit history.
 - Unrecognized stage configuration extensions and arbitrary match or stage metadata.
 
-Typed structural fields needed for brackets and standings are retained. These include qualification rules, pot membership and names, group and knockout restrictions, winners and losers separation round limits, final and third-place separation targets, protected seed counts, graph coordinates and bounded numeric participant points adjustments. Names, region, organization, logos, scores, fixtures, public scheduling, and presentation scenes remain visible.
+Typed structural fields needed for brackets and standings are retained. These include qualification rules, pot membership and names, group and knockout restrictions, winners and losers separation round limits, final and third-place separation targets, distance bounds and their target rounds, protected seed counts, graph coordinates and bounded numeric participant points adjustments. Names, region, organization, logos, scores, fixtures, public scheduling, and presentation scenes remain visible.
+
+Distance draws use manually entered city or club base coordinates. No device
+location is requested, and no geocoding or routing service receives those values.
+Use a competition base instead of a home address. Public snapshots, public
+update packets, recipes, standard participant CSV, bracket graphics and printed
+results omit the typed location field. A public copy can display and score its
+saved draw but needs new coordinates before regenerating a distance-restricted
+draw. Private snapshots, archives and private updates retain coordinates; private
+updates are plaintext. Encryption does not change the selected public/private
+scope. Rules and saved match pairings remain visible and may reveal that entrants
+meet the chosen distance criteria.
 
 Presentation text is intentionally public. A secret typed into a team name, tournament title, sponsor name, or announcement is public content. The application cannot infer that an organizer has placed a secret in a public field.
 

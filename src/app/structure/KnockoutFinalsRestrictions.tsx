@@ -19,7 +19,7 @@ export function KnockoutFinalsRestrictions({
   onChange: (value: KnockoutDrawConfig) => void;
 }) {
   const { t } = useI18n();
-  const rules = value.version === 4 ? value.finalsSeparation : [];
+  const rules = "finalsSeparation" in value ? value.finalsSeparation : [];
   const double = stage.format === "double-elimination";
   const targets = [
     {

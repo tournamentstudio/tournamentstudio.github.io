@@ -156,12 +156,14 @@
   font-size: 0.85rem;
 }
 .draw-losers-restrictions,
-.draw-finals-restrictions {
+.draw-finals-restrictions,
+.draw-distance-restrictions {
   border-block-start: 1px solid var(--line);
   padding-block-start: 12px;
 }
 .draw-losers-fields,
-.draw-finals-fields {
+.draw-finals-fields,
+.draw-distance-fields {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
   gap: 12px;
@@ -174,7 +176,8 @@
   margin: 0;
 }
 .draw-losers-preview,
-.draw-finals-preview {
+.draw-finals-preview,
+.draw-distance-preview {
   margin-block: 20px;
   padding: 16px;
   border: 1px solid var(--line);
@@ -182,11 +185,13 @@
   background: #f4f7ef;
 }
 .draw-losers-preview h4,
-.draw-finals-preview h4 {
+.draw-finals-preview h4,
+.draw-distance-preview h4 {
   margin-block: 0 12px;
 }
 .draw-losers-preview ul,
-.draw-finals-preview ul {
+.draw-finals-preview ul,
+.draw-distance-preview ul {
   padding: 0;
   margin: 0;
   list-style: none;
@@ -194,28 +199,69 @@
   gap: 12px;
 }
 .draw-losers-preview li,
-.draw-finals-preview li {
+.draw-finals-preview li,
+.draw-distance-preview li {
   display: flex;
   gap: 10px;
   align-items: start;
   line-height: 1.8;
 }
 .draw-losers-preview li > svg,
-.draw-finals-preview li > svg {
+.draw-finals-preview li > svg,
+.draw-distance-preview li > svg {
   flex-shrink: 0;
   margin-block-start: 5px;
 }
 .draw-losers-preview li > span,
-.draw-finals-preview li > span {
+.draw-finals-preview li > span,
+.draw-distance-preview li > span {
   display: grid;
   overflow-wrap: anywhere;
   min-width: 0;
 }
 .draw-losers-preview p,
-.draw-finals-preview p {
+.draw-finals-preview p,
+.draw-distance-preview p {
   color: var(--muted);
   font-size: 0.85rem;
   margin-block-end: 0;
+}
+.draw-distance-targets {
+  display: grid;
+  gap: 12px;
+  margin-block: 16px;
+}
+.draw-distance-targets .check-row {
+  align-items: start;
+  font-size: 0.85rem;
+}
+.draw-distance-targets .check-row span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.draw-distance-targets input {
+  margin-block-start: 3px;
+}
+.draw-distance-restrictions h4 {
+  display: flex;
+  align-items: start;
+  gap: 8px;
+  line-height: 1.8;
+}
+.draw-distance-restrictions h4 svg {
+  flex-shrink: 0;
+  margin-block-start: 3px;
+}
+.draw-distance-preview .draw-summary {
+  margin-block-end: 16px;
+}
+.draw-preview-pair .draw-pair-distance {
+  padding: 12px 14px;
+  margin: 0;
+  border-block-start: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
 }
 .draw-finals-fields h5 {
   font-size: 0.95rem;

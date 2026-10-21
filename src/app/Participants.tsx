@@ -18,6 +18,7 @@ import {
 import { Field, Modal, Notice, ErrorText } from "../components/ui";
 import { exportCSV } from "../export";
 import { useI18n } from "../i18n";
+import { ParticipantLocationFields } from "./ParticipantLocationFields";
 
 export interface EditorProps {
   tournament: Tournament;
@@ -342,6 +343,15 @@ export function Participants({ tournament: doc, onChange }: EditorProps) {
                 }
               />
             </Field>
+            <ParticipantLocationFields
+              value={editing.location}
+              onChange={(location) => {
+                const next = { ...editing };
+                if (location) next.location = location;
+                else delete next.location;
+                setEditing(next);
+              }}
+            />
             <div className="section-heading">
               <h3>{t("Team roster", "ترکیب تیم")}</h3>
               <button

@@ -127,6 +127,7 @@ Pots separate entrants in the first round. Region and organization restrictions
 can extend through a chosen winners-bracket round. Double elimination also has
 independent losers-bracket rules. Grand finals, resets and third-place matches
 have separate controls; protecting an earlier round does not protect these matches.
+Distance rules use coordinates independently of region and organization labels.
 See the [knockout preview](docs/screenshots/knockout-draw-preview.png) for a
 thirteen-entrant draw with three BYEs and two protected positions.
 
@@ -185,8 +186,8 @@ the change. This also allows switching to formats outside single/double
 elimination. Saved files and snapshot links retain knockout rules. Recipes
 retain the structure but require new affiliation values before restricted draws.
 Later winners rules use version 2; losers rules use version 3; final and
-third-place rules use version 4. Recipients need an app release that supports
-the saved version before importing the tournament.
+third-place rules use version 4; distance rules use version 5. Recipients need
+an app release that supports the saved version before importing the tournament.
 
 ### Protect the losers bracket
 
@@ -255,6 +256,60 @@ to an incompatible format. Removing all final targets keeps any winners/losers
 rules and restores the appropriate earlier rule version. Saved draws and played
 results keep their paths. Exported snapshots, backups and update packets retain
 these settings; recipients need a release with version 4 knockout-rule support.
+
+### Restrict opponent distances
+
+Use **Geographic distance** when entrants' base locations matter more than shared
+region labels. A minimum distance keeps nearby entrants apart. A maximum distance
+limits how far apart paired entrants may be. The app compares the shortest arc
+between those bases on a sphere, so these values are estimates, not road distances
+or travel times. It does not optimize the total travel of the tournament.
+
+1. Open **Participants**, edit an entrant and choose **Add base location**.
+   Enter **Latitude** from -90 to 90 and **Longitude** from -180 to 180 in decimal
+   degrees. Use a city center or club base rather than a home address. Choose
+   **Save participant**. Repeat for every active entrant in the stage, including
+   BYE recipients. No device-location permission or online address lookup is used.
+2. In **Structure**, open **Configure knockout draw**, then **Geographic distance**
+   and **Add distance restriction**. Reset an existing unplayed draw first.
+3. Set **Minimum opponent distance (km)**, **Maximum opponent distance (km)**,
+   or both. Leave a bound blank to omit it. Zero is a real bound: maximum zero
+   permits only identical base locations. Limits are inclusive, and minimum
+   cannot exceed maximum. The allowed input range is 0 to 20016 km.
+4. Choose **Apply distance through winners round** and, for double elimination,
+   **Apply distance through losers round**. **Off** disables that bracket range.
+   Each selected range starts at round 1. You may also select the grand final,
+   enabled reset or single-elimination third-place match. Choose at least one
+   target; the same interval applies to all selected targets.
+5. Preview the draw. **Verified distance range** lists the limits and targets.
+   The opening-pair preview shows rounded distances; validation uses full numeric
+   precision. Inspect BYEs, protected positions and any other rules, then choose
+   **Apply draw rules** and **Generate draw**.
+
+See the [verified distance preview](docs/screenshots/knockout-distance.png)
+for an example covering winners, losers and both final matches.
+
+For example, a 100 to 900 km opening-round range requires every played opening
+pair to be at least 100 km apart and at most 900 km apart. BYEs have no opponent.
+Extending protection through later rounds checks every possible opponent path,
+not just predicted winners. Any two entrants can reach a grand final or reset,
+so protecting either match requires every pair in the field to meet the interval.
+A conflict is reported before drawing; the app never removes an earned finalist
+or weakens a rule. Pots, affiliations and fixed slots may also make a range
+impossible. A search-limit message means feasibility is unknown.
+
+Changing coordinates does not rearrange saved matches. Reset an unplayed stage
+and preview again if the agreed bases change. **Remove distance restriction**
+keeps the remaining affiliation rules. Preview and apply before changing a
+format or disabling an optional match protected by a saved distance target.
+
+Public links, public updates and recipes omit coordinates. Public copies can
+show and score saved matches, but need new base locations before regenerating
+a distance-restricted draw. Use a private snapshot or `.tourney` backup to carry
+coordinates to another device; encrypt confidential packages. The names-only
+participant-list importer does not import coordinates. Full tournament JSON and
+private archives preserve them. **Remove base location**, followed by saving the
+participant, clears that entrant's stored coordinates.
 
 ## Build groups followed by playoffs
 

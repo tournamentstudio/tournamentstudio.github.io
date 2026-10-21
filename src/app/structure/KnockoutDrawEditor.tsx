@@ -21,6 +21,9 @@ import { KnockoutLosersRestrictions } from "./KnockoutLosersRestrictions";
 import { KnockoutLosersPreview } from "./KnockoutLosersPreview";
 import { KnockoutFinalsRestrictions } from "./KnockoutFinalsRestrictions";
 import { KnockoutFinalsPreview } from "./KnockoutFinalsPreview";
+import { KnockoutDistanceRestrictions } from "./KnockoutDistanceRestrictions";
+import { KnockoutDistancePreview } from "./KnockoutDistancePreview";
+import { greatCircleDistanceKm } from "../../engine/geographic-distance";
 import "./draw.css";
 
 interface Props {
@@ -194,6 +197,12 @@ export function KnockoutDrawEditor({
               entrantCount={entrants.length}
               onChange={onDraft}
             />
+            <KnockoutDistanceRestrictions
+              value={value}
+              stage={stage}
+              entrantCount={entrants.length}
+              onChange={onDraft}
+            />
             <p className="muted">
               {t(
                 "Round numbers count every bracket round, including rounds with BYEs. Preview validates the current entrant labels; changing labels after a draw does not move saved matches.",
@@ -293,60 +302,79 @@ export function KnockoutDrawEditor({
           />
           <KnockoutLosersPreview value={value} preview={currentPreview} />
           <KnockoutFinalsPreview value={value} preview={currentPreview} />
+          <KnockoutDistancePreview value={value} preview={currentPreview} />
           <div className="draw-group-grid">
             {Array.from(
               { length: currentPreview.slots.length / 2 },
-              (_, index) => (
-                <section className="draw-preview-pair" key={index}>
-                  <h5>
-                    {t("Opening match", "دیدار آغازین")}{" "}
-                    {(index + 1).toLocaleString(locale)}
-                  </h5>
-                  <ol>
-                    {currentPreview.slots
-                      .slice(index * 2, index * 2 + 2)
-                      .map((id, offset) => {
-                        const slot = index * 2 + offset + 1;
-                        const participant = id ? names.get(id) : undefined;
-                        return (
-                          <li key={slot} data-participant-id={id ?? ""}>
-                            <small className="draw-slot-label">
-                              {t("Slot", "جایگاه")}{" "}
-                              {slot.toLocaleString(locale)}
-                              {currentPreview.fixedSlots.some(
-                                (fixed) => fixed.slot === slot,
-                              ) && (
-                                <span className="badge">
-                                  {t("Fixed slot", "جایگاه ثابت")}
-                                </span>
-                              )}
-                            </small>
-                            <bdi>
-                              {participant?.name ?? id ?? t("BYE", "استراحت")}
-                            </bdi>
-                            {participant && (
-                              <small>
-                                <bdi>
-                                  {[
-                                    value?.pots.find((pot) =>
-                                      pot.participantIds.includes(
-                                        participant.id,
-                                      ),
-                                    )?.name,
-                                    participant.region,
-                                    participant.organization,
-                                  ]
-                                    .filter(Boolean)
-                                    .join(" · ")}
-                                </bdi>
+              (_, index) => {
+                const left = names.get(
+                  currentPreview.slots[index * 2] ?? "",
+                )?.location;
+                const right = names.get(
+                  currentPreview.slots[index * 2 + 1] ?? "",
+                )?.location;
+                return (
+                  <section className="draw-preview-pair" key={index}>
+                    <h5>
+                      {t("Opening match", "دیدار آغازین")}{" "}
+                      {(index + 1).toLocaleString(locale)}
+                    </h5>
+                    <ol>
+                      {currentPreview.slots
+                        .slice(index * 2, index * 2 + 2)
+                        .map((id, offset) => {
+                          const slot = index * 2 + offset + 1;
+                          const participant = id ? names.get(id) : undefined;
+                          return (
+                            <li key={slot} data-participant-id={id ?? ""}>
+                              <small className="draw-slot-label">
+                                {t("Slot", "جایگاه")}{" "}
+                                {slot.toLocaleString(locale)}
+                                {currentPreview.fixedSlots.some(
+                                  (fixed) => fixed.slot === slot,
+                                ) && (
+                                  <span className="badge">
+                                    {t("Fixed slot", "جایگاه ثابت")}
+                                  </span>
+                                )}
                               </small>
-                            )}
-                          </li>
-                        );
-                      })}
-                  </ol>
-                </section>
-              ),
+                              <bdi>
+                                {participant?.name ?? id ?? t("BYE", "استراحت")}
+                              </bdi>
+                              {participant && (
+                                <small>
+                                  <bdi>
+                                    {[
+                                      value?.pots.find((pot) =>
+                                        pot.participantIds.includes(
+                                          participant.id,
+                                        ),
+                                      )?.name,
+                                      participant.region,
+                                      participant.organization,
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" · ")}
+                                  </bdi>
+                                </small>
+                              )}
+                            </li>
+                          );
+                        })}
+                    </ol>
+                    {value?.version === 5 && left && right && (
+                      <p className="draw-pair-distance">
+                        {t("Base distance", "فاصله پایگاه‌ها")}:{" "}
+                        {greatCircleDistanceKm(left, right).toLocaleString(
+                          locale,
+                          { maximumFractionDigits: 1 },
+                        )}{" "}
+                        {t("km", "کیلومتر")}
+                      </p>
+                    )}
+                  </section>
+                );
+              },
             )}
           </div>
           {currentPreview.ready && (

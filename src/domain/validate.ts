@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { JsonValue, Tournament } from "./types";
 import { advancementErrors } from "./advancement";
+import { locationSchema } from "./geography";
 import { groupDrawErrors, groupDrawIssueText, groupDrawSchema } from "./draw";
 import {
   knockoutDrawErrors,
@@ -102,6 +103,7 @@ export const participantSchema = z
     status: z.enum(["active", "withdrawn", "disqualified"]),
     region: shortText.optional(),
     organization: shortText.optional(),
+    location: locationSchema.optional(),
     logo: asset.optional(),
     roster: z
       .array(

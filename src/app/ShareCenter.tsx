@@ -185,8 +185,8 @@ export function ShareCenter({
           {scope === "private" && (
             <Notice>
               {t(
-                "Private packages include organizer notes, rosters, and referee secrets. Give them only to trusted organizers.",
-                "بسته خصوصی شامل یادداشت‌ها، ترکیب تیم و اسرار داور است. فقط به برگزارکنندگان مورد اعتماد بدهید.",
+                "Private packages include organizer notes, rosters, base coordinates, and referee secrets. Give them only to trusted organizers.",
+                "بسته خصوصی شامل یادداشت‌ها، ترکیب تیم، مختصات پایگاه‌ها و اسرار داور است. فقط به برگزارکنندگان مورد اعتماد بدهید.",
               )}
             </Notice>
           )}
@@ -218,8 +218,8 @@ export function ShareCenter({
             <Check size={16} />
             <span>
               {t(
-                "Public snapshots exclude private notes, rosters, and concealed positions.",
-                "تصویر عمومی فاقد یادداشت خصوصی، ترکیب تیم و مکان گل است.",
+                "Public snapshots exclude private notes, rosters, base coordinates, and concealed positions. Saved matches remain visible. Recipients must enter base coordinates before generating a new distance-restricted draw.",
+                "تصویر عمومی فاقد یادداشت خصوصی، ترکیب تیم، مختصات پایگاه‌ها و مکان گل است. دیدارهای ذخیره‌شده قابل مشاهده می‌مانند. دریافت‌کننده باید پیش از ساخت قرعه تازه با محدودیت فاصله، مختصات پایگاه‌ها را وارد کند.",
               )}
             </span>
           </div>
@@ -229,8 +229,8 @@ export function ShareCenter({
           <h3>{t("A backup you can keep", "نسخه پشتیبان برای نگهداری")}</h3>
           <p>
             {t(
-              "Download a .tourney archive with the complete document, theme, and audit history. Larger competitions travel best as files.",
-              "بایگانی .tourney با کل داده، تم و تاریخچه دریافت کنید. مسابقات بزرگ بهتر است با فایل منتقل شوند.",
+              "Download a .tourney archive with the complete document, theme, base coordinates, and audit history. Larger competitions travel best as files.",
+              "بایگانی .tourney با کل داده، تم، مختصات پایگاه‌ها و تاریخچه دریافت کنید. مسابقات بزرگ بهتر است با فایل منتقل شوند.",
             )}
           </p>
           {secret && (

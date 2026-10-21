@@ -1,6 +1,7 @@
 import { shuffle } from "./random";
 import type { SeparationRule } from "./knockout-separation";
 import { canMeetInThirdPlace, type ThirdPlaceRule } from "./finals-separation";
+import type { DistanceConstraint } from "./geographic-distance";
 
 export interface KnockoutPathsInput {
   slots: (string | null)[];
@@ -11,6 +12,7 @@ export interface KnockoutPathsInput {
   separation: SeparationRule[];
   losersSeparation: SeparationRule[];
   thirdPlaceSeparation?: ThirdPlaceRule[];
+  distance?: DistanceConstraint;
   encounters: Uint8Array;
   seed: string;
   nodeLimit: number;
@@ -104,6 +106,15 @@ export function solveKnockoutPaths(input: KnockoutPathsInput): {
         )
           return false;
       }
+    if (input.distance)
+      for (const [other, position] of placed) {
+        work++;
+        if (
+          input.distance.incompatible.get(id)!.has(other) &&
+          input.distance.conflicts(id, match, other, position)
+        )
+          return false;
+      }
     return true;
   };
   const domains = new Uint8Array(entrants.length * matches);
@@ -130,7 +141,7 @@ export function solveKnockoutPaths(input: KnockoutPathsInput): {
   const rarity = entrants.map((id) =>
     rules.reduce(
       (total, rule) => total + rule.members.get(rule.labels.get(id)!)!.length,
-      0,
+      input.distance?.incompatible.get(id)?.size ?? 0,
     ),
   );
   const removed: number[] = [];
@@ -177,6 +188,25 @@ export function solveKnockoutPaths(input: KnockoutPathsInput): {
               if (rule.conflicts(id, match, entrants[other], position))
                 remove(other, position);
             }
+      if (input.distance)
+        for (let other = 0; other < entrants.length; other++)
+          if (
+            active[other] &&
+            input.distance.incompatible.get(id)!.has(entrants[other])
+          ) {
+            if (input.distance.openingOnly) {
+              work++;
+              if (input.distance.conflicts(id, match, entrants[other], match))
+                remove(other, match);
+            } else
+              for (let position = 0; position < matches; position++) {
+                work++;
+                if (
+                  input.distance.conflicts(id, match, entrants[other], position)
+                )
+                  remove(other, position);
+              }
+          }
       for (let other = 0; other < entrants.length; other++)
         if (active[other] && !openingAllowed(entrants[other], match))
           remove(other, match);

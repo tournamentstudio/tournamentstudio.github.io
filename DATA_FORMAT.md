@@ -8,6 +8,13 @@ The first public schema is version `1`. A document has a stable `id`, integer `r
 
 Entrants can be individuals or teams with rosters. Match slots contain an entrant ID, a winner or loser reference to an earlier match, or an empty place awaiting qualification. A match can contain more than two entrants. Results contain scores, winner IDs, an outcome, a timestamp, and optional sets and placements. Optional `liveScores` publish current totals without disclosing the private hand log; their length must match the slot count.
 
+An optional participant `location` contains only finite numeric `latitude`
+(-90 to 90) and `longitude` (-180 to 180), in decimal degrees. Both are required
+when the object is present; unknown keys and numeric strings are rejected.
+Absent locations remain absent, preserving older canonical documents. This
+field represents an organizer-entered competition base and is excluded from
+public projections and recipes. Private packages retain it.
+
 Stage configuration and metadata can preserve safe JSON extensions. Extensions cannot contain executable values. Unknown top-level properties are rejected, rather than silently discarded. Unknown schema versions fail with an instruction to keep the source file and update the application. There is no earlier published schema to migrate.
 
 Validation checks duplicate entity IDs, entrant references, winner identities, match sources, and cycles in stage and match dependencies. Scoring legality and pairing rules are checked separately by the competition engine.
@@ -267,6 +274,53 @@ and BYE entitlements apply together. Removing all final targets restores version
 1 otherwise. Versions 1, 2 and 3 retain their canonical representation and draw
 algorithms; they are not silently upgraded.
 
+Version 5 adds a required `distance` rule and permits empty affiliation arrays:
+
+```json
+{
+  "version": 5,
+  "pots": [],
+  "restrictions": [],
+  "protectedSeeds": 0,
+  "separation": [],
+  "losersSeparation": [],
+  "finalsSeparation": [],
+  "distance": {
+    "minKm": 100,
+    "maxKm": 900,
+    "winnersThroughRound": 1,
+    "losersThroughRound": 0,
+    "finals": []
+  }
+}
+```
+
+At least one of `minKm` and `maxKm` must be present. Bounds are finite numbers
+from 0 to 20016 kilometers, inclusive; minimum cannot exceed maximum. Missing
+bounds mean no limit on that side, while zero remains an explicit limit.
+`winnersThroughRound` ranges from 0 to 9 and `losersThroughRound` from 0 to 16.
+Zero disables that bracket; a positive limit protects all rounds from 1 through
+the selected round, which must exist in the actual draw. `finals` contains unique
+targets from `grand-final`, `reset` and `third-place`. At least one bracket range
+or final target must be enabled. The same distance interval applies to every
+selected target, independently of affiliation rules.
+
+Lower and grand-final targets require double elimination. Reset protection also
+requires the reset setting; third place requires the existing single-elimination
+third-place match. Every active entrant needs valid coordinates before preview or
+generation, including BYE recipients. Distances use a Haversine calculation on a
+sphere with radius 6371.0088 km. Comparisons use unrounded values and include the
+limits; preview rounding does not decide eligibility. This is a versioned
+competition policy, not a road-distance or ellipsoidal survey calculation.
+
+Version 5 uses `knockout-distance-haversine-fnv1a-mulberry32-v5`. Pairwise incompatibilities
+are checked against every possible selected match path without transitive
+location grouping. Removing distance rules restores version 4, 3, 2 or 1 as
+needed by the remaining affiliation rules. Existing rule versions retain their
+representation and draw algorithm. Public packages retain distance rules and
+generated matches but omit coordinates, so regeneration needs new locations.
+Private packages and private updates retain both; recipes retain only the rules.
+
 `protectedSeeds` pins the first specified number of entrants in the selected
 draw order to their standard seed positions. For a field of `n`, the bracket
 has the next power-of-two slot count and exactly `slotCount - n` BYEs. The first
@@ -279,8 +333,8 @@ The optional object is validated on import and retained by public snapshots,
 files, encrypted backups and updates. Pot names and affiliations remain public.
 Recipes remap its pot references to new entrant IDs, without carrying names or
 affiliations. Absent fields remain absent in older documents and their hashes.
-Unknown rule versions are rejected. A release that supports only versions 1 to 3
-rejects version 4 instead of ignoring its final rules. Earlier releases
+Unknown rule versions are rejected. A release that supports only versions 1 to 4
+rejects version 5 instead of ignoring its distance rules. Earlier releases
 from before knockout-rule validation may preserve the entire object as extension
 data without enforcing it; update the app before regenerating a shared tournament
 that uses it.
