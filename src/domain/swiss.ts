@@ -19,6 +19,15 @@ export const swissPolicySchema = z
           .strict(),
       )
       .max(512),
+    federation: z
+      .object({
+        system: z.literal("fide-dutch-2026"),
+        engine: z.literal("bbp-6.0.0-ts1"),
+        initialColor: z.enum(["white", "black"]),
+        pairingOrder: z.array(entrantId).min(2).max(512).optional(),
+      })
+      .strict()
+      .optional(),
     acceleration: z
       .object({
         policy: z.literal("fixed-group-v1"),
@@ -79,6 +88,60 @@ export function swissPolicyErrors(
   )
     errors.push("Swiss entry credits cannot exceed a win per missed round.");
   const acceleration = policy.acceleration;
+  if (policy.federation) {
+    if (
+      tournament.rules.pointsWin !== 1 ||
+      tournament.rules.pointsDraw !== 0.5 ||
+      tournament.rules.pointsLoss !== 0 ||
+      !tournament.rules.allowDraws ||
+      !["high", "manual"].includes(tournament.rules.scoring) ||
+      tournament.rules.bestOf !== 1
+    )
+      errors.push(
+        "FIDE Dutch requires single-game scoring, draws, and 1 / 0.5 / 0 match points.",
+      );
+    if (
+      policy.acceleration ||
+      Object.keys(policy.preferences).length ||
+      (Array.isArray(stage.config.forbiddenPairs) &&
+        stage.config.forbiddenPairs.length)
+    )
+      errors.push(
+        "FIDE Dutch cannot combine generic acceleration, side preferences, or forbidden pairs.",
+      );
+    if (policy.lateEntries.some((entry) => entry.points !== 0))
+      errors.push(
+        "FIDE Dutch late entrants must receive zero points for missed rounds.",
+      );
+    if (
+      tournament.participants.some(
+        (participant) =>
+          stage.participantIds.includes(participant.id) &&
+          typeof participant.metadata.pointsAdjustment === "number" &&
+          participant.metadata.pointsAdjustment !== 0,
+      )
+    )
+      errors.push("FIDE Dutch does not accept standings point adjustments.");
+    const order = policy.federation.pairingOrder;
+    if (
+      !order &&
+      tournament.matches.some((match) => match.stageId === stage.id)
+    )
+      errors.push(
+        "Generated FIDE rounds require their original pairing numbers.",
+      );
+    if (
+      order &&
+      (new Set(order).size !== order.length ||
+        order.length !== stage.participantIds.length ||
+        order.some((id) => !stage.participantIds.includes(id)))
+    )
+      errors.push(
+        "FIDE pairing numbers must list every stage entrant exactly once.",
+      );
+    if (stage.config.seeding !== "ranked" && stage.config.seeding !== "manual")
+      errors.push("FIDE Dutch requires ranked or manual initial order.");
+  }
   if (
     acceleration &&
     (acceleration.rounds >= stage.config.rounds ||

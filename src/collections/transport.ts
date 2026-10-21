@@ -3,6 +3,7 @@ import type { Tournament } from "../domain/types";
 import { validateTournament } from "../domain/validate";
 import { canonicalize, LIMITS } from "../security/codec";
 import { decryptJson, encryptJson } from "../security/crypto";
+import { readPlayerStatistics, withPlayerStatistics } from "../players/model";
 import {
   decodeTransport,
   encodeTransport,
@@ -131,14 +132,28 @@ export async function forkBundle(
   const at = new Date().toISOString();
   const tournaments = await Promise.all(
     source.tournaments.map((t) => {
-      const copy = structuredClone(t);
+      let copy = structuredClone(t);
       if (clearResults) {
+        if (copy.metadata.playerStatistics !== undefined)
+          copy = withPlayerStatistics(copy, {
+            ...readPlayerStatistics(copy),
+            events: [],
+          });
         copy.matches = [];
         copy.status = "draft";
+        delete copy.metadata.correctionRecovery;
         for (const stage of copy.stages) {
           stage.status = "draft";
           stage.metadata = {};
-          if (stage.sources.length) stage.participantIds = [];
+          if (stage.config.swiss) {
+            stage.config.swiss.lateEntries = [];
+            if (stage.config.swiss.federation)
+              delete stage.config.swiss.federation.pairingOrder;
+          }
+          if (stage.sources.length) {
+            stage.participantIds = [];
+            if (stage.config.swiss) delete stage.config.swiss.acceleration;
+          }
         }
         for (const p of copy.participants) {
           p.checkedIn = false;

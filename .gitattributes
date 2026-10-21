@@ -1,1 +1,3 @@
 docs/** -text
+src/vendor/bbp/dutch.js -text
+scripts/fide/*.patch text eol=lf

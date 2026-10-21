@@ -116,8 +116,23 @@ function Scoreboard({
       </p>
     );
   const names = matchNames(tournament, match, locale);
+  const visibleScore = (index: number) =>
+    (match.status === "live" ? match.liveScores?.[index] : undefined) ??
+    match.result?.scores[index] ??
+    0;
   return (
     <div className="live-scoreboard" data-testid="presentation-scoreboard">
+      <p className="sr-only" role="status" aria-atomic="true">
+        {t("Scoreboard", "تابلو امتیاز")}: {t("Round", "دور")}{" "}
+        {match.round.toLocaleString(locale)}.{" "}
+        {names
+          .map((name, index) =>
+            tournament.presentation.showScores
+              ? `${name}: ${visibleScore(index).toLocaleString(locale)}`
+              : name,
+          )
+          .join("; ")}
+      </p>
       <div className="scoreboard-eyebrow">
         {match.status === "live" ? t("LIVE", "زنده") : t("MATCH", "مسابقه")} ·{" "}
         {t("Round", "دور")} {match.round.toLocaleString(locale)}
@@ -145,13 +160,7 @@ function Scoreboard({
               </h2>
               <strong>
                 {tournament.presentation.showScores
-                  ? (
-                      (match.status === "live"
-                        ? match.liveScores?.[i]
-                        : undefined) ??
-                      match.result?.scores[i] ??
-                      0
-                    ).toLocaleString(locale)
+                  ? visibleScore(i).toLocaleString(locale)
                   : "·"}
               </strong>
             </div>
@@ -651,6 +660,18 @@ export function Presentation({
       data-pattern={getTheme(safe.theme.preset).pattern}
       dir={locale === "fa" ? "rtl" : "ltr"}
     >
+      <p className="sr-only" role="status" aria-atomic="true">
+        {safe.presentation.overlay?.enabled ? (
+          t("Broadcast overlay", "پوشش پخش")
+        ) : (
+          <>
+            {t("Scene", "نما")}{" "}
+            {((index % Math.max(1, scenes.length)) + 1).toLocaleString(locale)}{" "}
+            {t("of", "از")} {Math.max(1, scenes.length).toLocaleString(locale)}:{" "}
+            {scene.title || sceneLabel(scene.type, locale)}
+          </>
+        )}
+      </p>
       {safe.presentation.overlay?.enabled ? (
         <BroadcastOverlay
           tournament={safe}

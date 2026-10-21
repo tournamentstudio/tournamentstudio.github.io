@@ -8,6 +8,7 @@ const base =
 
 export default defineConfig({
   base,
+  worker: { format: "es" },
   plugins: [
     react(),
     VitePWA({

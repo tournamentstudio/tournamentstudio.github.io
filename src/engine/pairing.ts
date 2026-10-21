@@ -3,6 +3,7 @@ import { getStandings } from "../standings";
 import { entrant, newMatch } from "./formats";
 import { swissPairingBonus, swissPolicy } from "../domain/swiss";
 import { orientSwissPair } from "./swiss-colors";
+import { fideDutchRound } from "./fide-dutch";
 
 export class PairingError extends Error {
   constructor(message: string) {
@@ -20,6 +21,8 @@ export function swissRound(
   stage: Stage,
   round: number,
 ): Match[] {
+  if (swissPolicy(stage).federation)
+    return fideDutchRound(tournament, stage, round);
   const history = tournament.matches.filter(
     (match) => match.stageId === stage.id,
   );

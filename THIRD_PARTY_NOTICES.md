@@ -24,3 +24,16 @@ Icons from lucide-react use the ISC license. Original TournaStudio branding artw
 The QR scanner bundles ZXing for JS. Its license files are included in public/licenses; the decoder loads locally when scanning starts. No runtime CDN is required.
 
 Development dependencies are used during builds and tests, not as remote runtime services. Their package license files remain available in node_modules after npm ci.
+
+## Dutch pairing engine
+
+The browser bundle includes BBP Pairings 6.0.0, copyright Jeremy Bierema,
+under Apache-2.0. The local `bbp-6.0.0-ts1` build applies the exchange-order
+correction from upstream pull request 39 and a C++ size-type portability change.
+It exposes Dutch pairing only. The source archive, patch, bridge and reproducible
+build instructions are in [scripts/fide](scripts/fide/README.md).
+
+Emscripten 4.0.18 compiles the source to JavaScript. Generated runtime and C/C++
+library notices are retained in `public/licenses/`: `BBP-LICENSE.txt`,
+`BBP-APACHE-2.0.txt`, `Emscripten-LICENSE.txt`, `LLVM-LICENSE.txt` and
+`musl-COPYRIGHT.txt`. These third-party legal notices remain verbatim.

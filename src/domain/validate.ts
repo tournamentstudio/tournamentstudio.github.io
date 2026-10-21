@@ -955,6 +955,17 @@ export function recoveredMatches(document: Tournament): Match[] {
           revision: z.number().int().min(0),
           matchId: z.string().min(1).max(160),
           matches: z.array(matchSchema).max(20000),
+          swissPolicies: z
+            .array(
+              z
+                .object({
+                  stageId: z.string().min(1).max(160),
+                  policy: swissPolicySchema,
+                })
+                .strict(),
+            )
+            .max(64)
+            .optional(),
         })
         .strict(),
     )

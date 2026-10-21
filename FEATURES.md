@@ -29,7 +29,7 @@ succeeded.
 | GSL groups | Implemented | Groups of exactly four with openers, winners match, elimination match and qualification decider. Field size must be divisible by four. |
 | Swiss | Implemented | Score-ordered deterministic pairing, no rematches, fresh BYEs, side preferences, optional standalone late entries with explicit missed-round credits, and a validated editor for the latest unplayed round. Pairing failures are reported. |
 | Swiss acceleration | Implemented | Named fixed-group-v1 policy assigns virtual pairing points to an explicit starting group for opening rounds. The group and bonus lock after drawing; official points, tie-breaks and bye order stay unchanged. Recipes remap group identities. |
-| Swiss federation rules | Partially implemented | Generic balanced side preferences, late-entry credits and named acceleration are available. Federation-specific pairing/color algorithms and certification are not supplied. |
+| FIDE Dutch 2026 pairings | Implemented | Local BBP 6.0.0 with the pinned exchange-order correction, identified as bbp-6.0.0-ts1. Joint opponent/color decisions, fixed tournament pairing numbers, standard chess points, withdrawals and zero-credit late entry. Four upstream regression fixtures and native-reference comparisons cover actual opponents and colors. No independent FIDE endorsement; Burstein, federation acceleration variants and rating submission are outside this named policy. |
 | Free-for-all | Implemented | More than two entrants per match, balanced heats, repeated rounds, placement scores and ties. A one-entrant heat is rejected. |
 | Battle royale scoring | Implemented | Multi-entrant heats with placement awards, measured eliminations/survival values and weighted dimensions. Tied placements average the awards of occupied positions. Organizers enter the evidence; no game-server feed is required. |
 | Gauntlet | Implemented | Lower seeds play first; each winner meets the next higher seed. |
@@ -232,26 +232,27 @@ Theme collections:
 | Multi-format predictions | Implemented | TSB1 version 2 supports generated static stages and dynamic-round scopes: winner/loser paths, draws, conditional resets and full placement rankings with ties. Swiss, three-loss and challenge formats predict only the generated round. Exact correct outcomes score one point, with shared ranks and separate scope/schema leaderboards. Legacy version-1 packets remain readable. Imported identity/time claims remain unverified. |
 | Events and seasons | Implemented | Collections, divisions, explicit shared directory, weighted standings, reasoned adjustments, shared schedule conflicts, public presentation, archive/restore and encrypted packages. Reviewed promotion/relegation creates new independent league divisions; source seasons remain unchanged. |
 | English/Persian interface | Implemented | Bilingual main screens, RTL, locale formatting, mixed-script names, bundled fonts, generated match labels and mapped engine/import diagnostics. Unknown external errors retain their original details after a Persian explanation. |
-| Keyboard and screen-reader support | Partially implemented | Native controls, linked field hints, dialog focus trapping/restoration and ordering alternatives. Targeted keyboard and automated AA checks cover both languages, including new player, prediction, signature and route forms. ACCESSIBILITY.md records repeatable checks and outstanding human assistive-device audits. |
+| Keyboard and screen-reader support | Implemented | Named controls/regions, hints, modal and mobile-drawer focus containment/restoration, inert backgrounds, current-route states, route titles/focus, section/save announcements, public scoreboard announcements and keyboard alternatives to dragging. Cross-browser English/Persian interaction, accessibility-tree, AA-rule and reflow checks are repeatable. ACCESSIBILITY.md distinguishes these checks from human speech-quality audits and independent certification. |
 | Reduced motion | Implemented | Presentation respects OS preference and the theme setting. |
 | Offline PWA | Implemented | Manifest, local icons, app-shell precache, update prompt and offline state. Initial caching must finish before offline use. Browser test results are reported separately. |
 | GitHub Pages configuration | Implemented | Static hash routes, owner/repository-derived base and local build publication from main/docs. No repository CI workflows. Actual publication depends on GitHub permissions/settings. |
 | Runtime external dependencies | Implemented | Core assets, fonts and libraries are bundled. No backend, required runtime CDN, remote database or analytics service. |
 | Import hardening | Implemented | Schema checks, bounded JSON/decompression, archive entry/path checks, safe raster validation and no executable imported code. |
 | Data migrations | Implemented | Schema-1 legacy fixtures and untagged revision snapshots remain readable without rewriting their bytes. Known optional extensions are validated; unsupported schema/command versions fail without modifying storage. No hypothetical earlier document schema is fabricated. |
-| Browser performance | Implemented | Participants, matches and schedule use bounded pages with full search. Draw and venue searches run in cancelable module workers; fallback is explicit. Indexed conflict candidates and memoized graph lookups reduce repeated scans. Browser checks cover 512 entrants; practical format and match limits remain. |
+| Browser performance | Implemented | Participants, matches and schedule use bounded pages with full search. Draw and venue searches run in cancelable module workers; fallback is explicit. Dutch generation, advancement, simulation and recipe reconstruction use a separate cancelable worker without a blocking fallback. Indexed conflict candidates and memoized graph lookups reduce repeated scans. Browser checks cover 512 entrants; practical format and match limits remain. |
 | Automated verification | Implemented | Engine/property, storage, sharing, cryptography, security and visual/export tests exist and are executable. Use the release report for commands and actual results. |
 | Central accounts, registration, payments, notifications | Unsupported due to static-hosting constraints | Manual registration/result packets and portable snapshots replace selected exchange workflows. No payment processing or remote message delivery. |
 
-## Remaining boundaries
+## Platform and verification boundaries
 
 The working policies above do not imply federation certification or support for
-every tournament convention. Federation-specific Swiss pairing/color algorithms,
-automated video/game verification and certified timing are not supplied.
+every tournament convention. The named Dutch engine supplies its documented
+pairing/color algorithm; other federation systems, automated video/game
+verification and certified timing are outside the supplied policies.
 Travel paths require organizer-entered network data; live maps, geocoding,
-traffic and measured travel times are not supplied. Accessibility has targeted
-automated and keyboard coverage; human assistive-device audits in
-ACCESSIBILITY.md remain and no independent WCAG certification is claimed.
+traffic and measured travel times are not supplied. Accessibility has browser
+accessibility-tree, automated and keyboard coverage. Human assistive-device
+speech-quality audits and independent WCAG certification are not claimed.
 
 These are distinct from the hosted services this static application deliberately
 does not supply. New formats and rule variants need explicit contracts and tests

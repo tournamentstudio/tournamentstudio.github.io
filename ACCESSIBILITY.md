@@ -6,10 +6,13 @@ I target WCAG 2.2 AA for the organizer and spectator interfaces. The checks belo
 
 - Forms use visible labels, semantic inputs, and readable error messages. Errors are announced through an alert region.
 - Dialogs receive focus, contain keyboard focus while open, close with Escape, and return focus to the opener when it remains available. Controls inside closed disclosure sections are excluded from the focus cycle.
+- Mobile navigation uses a named modal drawer, an expanded-state trigger and an inert background. Escape closes it and restores focus. Its contents scroll at small viewport heights.
+- Main routes update the document title and focus the main region. Current routes and sections expose their state; workspace section changes and confirmed saves have status announcements.
 - Stage connections, schedule changes, seeding, and scene ordering have controls that do not require dragging.
 - Brackets have keyboard controls and match buttons. Standings and wide tables remain scrollable inside their own region at narrow widths.
 - Persian uses right-to-left layout, local fonts, translated controls, and bidirectional isolation for mixed-script names. Long labels can wrap.
 - Presentation mode has keyboard controls, an exit control, and focus handling. Reduced-motion preferences are respected by the interface and can be configured for tournament displays.
+- Spectator scenes and public score changes have polite, atomic announcements. Timer ticks do not repeat announcements every second. The announcement text uses the same public projection as the display.
 - Player statistics use labeled forms and explicit status text. Review warnings explain why observations are excluded from totals. Private-data export is a separate action with a visible explanation.
 
 ## Local automated checks
@@ -25,6 +28,8 @@ Playwright covers Chromium, Firefox, and WebKit. The accessibility assertions us
 
 Relevant checks include:
 
+- `tests/e2e/assistive-navigation.spec.ts`: English/Persian mobile focus containment, inert backgrounds, Escape/restoration, current page semantics, route titles, section names, keyboard scrolling, public score announcements, reduced motion and forced colors. Reflow checks use 640 by 360 and 320 by 180 CSS-pixel viewports, equivalent to the available layout area at 200% and 400% of a 1280 by 720 baseline.
+- `tests/e2e/fide-dutch.spec.ts`: translated Swiss policy errors and 320-pixel Persian controls.
 - `tests/e2e/i18n-accessibility.spec.ts`: Persian form errors, modal focus cycles, disclosure sections, focus restoration, saved language, and operator sections.
 - `tests/e2e/player-statistics.spec.ts`: player observations, correction history, private export boundaries, Persian at 320 CSS pixels, keyboard opening, and dialog checks.
 - `tests/e2e/custom-fields.spec.ts`: long Persian labels, number validation, and narrow layouts.
@@ -46,6 +51,6 @@ For a release, review the following with representative long English and Persian
 
 ## Checks requiring human assistive-device review
 
-A complete NVDA, JAWS, VoiceOver, or TalkBack reading-order and speech-quality audit has not been completed. Switch-control, braille-display, and speech-input testing has not been completed. Custom themes, imported artwork, unusual font settings, and every possible tournament size are not independently certified for contrast or reflow.
+Browser accessibility-tree assertions, keyboard interaction and visual reflow checks establish the implemented behavior described above. They do not establish the quality of a particular screen reader's spoken Persian or replace human device testing. No complete NVDA, JAWS, VoiceOver, TalkBack, switch-control, braille-display or speech-input audit is claimed. Custom themes, imported artwork, unusual font settings, and every possible tournament size are not independently certified for contrast or reflow. Viewport reflow tests are not a claim that a person tested every browser's zoom UI.
 
 Report an accessibility issue with the screen, language, browser, assistive technology, and steps that reproduce it. Avoid attaching private tournament data. A small anonymized example is enough for most layout and keyboard issues.

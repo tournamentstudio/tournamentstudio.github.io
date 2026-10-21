@@ -52,6 +52,10 @@ export function setManualSwissPairings(
 ): Tournament {
   const doc = structuredClone(input),
     stage = requireSwiss(doc, stageId);
+  if (swissPolicy(stage).federation)
+    throw new Error(
+      "FIDE Dutch pairings and colors are assigned by the declared engine and cannot be edited manually.",
+    );
   if (!swissRoundEditable(doc, stage))
     throw new Error(
       "Only the latest unplayed Swiss round can be paired manually. Remove dependent outcome connections first.",
@@ -157,6 +161,14 @@ export function setSwissPolicy(
   const policy = swissPolicySchema.parse(value);
   if (
     matches.length &&
+    JSON.stringify(policy.federation ?? null) !==
+      JSON.stringify(swissPolicy(stage).federation ?? null)
+  )
+    throw new Error(
+      "The FIDE system, initial color, and pairing numbers are fixed after the first draw. Reset the stage before changing them.",
+    );
+  if (
+    matches.length &&
     JSON.stringify(policy.acceleration ?? null) !==
       JSON.stringify(swissPolicy(stage).acceleration ?? null)
   )
@@ -231,6 +243,10 @@ export function admitSwissEntrant(
     throw new Error(
       "Swiss entry credits cannot exceed a win per missed round.",
     );
+  if (policy.federation && points !== 0)
+    throw new Error(
+      "FIDE Dutch late entrants must receive zero points for missed rounds.",
+    );
   const participant = createParticipant(
     clean,
     Math.max(0, ...doc.participants.map((participant) => participant.seed)) + 1,
@@ -239,6 +255,18 @@ export function admitSwissEntrant(
   stage.participantIds.push(participant.id);
   stage.config.swiss = {
     ...policy,
+    ...(policy.federation
+      ? {
+          federation: {
+            ...policy.federation,
+            pairingOrder: [
+              ...(policy.federation.pairingOrder ??
+                stage.participantIds.filter((id) => id !== participant.id)),
+              participant.id,
+            ],
+          },
+        }
+      : {}),
     lateEntries: [
       ...policy.lateEntries,
       { participantId: participant.id, joinedRound: round + 1, points },

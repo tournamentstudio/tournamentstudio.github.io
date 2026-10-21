@@ -700,6 +700,44 @@ Deleting an entrant or resource removes only its mapping on a normal write;
 network geometry remains and the prior revision is recoverable. Exact update
 packets still retain the sender's target hash without implicit changes.
 
+## Named Swiss pairing policy
+
+The optional `stage.config.swiss.federation` object preserves compatibility with
+version-1 Swiss configurations that omit it. It is strict and contains:
+
+```json
+{
+  "system": "fide-dutch-2026",
+  "engine": "bbp-6.0.0-ts1",
+  "initialColor": "white",
+  "pairingOrder": ["entrant-id-1", "entrant-id-2"]
+}
+```
+
+`initialColor` is `white` or `black`. A draft may omit `pairingOrder`; generation
+freezes the ranked/manual participant order as one-based tournament pairing
+numbers. The array has 2 to 512 distinct stage entrant IDs, including withdrawn
+entrants with history. Late admission appends a number. A fresh draw rebuilds
+the order; later seed edits do not renumber an existing competition.
+
+The system, engine, color and frozen order cannot be changed after drawing.
+An unknown engine or policy version fails validation instead of selecting a
+different algorithm. Portable snapshots retain the policy and actual colors.
+Recipes remap entrant references to their new identities. Match metadata records
+the pairing system/engine, white/black pairing numbers and whether a pairing bye
+was assigned. No private FIDE identifier, participant name or contact information
+is sent to the compiled engine or a server.
+
+Upstream corrections can clear qualifier-dependent Swiss configuration. The
+private `metadata.correctionRecovery` records optionally preserve `swissPolicies`
+as a bounded array of `{stageId, policy}` alongside affected matches. Each saved
+policy passes the versioned Swiss schema; legacy recovery entries without that
+field remain valid. Revision history also retains the earlier full state.
+
+Single-stage recipes use TSR2 when the stage contains a subset of the tournament
+directory or a different entrant order. TSR1 remains the compact choice when
+the stage uses the complete directory in its existing order.
+
 ## Participant tables
 
 CSV supports quoted fields, doubled quotes and embedded newlines. Headers include name, seed, shortName, kind, status, region, organization, checkedIn, roster, tags, availableFrom, availableUntil, registration, eligibility, payment and note. Roster cells contain a JSON array; tags use semicolons. Availability uses ISO timestamps. JSON imports preserve valid participant fields and safe metadata while assigning fresh participant and roster IDs.

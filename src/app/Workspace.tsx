@@ -49,6 +49,11 @@ import { Settings } from "./StorageHealth";
 import { getTheme, themeStyle } from "../themes";
 import { GameIdentity, ThemeMotif } from "../themes/ThemeMotif";
 import "./game-experience.css";
+import { requiresCompetitionWorker } from "../workers/competition-task";
+import {
+  CompetitionTaskNotice,
+  useCompetitionTask,
+} from "../workers/use-competition-task";
 const ThemeStudio = lazy(() =>
   import("../themes/ThemeStudio").then((m) => ({ default: m.ThemeStudio })),
 );
@@ -117,11 +122,13 @@ export function Workspace({
 }) {
   const { t, locale } = useI18n();
   const [tab, setTab] = useState("overview");
+  const activeSection = tabs.find((item) => item.id === tab)!;
   const [matchId, setMatchId] = useState<string>();
   const [filter, setFilter] = useState("ready");
   const [search, setSearch] = useState("");
   const [error, setError] = useState<unknown>();
   const [stageId, setStageId] = useState(doc.stages[0]?.id ?? "");
+  const computation = useCompetitionTask(doc, `${tab}:${stageId}`);
   const participants = useMemo(
     () =>
       new Map(
@@ -165,9 +172,15 @@ export function Workspace({
       "noopener",
     );
   }
-  function nextRound() {
+  async function nextRound() {
+    if (computation.busy) return;
+    setError(undefined);
     try {
-      onChange(advanceStage(doc, stageId), t("Advance round", "پیشروی دور"));
+      const next = requiresCompetitionWorker(doc, stageId)
+        ? await computation.run({ kind: "advance", tournament: doc, stageId })
+        : advanceStage(doc, stageId);
+      if (!next) return;
+      onChange(next, t("Advance round", "پیشروی دور"));
       setError(undefined);
     } catch (e) {
       setError(e);
@@ -206,7 +219,7 @@ export function Workspace({
                         ? t("Awaiting ruling", "در انتظار رأی")
                         : m.status === "canceled"
                           ? t("Canceled", "لغوشده")
-                    : t("Waiting", "در انتظار")}
+                          : t("Waiting", "در انتظار")}
           </span>
         </div>
         {m.slots.map((slot, i) => {
@@ -297,7 +310,10 @@ export function Workspace({
         {tabs.map((item) => (
           <button
             key={item.id}
+            id={`workspace-tab-${item.id}`}
             className={tab === item.id ? "active" : ""}
+            aria-current={tab === item.id ? "page" : undefined}
+            aria-controls="workspace-section"
             onClick={() => {
               setTab(item.id);
               setError(undefined);
@@ -308,11 +324,17 @@ export function Workspace({
           </button>
         ))}
       </nav>
+      <p className="sr-only" role="status" aria-atomic="true">
+        {t("Section", "بخش")}: {t(activeSection.en, activeSection.fa)}
+      </p>
       <ErrorText error={error} />
+      <CompetitionTaskNotice task={computation} />
       <fieldset
+        id="workspace-section"
         className="workspace-fieldset"
-        disabled={saving}
-        aria-busy={saving}
+        aria-labelledby={`workspace-tab-${tab}`}
+        disabled={saving || computation.busy}
+        aria-busy={saving || computation.busy}
       >
         <Suspense
           fallback={

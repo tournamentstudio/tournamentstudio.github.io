@@ -48,6 +48,7 @@ import { ImportCenter } from "./ImportCenter";
 import { BackupReminderNotice } from "./BackupReminders";
 import { useUndoSession } from "./undo-session";
 import { useVaultInactivity } from "./VaultInactivity";
+import { useNavigationDrawer } from "./useNavigationDrawer";
 const Collections = lazy(() =>
   import("../collections/Collections").then((m) => ({
     default: m.Collections,
@@ -104,6 +105,7 @@ function Studio({
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState("");
   const [sidebar, setSidebar] = useState(false);
+  const navigation = useNavigationDrawer(sidebar, () => setSidebar(false));
   const [importOpen, setImportOpen] = useState(false);
   const [importCode, setImportCode] = useState("");
   const [template, setTemplate] = useState<string>();
@@ -172,6 +174,28 @@ function Studio({
   }
   const id = documentId(route);
   const presentation = route.startsWith("/present/");
+  const previousRoute = useRef(route);
+  const routeTitles: Record<string, string> = {
+    "/": t("Home", "خانه"),
+    "/library": t("My tournaments", "مسابقات من"),
+    "/events": t("Events & seasons", "رویدادها و فصل‌ها"),
+    "/advisor": t("Format advisor", "راهنمای قالب"),
+    "/storage": t("Storage health", "وضعیت ذخیره‌سازی"),
+    "/create": t("Create tournament", "ساخت مسابقات"),
+  };
+  const pageTitle = `${doc?.title ?? routeTitles[route] ?? t("Tournament workspace", "فضای مدیریت مسابقات")} | TournaStudio`;
+  useEffect(() => {
+    document.title = pageTitle;
+  }, [pageTitle]);
+  useEffect(() => {
+    if (
+      previousRoute.current !== route &&
+      !presentation &&
+      !document.querySelector("dialog[open]")
+    )
+      document.getElementById("main-content")?.focus({ preventScroll: true });
+    previousRoute.current = route;
+  }, [route, presentation]);
   const isProtected =
     entries.find((e) => e.id === doc?.id)?.protected ?? !!secret;
   useVaultInactivity(isProtected && doc ? doc.id : undefined, lock);
@@ -636,6 +660,7 @@ function Studio({
     <div className={`app-shell ${sidebar ? "sidebar-open" : ""}`}>
       <a
         className="skip-link"
+        inert={navigation.active}
         href="#main-content"
         tabIndex={0}
         onClick={(event) => {
@@ -645,15 +670,39 @@ function Studio({
       >
         {t("Skip to main content", "رفتن به محتوای اصلی")}
       </a>
-      {sidebar && (
+      {navigation.active && (
         <button
           className="sidebar-scrim"
+          tabIndex={-1}
+          aria-hidden="true"
           aria-label={t("Close navigation", "بستن فهرست")}
           onClick={() => setSidebar(false)}
         />
       )}
-      <aside className="sidebar">
-        <a href="#/" className="brand" aria-label="TournaStudio home">
+      <aside
+        ref={navigation.drawer}
+        id="studio-navigation"
+        className="sidebar"
+        inert={navigation.mobile && !sidebar}
+        role={navigation.active ? "dialog" : undefined}
+        aria-modal={navigation.active ? "true" : undefined}
+        aria-label={t("Studio navigation", "فهرست استودیو")}
+        tabIndex={-1}
+        onKeyDown={navigation.onKeyDown}
+      >
+        <button
+          className="icon-button drawer-close"
+          aria-label={t("Close navigation", "بستن فهرست")}
+          onClick={() => setSidebar(false)}
+        >
+          <X size={20} aria-hidden="true" />
+        </button>
+        <a
+          href="#/"
+          className="brand"
+          aria-label={t("TournaStudio home", "خانه TournaStudio")}
+          onClick={() => setSidebar(false)}
+        >
           <img
             src={`${import.meta.env.BASE_URL}icon.svg`}
             width={34}
@@ -686,6 +735,7 @@ function Studio({
                 href={`#${path}`}
                 onClick={() => setSidebar(false)}
                 className={route === path ? "active" : ""}
+                aria-current={route === path ? "page" : undefined}
               >
                 <Mark size={19} />
                 <span>{t(String(en), String(fa))}</span>
@@ -740,7 +790,7 @@ function Studio({
                 "ذخیره در این مرورگر. هر زمان نیاز دارید پشتیبان بگیرید.",
               )}
             </p>
-            <a href="#/storage">
+            <a href="#/storage" onClick={() => setSidebar(false)}>
               {t("Check storage", "بررسی ذخیره‌سازی")}
               <ArrowRightSmall />
             </a>
@@ -755,12 +805,15 @@ function Studio({
           </button>
         </div>
       </aside>
-      <div className="app-body">
+      <div className="app-body" inert={navigation.active}>
         <header className="topbar">
           <div className="topbar-left">
             <button
+              ref={navigation.trigger}
               className="icon-button mobile-menu"
               aria-label={t("Open navigation", "باز کردن فهرست")}
+              aria-expanded={navigation.active}
+              aria-controls="studio-navigation"
               onClick={() => setSidebar(!sidebar)}
             >
               {sidebar ? <X size={21} /> : <Menu size={21} />}
@@ -784,6 +837,7 @@ function Studio({
             <span
               className={`save-status ${saveError ? "failed" : ""}`}
               role="status"
+              aria-atomic="true"
             >
               {saving ? (
                 <>
@@ -820,7 +874,11 @@ function Studio({
             </button>
           </div>
         </header>
-        <main id="main-content" tabIndex={-1}>
+        <main
+          id="main-content"
+          tabIndex={-1}
+          aria-label={t("Studio content", "محتوای استودیو")}
+        >
           <ErrorText error={error} />
           <BackupReminderNotice
             entries={entries}
@@ -1110,6 +1168,7 @@ function Studio({
 function CodeLogo() {
   return (
     <svg
+      aria-hidden="true"
       viewBox="0 0 24 24"
       width="18"
       height="18"

@@ -42,11 +42,17 @@ import { SwissRestrictionsEditor } from "./structure/SwissRestrictionsEditor";
 import { SwissPairingEditor } from "./structure/SwissPairingEditor";
 import { SwissPolicyEditor } from "./structure/SwissPolicyEditor";
 import { LadderPolicyEditor } from "./structure/LadderPolicyEditor";
+import { requiresCompetitionWorker } from "../workers/competition-task";
+import {
+  CompetitionTaskNotice,
+  useCompetitionTask,
+} from "../workers/use-competition-task";
 import "./structure/structure.css";
 
 export function Structure({ tournament: doc, onChange }: EditorProps) {
   const { t, locale } = useI18n();
   const [selected, setSelected] = useState(doc.stages[0]?.id);
+  const computation = useCompetitionTask(doc, selected);
   const [error, setError] = useState<unknown>();
   const [simulation, setSimulation] = useState<Tournament>();
   const [drafts, setDrafts] = useState<Record<string, Advancement[]>>({});
@@ -148,6 +154,7 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
     })),
   };
   function update(next: Tournament, action: string) {
+    if (computation.busy) return false;
     const issues = validateGraph(next);
     if (issues.length) {
       setError(issues.join(" "));
@@ -176,6 +183,12 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
       next.stages.find((item) => item.id === stage.id)!,
       patch,
     );
+    const edited = next.stages.find((item) => item.id === stage.id)!;
+    if (
+      edited.config.swiss?.federation &&
+      (patch.config || patch.sources || patch.participantIds || patch.format)
+    )
+      delete edited.config.swiss.federation.pairingOrder;
     update(next, t("Edit stage", "ویرایش مرحله"));
   }
   function clearDraft(id: string) {
@@ -259,6 +272,12 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
           .filter((participant) => participant.status === "active")
           .map((participant) => participant.id);
     delete target.config.manualQualifiers;
+    if (target.config.swiss?.federation)
+      delete target.config.swiss.federation.pairingOrder;
+    if (sources.length && target.config.swiss) {
+      target.config.swiss.lateEntries = [];
+      delete target.config.swiss.acceleration;
+    }
     if (update(next, t("Apply stage connections", "اعمال اتصال‌های مرحله")))
       clearDraft(stage.id);
   }
@@ -289,13 +308,20 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
         };
     if (copy) delete added.config.manualQualifiers;
     if (copy && added.config.swiss) added.config.swiss.lateEntries = [];
+    if (copy && added.config.swiss?.federation)
+      delete added.config.swiss.federation.pairingOrder;
     next.stages.push(added);
     if (update(next, t("Add stage", "افزودن مرحله"))) setSelected(added.id);
   }
-  function run(action: "draw" | "advance" | "simulate") {
+  async function run(action: "draw" | "advance" | "simulate") {
+    if (computation.busy) return;
+    setError(undefined);
     try {
       if (action === "simulate") {
-        setSimulation(simulate(doc));
+        const value = requiresCompetitionWorker(doc)
+          ? await computation.run({ kind: "simulate", tournament: doc })
+          : simulate(doc);
+        if (value) setSimulation(value);
         return;
       }
       if (!stage) return;
@@ -313,10 +339,16 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
             "پیش از ساخت دوباره، قرعه بدون نتیجه را بازنشانی کنید.",
           ),
         );
-      const next =
-        action === "draw"
+      const next = requiresCompetitionWorker(doc, stage.id)
+        ? await computation.run({
+            kind: action,
+            tournament: doc,
+            stageId: stage.id,
+          })
+        : action === "draw"
           ? generateStage(doc, stage.id)
           : advanceStage(doc, stage.id);
+      if (!next) return;
       update(
         next,
         action === "draw"
@@ -369,7 +401,15 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
       target.metadata = target.metadata.canvasPosition
         ? { canvasPosition: target.metadata.canvasPosition }
         : {};
-      if (target.sources.length) target.participantIds = [];
+      if (target.sources.length) {
+        target.participantIds = [];
+        if (target.config.swiss) {
+          target.config.swiss.lateEntries = [];
+          delete target.config.swiss.acceleration;
+        }
+      }
+      if (target.config.swiss?.federation)
+        delete target.config.swiss.federation.pairingOrder;
       update(
         next,
         t("Reset unplayed stage draw", "بازنشانی قرعه بدون نتیجه مرحله"),
@@ -470,264 +510,283 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
           "برای تغییر قالب یا اتصال‌ها، قرعه بدون نتیجه را بازنشانی کنید. قرعه قبلی در تاریخچه ذخیره می‌ماند.",
         );
   return (
-    <div className="panel-content structure-studio">
-      <div className="section-heading">
-        <div>
-          <h2>
-            {t("Design the road to the final", "مسیر فینال را طراحی کنید")}
-          </h2>
-          <p>
-            {t(
-              "Connect stages, set qualifiers, and test the whole competition.",
-              "مراحل را متصل کنید، صعودکنندگان را مشخص و رقابت را آزمایش کنید.",
-            )}
-          </p>
-        </div>
-        <div className="button-row">
-          <button
-            className="button secondary"
-            disabled={anyDraft}
-            onClick={() => run("simulate")}
-          >
-            <Play size={16} />
-            {t("Run simulation", "اجرای شبیه‌سازی")}
-          </button>
-          <button className="button primary" onClick={() => add()}>
-            <Plus size={16} />
-            {t("Add stage", "افزودن مرحله")}
-          </button>
-        </div>
-      </div>
-      <ErrorText error={error} />
-      {!!errors.length && <Notice danger>{errors.join(" ")}</Notice>}
-      <div className="structure-workbench">
-        <div className="structure-main">
-          <StageCanvas
-            tournament={graphDocument}
-            selected={stage?.id}
-            onSelect={setSelected}
-            onMove={moveNode}
-            onConnect={connect}
-            locked={(id) => stageProtection(doc, id).locked || hasDrawDraft(id)}
-          />
-          {stage && (
-            <>
-              <Field label={t("Selected stage", "مرحله انتخاب‌شده")}>
-                <select
-                  value={stage.id}
-                  onChange={(event) => setSelected(event.target.value)}
-                >
-                  {[...doc.stages]
-                    .sort((a, b) => a.order - b.order)
-                    .map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                </select>
-              </Field>
-              <ConnectionsEditor
-                key={stage.id}
-                tournament={doc}
-                stage={stage}
-                sources={sources}
-                locked={!!protection?.locked || anyDrawDirty}
-                dirty={dirty}
-                onDraft={(value) =>
-                  setDrafts((current) => ({ ...current, [stage.id]: value }))
+    <>
+      <CompetitionTaskNotice task={computation} />
+      <fieldset
+        className="competition-fieldset"
+        disabled={computation.busy}
+        aria-busy={computation.busy}
+      >
+        <div className="panel-content structure-studio">
+          <div className="section-heading">
+            <div>
+              <h2>
+                {t("Design the road to the final", "مسیر فینال را طراحی کنید")}
+              </h2>
+              <p>
+                {t(
+                  "Connect stages, set qualifiers, and test the whole competition.",
+                  "مراحل را متصل کنید، صعودکنندگان را مشخص و رقابت را آزمایش کنید.",
+                )}
+              </p>
+            </div>
+            <div className="button-row">
+              <button
+                className="button secondary"
+                disabled={anyDraft}
+                onClick={() => run("simulate")}
+              >
+                <Play size={16} />
+                {t("Run simulation", "اجرای شبیه‌سازی")}
+              </button>
+              <button className="button primary" onClick={() => add()}>
+                <Plus size={16} />
+                {t("Add stage", "افزودن مرحله")}
+              </button>
+            </div>
+          </div>
+          <ErrorText error={error} />
+          {!!errors.length && <Notice danger>{errors.join(" ")}</Notice>}
+          <div className="structure-workbench">
+            <div className="structure-main">
+              <StageCanvas
+                tournament={graphDocument}
+                selected={stage?.id}
+                onSelect={setSelected}
+                onMove={moveNode}
+                onConnect={connect}
+                locked={(id) =>
+                  computation.busy ||
+                  stageProtection(doc, id).locked ||
+                  hasDrawDraft(id)
                 }
-                onApply={applyConnections}
-                onDiscard={() => clearDraft(stage.id)}
               />
-              {!!stage.sources.length && (
-                <ManualQualifierEditor
-                  key={`qualifiers-${stage.id}`}
-                  tournament={doc}
-                  stage={stage}
-                  locked={!!protection?.locked || dirty || anyDrawDirty}
-                  onEdit={editStage}
-                />
-              )}
-              {(stage.format === "groups" || stage.format === "gsl") && (
-                <ManualGroupEditor
-                  key={`manual-groups-${stage.id}`}
-                  tournament={doc}
-                  stage={stage}
-                  locked={!!protection?.locked || dirty || anyDrawDirty}
-                  onEdit={editStage}
-                />
-              )}
-              {stage.format === "time-trial" && (
-                <TimeTrialPolicy
-                  stage={stage}
-                  locked={!!protection?.locked || dirty || anyDrawDirty}
-                  onEdit={editStage}
-                />
-              )}
-              {stage.format === "ladder" && (
-                <LadderPolicyEditor
-                  stage={stage}
-                  locked={!!protection?.locked || dirty || anyDrawDirty}
-                  onEdit={editStage}
-                />
-              )}
-              {stage.format === "swiss" && (
+              {stage && (
                 <>
-                  <SwissPolicyEditor
-                    key={`swiss-policy-${stage.id}`}
+                  <Field label={t("Selected stage", "مرحله انتخاب‌شده")}>
+                    <select
+                      value={stage.id}
+                      onChange={(event) => setSelected(event.target.value)}
+                    >
+                      {[...doc.stages]
+                        .sort((a, b) => a.order - b.order)
+                        .map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.name}
+                          </option>
+                        ))}
+                    </select>
+                  </Field>
+                  <ConnectionsEditor
+                    key={stage.id}
                     tournament={doc}
                     stage={stage}
-                    locked={dirty || anyDrawDirty}
-                    onChange={update}
+                    sources={sources}
+                    locked={!!protection?.locked || anyDrawDirty}
+                    dirty={dirty}
+                    onDraft={(value) =>
+                      setDrafts((current) => ({
+                        ...current,
+                        [stage.id]: value,
+                      }))
+                    }
+                    onApply={applyConnections}
+                    onDiscard={() => clearDraft(stage.id)}
                   />
-                  <SwissPairingEditor
-                    key={`swiss-pairs-${stage.id}`}
-                    tournament={doc}
-                    stage={stage}
-                    locked={dirty || anyDrawDirty}
-                    onChange={update}
-                  />
-                  <SwissRestrictionsEditor
-                    key={`swiss-${stage.id}`}
-                    tournament={doc}
-                    stage={stage}
-                    locked={!!protection?.locked || dirty || anyDrawDirty}
-                    onEdit={editStage}
-                  />
+                  {!!stage.sources.length && (
+                    <ManualQualifierEditor
+                      key={`qualifiers-${stage.id}`}
+                      tournament={doc}
+                      stage={stage}
+                      locked={!!protection?.locked || dirty || anyDrawDirty}
+                      onEdit={editStage}
+                    />
+                  )}
+                  {(stage.format === "groups" || stage.format === "gsl") && (
+                    <ManualGroupEditor
+                      key={`manual-groups-${stage.id}`}
+                      tournament={doc}
+                      stage={stage}
+                      locked={!!protection?.locked || dirty || anyDrawDirty}
+                      onEdit={editStage}
+                    />
+                  )}
+                  {stage.format === "time-trial" && (
+                    <TimeTrialPolicy
+                      stage={stage}
+                      locked={!!protection?.locked || dirty || anyDrawDirty}
+                      onEdit={editStage}
+                    />
+                  )}
+                  {stage.format === "ladder" && (
+                    <LadderPolicyEditor
+                      stage={stage}
+                      locked={!!protection?.locked || dirty || anyDrawDirty}
+                      onEdit={editStage}
+                    />
+                  )}
+                  {stage.format === "swiss" && (
+                    <>
+                      <SwissPolicyEditor
+                        key={`swiss-policy-${stage.id}`}
+                        tournament={doc}
+                        stage={stage}
+                        locked={dirty || anyDrawDirty}
+                        onChange={update}
+                      />
+                      <SwissPairingEditor
+                        key={`swiss-pairs-${stage.id}`}
+                        tournament={doc}
+                        stage={stage}
+                        locked={dirty || anyDrawDirty}
+                        onChange={update}
+                      />
+                      <SwissRestrictionsEditor
+                        key={`swiss-${stage.id}`}
+                        tournament={doc}
+                        stage={stage}
+                        locked={!!protection?.locked || dirty || anyDrawDirty}
+                        onEdit={editStage}
+                      />
+                    </>
+                  )}
+                  {(stage.format === "groups" || stage.format === "gsl") && (
+                    <GroupDrawEditor
+                      key={`draw-${stage.id}`}
+                      tournament={doc}
+                      stage={stage}
+                      value={drawValue}
+                      dirty={drawDirty}
+                      stale={drawStale}
+                      locked={!!protection?.locked || dirty}
+                      onDraft={(value) => {
+                        if (
+                          JSON.stringify(value) ===
+                          JSON.stringify(stage.config.draw ?? null)
+                        ) {
+                          clearDrawDraft(stage.id);
+                        } else
+                          setDrawDrafts((current) => ({
+                            ...current,
+                            [stage.id]: {
+                              value,
+                              base:
+                                current[stage.id]?.base ??
+                                groupDrawBasis(stage),
+                            },
+                          }));
+                      }}
+                      onDiscard={() => clearDrawDraft(stage.id)}
+                      onApply={applyDrawRules}
+                    />
+                  )}
+                  {(stage.format === "single-elimination" ||
+                    stage.format === "double-elimination") && (
+                    <KnockoutDrawEditor
+                      key={`knockout-draw-${stage.id}`}
+                      tournament={doc}
+                      stage={stage}
+                      value={knockoutValue}
+                      dirty={knockoutDirty}
+                      stale={knockoutStale}
+                      locked={!!protection?.locked || dirty}
+                      onDraft={(value) => {
+                        if (
+                          JSON.stringify(value) ===
+                          JSON.stringify(stage.config.knockoutDraw ?? null)
+                        ) {
+                          clearKnockoutDraft(stage.id);
+                        } else
+                          setKnockoutDrafts((current) => ({
+                            ...current,
+                            [stage.id]: {
+                              value,
+                              base:
+                                current[stage.id]?.base ?? knockoutBasis(stage),
+                            },
+                          }));
+                      }}
+                      onDiscard={() => clearKnockoutDraft(stage.id)}
+                      onApply={applyKnockoutRules}
+                    />
+                  )}
                 </>
               )}
-              {(stage.format === "groups" || stage.format === "gsl") && (
-                <GroupDrawEditor
-                  key={`draw-${stage.id}`}
-                  tournament={doc}
-                  stage={stage}
-                  value={drawValue}
-                  dirty={drawDirty}
-                  stale={drawStale}
-                  locked={!!protection?.locked || dirty}
-                  onDraft={(value) => {
-                    if (
-                      JSON.stringify(value) ===
-                      JSON.stringify(stage.config.draw ?? null)
-                    ) {
-                      clearDrawDraft(stage.id);
-                    } else
-                      setDrawDrafts((current) => ({
-                        ...current,
-                        [stage.id]: {
-                          value,
-                          base:
-                            current[stage.id]?.base ?? groupDrawBasis(stage),
-                        },
-                      }));
-                  }}
-                  onDiscard={() => clearDrawDraft(stage.id)}
-                  onApply={applyDrawRules}
-                />
-              )}
-              {(stage.format === "single-elimination" ||
-                stage.format === "double-elimination") && (
-                <KnockoutDrawEditor
-                  key={`knockout-draw-${stage.id}`}
-                  tournament={doc}
-                  stage={stage}
-                  value={knockoutValue}
-                  dirty={knockoutDirty}
-                  stale={knockoutStale}
-                  locked={!!protection?.locked || dirty}
-                  onDraft={(value) => {
-                    if (
-                      JSON.stringify(value) ===
-                      JSON.stringify(stage.config.knockoutDraw ?? null)
-                    ) {
-                      clearKnockoutDraft(stage.id);
-                    } else
-                      setKnockoutDrafts((current) => ({
-                        ...current,
-                        [stage.id]: {
-                          value,
-                          base: current[stage.id]?.base ?? knockoutBasis(stage),
-                        },
-                      }));
-                  }}
-                  onDiscard={() => clearKnockoutDraft(stage.id)}
-                  onApply={applyKnockoutRules}
-                />
-              )}
-            </>
+            </div>
+            {stage && protection && (
+              <StageSettings
+                stage={stage}
+                locked={protection.locked}
+                canReset={protection.canReset}
+                lockReason={lockReason}
+                hasDraft={dirty || anyDrawDirty}
+                onEdit={editStage}
+                onRefreshEntrants={() => {
+                  if (dirty || stage.sources.length) return;
+                  editStage({
+                    participantIds: doc.participants
+                      .filter((participant) => participant.status === "active")
+                      .map((participant) => participant.id),
+                  });
+                }}
+                onReorder={reorder}
+                onDuplicate={() => add(stage)}
+                onRemove={remove}
+                onReset={() =>
+                  setConfirmation({ action: "reset", stageId: stage.id })
+                }
+                onDraw={() => run("draw")}
+                onAdvance={() => run("advance")}
+              />
+            )}
+          </div>
+          {confirmation && (
+            <Confirm
+              title={
+                confirmation.action === "reset"
+                  ? t("Reset unplayed draw?", "بازنشانی قرعه بدون نتیجه؟")
+                  : t("Remove this stage?", "حذف این مرحله؟")
+              }
+              message={
+                confirmation.action === "reset"
+                  ? t(
+                      "This removes unplayed matches, schedules, notes and challenge invitations. Swiss settings tied to previous qualifiers also reset. The previous saved revision remains in History. No later stage has a draw.",
+                      "دیدارهای بدون نتیجه، برنامه‌ها، یادداشت‌ها و دعوت‌های چالش حذف می‌شوند. تنظیمات سوئیسی وابسته به صعودکنندگان قبلی نیز بازنشانی می‌شوند. نسخه ذخیره‌شده قبلی در تاریخچه باقی می‌ماند. هیچ مرحله بعدی قرعه ندارد.",
+                    )
+                  : t(
+                      "This removes the stage and any unplayed matches. Saved history keeps the previous version.",
+                      "مرحله و دیدارهای بدون نتیجه آن حذف می‌شوند. نسخه قبلی در تاریخچه ذخیره‌شده باقی می‌ماند.",
+                    )
+              }
+              destructive
+              onConfirm={confirmAction}
+              onClose={() => setConfirmation(undefined)}
+            />
+          )}
+          {simulation && (
+            <Modal
+              wide
+              title={t("Simulation preview", "پیش‌نمایش شبیه‌سازی")}
+              onClose={() => setSimulation(undefined)}
+            >
+              <Notice>
+                {t(
+                  "Synthetic results only. Your tournament has not changed.",
+                  "فقط نتایج شبیه‌سازی شده. مسابقات شما تغییر نکرده است.",
+                )}
+              </Notice>
+              <p>
+                {simulation.matches.filter((match) => match.result).length}{" "}
+                {t("completed matches", "دیدار کامل")} ·{" "}
+                {t("Champion", "قهرمان")}:{" "}
+                {getChampion(simulation)?.name ??
+                  t("See standings", "جدول را ببینید")}
+              </p>
+              <Bracket tournament={simulation} locale={locale} readOnly />
+            </Modal>
           )}
         </div>
-        {stage && protection && (
-          <StageSettings
-            stage={stage}
-            locked={protection.locked}
-            canReset={protection.canReset}
-            lockReason={lockReason}
-            hasDraft={dirty || anyDrawDirty}
-            onEdit={editStage}
-            onRefreshEntrants={() => {
-              if (dirty || stage.sources.length) return;
-              editStage({
-                participantIds: doc.participants
-                  .filter((participant) => participant.status === "active")
-                  .map((participant) => participant.id),
-              });
-            }}
-            onReorder={reorder}
-            onDuplicate={() => add(stage)}
-            onRemove={remove}
-            onReset={() =>
-              setConfirmation({ action: "reset", stageId: stage.id })
-            }
-            onDraw={() => run("draw")}
-            onAdvance={() => run("advance")}
-          />
-        )}
-      </div>
-      {confirmation && (
-        <Confirm
-          title={
-            confirmation.action === "reset"
-              ? t("Reset unplayed draw?", "بازنشانی قرعه بدون نتیجه؟")
-              : t("Remove this stage?", "حذف این مرحله؟")
-          }
-          message={
-            confirmation.action === "reset"
-              ? t(
-                  "This removes unplayed matches, schedules, notes and challenge invitations. The previous saved revision remains in History. No later stage has a draw.",
-                  "دیدارهای بدون نتیجه، برنامه‌ها، یادداشت‌ها و دعوت‌های چالش حذف می‌شوند. نسخه ذخیره‌شده قبلی در تاریخچه باقی می‌ماند. هیچ مرحله بعدی قرعه ندارد.",
-                )
-              : t(
-                  "This removes the stage and any unplayed matches. Saved history keeps the previous version.",
-                  "مرحله و دیدارهای بدون نتیجه آن حذف می‌شوند. نسخه قبلی در تاریخچه ذخیره‌شده باقی می‌ماند.",
-                )
-          }
-          destructive
-          onConfirm={confirmAction}
-          onClose={() => setConfirmation(undefined)}
-        />
-      )}
-      {simulation && (
-        <Modal
-          wide
-          title={t("Simulation preview", "پیش‌نمایش شبیه‌سازی")}
-          onClose={() => setSimulation(undefined)}
-        >
-          <Notice>
-            {t(
-              "Synthetic results only. Your tournament has not changed.",
-              "فقط نتایج شبیه‌سازی شده. مسابقات شما تغییر نکرده است.",
-            )}
-          </Notice>
-          <p>
-            {simulation.matches.filter((match) => match.result).length}{" "}
-            {t("completed matches", "دیدار کامل")} · {t("Champion", "قهرمان")}:{" "}
-            {getChampion(simulation)?.name ??
-              t("See standings", "جدول را ببینید")}
-          </p>
-          <Bracket tournament={simulation} locale={locale} readOnly />
-        </Modal>
-      )}
-    </div>
+      </fieldset>
+    </>
   );
 }

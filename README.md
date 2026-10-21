@@ -30,13 +30,13 @@ The application is a static React and TypeScript bundle hosted on GitHub Pages. 
 - Predictions for static stages and generated dynamic rounds, including draws, loser paths, conditional resets and tied multi-entrant placements.
 - Private roster-player observations, sport metric templates, reviewed corrections, player totals and CSV exports.
 
-These are defined local rulesets. Swiss offers constrained score-based pairing, manual review, side preferences, optional late-entry credits and fixed-group acceleration without claiming federation certification. Acceleration adds temporary pairing points only; official standings stay unchanged. Three-loss elimination uses dynamic rounds. Ladders offer adjacent challenges, reviewed invitations or an incumbent queue. Exact policies and limits are in [ARCHITECTURE.md](ARCHITECTURE.md).
+These are defined local rulesets. General Swiss offers constrained score-based pairing, manual review, side preferences, late-entry credits and fixed-group acceleration. A separate FIDE Dutch 2026 mode runs the locally compiled BBP engine, with fixed pairing numbers, joint opponent/color decisions and standard chess points. Its source, pinned correction and build instructions are included; TournaStudio has no independent FIDE endorsement. Acceleration in General Swiss adds temporary pairing points only. Three-loss elimination uses dynamic rounds. Ladders offer adjacent challenges, reviewed invitations or an incumbent queue. Exact policies and limits are in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## At the tournament desk
 
 Quick Create accepts numbered entrants or pasted names. The workspace includes participant rosters, local logo uploads, waiting lists, eligibility and payment-status records, participant availability, check-in, match control, standings, a stage graph, schedules, statistics, rules, themes, presentation, portable sharing, offline registration/result exchange, revision history, typed custom fields and vault settings.
 
-English and Persian labels, local Inter and Vazirmatn fonts, and RTL layouts are included. The interface is designed for desktop and phones. Engine and import diagnostics have Persian display translations. [FEATURES.md](FEATURES.md) records supported behavior and remaining work.
+English and Persian labels, local Inter and Vazirmatn fonts, and RTL layouts are included. The interface is designed for desktop and phones. Engine and import diagnostics have Persian display translations. Mobile navigation contains focus, routes identify the current page, and saved changes and public scoreboards have assistive announcements. [FEATURES.md](FEATURES.md) records supported behavior and platform boundaries.
 
 Named personal designs complement 50 theme presets with game collections for all 14 activities. Original court diagrams, paddles, chess pieces, Persian geometry and other vector artwork sit on paper, wood, felt, tile and other material treatments. Theme Studio recommends related choices and lets you search the full catalog. The selected identity appears in creation, the workspace, match cards and scorekeeping.
 

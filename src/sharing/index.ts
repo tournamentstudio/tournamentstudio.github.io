@@ -741,6 +741,19 @@ export function remapRecipeReferences(
         ]),
       ),
       lateEntries: [],
+      ...(config.swiss.federation
+        ? {
+            federation: {
+              ...config.swiss.federation,
+              ...(config.swiss.federation.pairingOrder
+                ? {
+                    pairingOrder:
+                      config.swiss.federation.pairingOrder.map(resolve),
+                  }
+                : {}),
+            },
+          }
+        : {}),
       ...(config.swiss.acceleration
         ? {
             acceleration: {
@@ -986,7 +999,14 @@ export async function decodePatch(
 }
 
 export async function encodeRecipe(tournament: Tournament): Promise<string> {
-  return tournament.stages.length === 1
+  const stage = tournament.stages[0];
+  const legacyShape =
+    tournament.stages.length === 1 &&
+    stage.participantIds.length === tournament.participants.length &&
+    stage.participantIds.every(
+      (id, index) => id === tournament.participants[index].id,
+    );
+  return legacyShape
     ? encodeLegacyRecipe(tournament)
     : (await import("./recipes")).encodeStageRecipe(tournament);
 }

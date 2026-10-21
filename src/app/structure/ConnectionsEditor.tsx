@@ -39,11 +39,22 @@ export function ConnectionsEditor({
   const chosenSource = available.some((item) => item.id === sourceId)
     ? sourceId
     : (available[0]?.id ?? "");
-  const draftStage = {
-    ...stage,
-    sources,
-    participantIds: sources.length ? [] : stage.participantIds,
-  };
+  const draftStage = dirty ? structuredClone(stage) : stage;
+  if (dirty) {
+    draftStage.sources = sources;
+    draftStage.participantIds = sources.length
+      ? []
+      : tournament.participants
+          .filter((participant) => participant.status === "active")
+          .map((participant) => participant.id);
+    delete draftStage.config.manualQualifiers;
+    if (draftStage.config.swiss?.federation)
+      delete draftStage.config.swiss.federation.pairingOrder;
+    if (sources.length && draftStage.config.swiss) {
+      draftStage.config.swiss.lateEntries = [];
+      delete draftStage.config.swiss.acceleration;
+    }
+  }
   const draft = {
     ...tournament,
     stages: tournament.stages.map((item) =>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Upload, LockKeyhole, Check, Copy, FileCheck2 } from "lucide-react";
 import type { Tournament } from "../domain/types";
 import { parseTournament } from "../domain/validate";
@@ -19,6 +19,11 @@ import { Field, Modal, Notice, ErrorText } from "../components/ui";
 import { Bracket } from "../components/Bracket";
 import { useI18n } from "../i18n";
 import { QRImport } from "./QRImport";
+import { requiresCompetitionWorker } from "../workers/competition-task";
+import {
+  CompetitionTaskNotice,
+  useCompetitionTask,
+} from "../workers/use-competition-task";
 export function ImportCenter({
   initialCode = "",
   current,
@@ -56,6 +61,11 @@ export function ImportCenter({
   }>();
   const [error, setError] = useState<unknown>();
   const [busy, setBusy] = useState(false);
+  const computationScope = useMemo(
+    () => ({ text, file, secret }),
+    [text, file, secret],
+  );
+  const computation = useCompetitionTask(current, computationScope);
   async function inspect(raw = text) {
     setBusy(true);
     setError(undefined);
@@ -142,8 +152,17 @@ export function ImportCenter({
         setPatch(packet);
       } else if (/^TSR[12]:/.test(code.replace(/\s/g, ""))) {
         value = await decodeRecipe(code);
-        if (value.stages.length === 1)
-          value = generateStage(value, value.stages[0].id);
+        if (value.stages.length === 1) {
+          const generated = requiresCompetitionWorker(value, value.stages[0].id)
+            ? await computation.run({
+                kind: "draw",
+                tournament: value,
+                stageId: value.stages[0].id,
+              })
+            : generateStage(value, value.stages[0].id);
+          if (!generated) return;
+          value = generated;
+        }
         setPatch(undefined);
       } else if (code.startsWith("{")) {
         value = parseTournament(code);
@@ -189,6 +208,7 @@ export function ImportCenter({
       onClose={onClose}
     >
       <ErrorText error={error} />
+      <CompetitionTaskNotice task={computation} />
       {merge && current ? (
         <PatchMergeReview
           key={`${merge.packet.id}:${current.revision}`}

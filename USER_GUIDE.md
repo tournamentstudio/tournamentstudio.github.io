@@ -87,7 +87,7 @@ promise of the same rendering speed on every device.
 
 ## Review Swiss rounds, challenges and timed runs
 
-For Swiss, finish the current round before generating another. Use the latest
+For General Swiss, finish the current round before generating another. Use the latest
 unplayed-round editor to review all pairings together; each eligible entrant must
 appear once, repeated/forbidden opponents are refused, and a BYE must be fresh.
 Confirm clearing that round's saved schedule after changing pairs. Balanced side
@@ -1031,8 +1031,37 @@ Outside text inputs, Ctrl+S or Command+S downloads a tournament backup. Ctrl or
 Command+Z opens the session Undo review; Shift+Z or Ctrl+Y opens Redo. Normal
 editing already saves through the local repository.
 
-For the exact supported subset and remaining gaps, consult
+For the exact supported policies and platform boundaries, consult
 [FEATURES.md](FEATURES.md).
+
+## Use Dutch chess pairings
+
+1. Create a Swiss chess tournament and open **Structure**. Reset its first draw
+   before play if Quick Create already generated it.
+2. Set participant seeds in the initial ranking order. In Rules, use one point
+   for a win, half a point for a draw, zero for a loss and a single game per match.
+3. Open **Swiss sides and late entry**. Choose **FIDE Dutch 2026**, record the
+   initial color from the organizer's draw, then **Apply Swiss policy**. Remove
+   generic forbidden-pair rules first. Selecting this mode clears draft side
+   preferences and fixed-group acceleration; incompatible scoring is reported.
+4. Generate the draw. **Fixed tournament pairing numbers** shows the frozen
+   order. **Dutch round pairings** shows white and black; opponents and colors
+   come from the same engine and cannot be changed manually in this mode.
+5. Record every result, including draws or a specific unplayed forfeit ruling,
+   then generate the next round. A canceled game records no played color or
+   opponent result. A pairing failure leaves the saved competition unchanged.
+
+Withdrawals retain their number and past results. Enable late entry when needed;
+admit new players between completed rounds with zero points for missed rounds.
+They receive new pairing numbers at the end. Changing a displayed seed later
+does not renumber the tournament. Large draws run in a cancelable worker; closing
+the workspace or canceling discards unfinished calculations.
+
+The mode uses the locally bundled `bbp-6.0.0-ts1` engine and works offline after
+caching. It applies the 2026 Dutch pairing/color rules with the documented
+correction. It does not claim independent FIDE software endorsement, submit
+ratings or implement every federation acceleration and tie-break convention.
+General Swiss remains available for custom points and manual pairing policies.
 
 ## Organizer records and spreadsheets
 
@@ -1060,7 +1089,7 @@ Under Competition links, map recurring participants to the same directory member
 
 Use shared venue names for physical resources used by several competitions. The shared schedule checks venue, referee and mapped-entrant rest conflicts, including possible entrants in later matches. Edit the source tournament to resolve a conflict. The table shows up to 1,000 conflicts per pass; fix the listed problems and check again.
 
-Event presentation shows filtered public standings and branding. Download printable event creates a standalone HTML file. Download event package includes all linked competitions; private packages need a secret. Import event previews the package and creates independent copies. Duplicate for next season keeps rules and entrants while resetting results, schedules and adjustments.
+Event presentation shows filtered public standings and branding. Download printable event creates a standalone HTML file. Download event package includes all linked competitions; private packages need a secret. Import event previews the package and creates independent copies. Duplicate for next season keeps rules, entrants and player metric definitions while resetting results, schedules, adjustments and recorded player observations. Swiss pairing numbers and late-entry credits reset too. A sourced Swiss stage drops an acceleration group tied to last season's qualifiers; choose its new group after qualification. Ordinary event import keeps recorded history.
 
 ## Reuse designs and transfer without a shared browser
 

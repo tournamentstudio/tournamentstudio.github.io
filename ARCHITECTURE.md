@@ -88,7 +88,7 @@ triple-elimination bracket. With no withdrawals, every nonchampion records three
 losses. An odd field gives the bye to an entrant with the fewest previous byes,
 then more losses, then a lower seed.
 
-The Swiss search is bounded at 150,000 search nodes. It reports an impossible
+The General Swiss search is bounded at 150,000 search nodes. It reports an impossible
 pairing or search-limit error rather than silently inserting a rematch. Score
 proximity is a deterministic search preference, not a claim of globally optimal
 pairing or federation compliance. Withdrawn entrants are excluded from future
@@ -98,8 +98,8 @@ exactly once, respecting rematch/forbidden-pair rules and one fresh BYE. It clea
 that round's schedule after confirmation. Standalone Swiss stages can admit new
 names with explicit missed-round point credits capped at one win per missed
 round. Credits do not invent opponent results or Buchholz evidence. The named
-fixed-group-v1 acceleration policy is described below. Federation-specific
-pairing/color algorithms and certification are not supplied.
+fixed-group-v1 acceleration policy is described below. FIDE Dutch 2026 is a
+separate policy with its own joint opponent/color engine, described below.
 
 Free-for-all heats do not automatically merge into a final. Add a destination
 stage and qualification rule for a final. A capacity that creates a one-entrant
@@ -737,6 +737,41 @@ and propagate unknown arrival times after missing segments. No geocoding or road
 data is fetched. CSV rendering is a separate adapter; the domain validator does
 not depend on UI or document-export code. Normal saves remove mappings for
 explicitly deleted entrants/venues while retaining network geometry and history.
+
+## FIDE Dutch 2026 pairing
+
+`src/engine/fide-dutch.ts` adapts the optional `fide-dutch-2026` policy to the
+locally compiled BBP Pairings engine. `bbp-6.0.0-ts1` identifies the exact release
+and exchange-order correction. Build provenance, source, compiler version and
+licenses are in [scripts/fide/README.md](scripts/fide/README.md). The policy
+implements the [Dutch rules effective February 2026](https://handbook.fide.com/chapter/C0403202602).
+This is an implementation claim, not independent FIDE software endorsement.
+
+Initial participant seed order, or an explicit manual order, becomes an
+immutable list of tournament pairing numbers at round one. Withdrawals retain
+their number and history; zero-credit late entrants append a new number. The
+organizer records the initial color draw before generation. BBP decides both
+opponents and colors; General Swiss side balancing is not applied afterward.
+TRF input contains synthetic numbered names and actual played, drawn, forfeit,
+bye or absent-round records. Private names and metadata never enter the compiled
+runtime. Output must cover every eligible entrant exactly once and have the
+right number of byes before any matches are returned.
+
+This mode requires single-game scoring, draws, and 1/0.5/0 points. It refuses
+generic acceleration, arbitrary forbidden pairs, point adjustments and nonzero
+late-entry credits. Manual opponent/color changes cannot bypass the declared
+engine. The app's existing standings policies remain explicit local policies;
+selecting Dutch pairing does not silently claim all FIDE rating or tie-break
+reporting conventions. Burstein, federation-specific acceleration variants and
+rating submission are outside this named policy.
+
+The compiled module uses plain JavaScript with dynamic execution disabled,
+bounded input, a 2 MiB stack and a 256 MiB memory ceiling. It needs no network,
+filesystem or WebAssembly CSP exception. Browser generation, advancement,
+simulation and recipe reconstruction run in a cancelable competition worker.
+Canceled, failed or stale jobs cannot save a result. The synchronous engine
+contract remains available for tests and non-UI callers. Large pairing calls
+can take seconds; format capacity is not a speed guarantee.
 
 ## Collections, display options and bounded work
 

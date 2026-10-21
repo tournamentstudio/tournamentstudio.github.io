@@ -410,6 +410,12 @@ function clearDownstream(
     if (downstreamStages.has(item.id)) {
       item.status = "draft";
       item.participantIds = [];
+      if (item.config.swiss) {
+        if (item.config.swiss.federation)
+          delete item.config.swiss.federation.pairingOrder;
+        item.config.swiss.lateEntries = [];
+        delete item.config.swiss.acceleration;
+      }
     } else if (item.id === stage.id) item.status = "active";
     if (item.id === stage.id || downstreamStages.has(item.id))
       delete item.metadata.championId;
@@ -446,6 +452,17 @@ export function recordResult(
       revision: tournament.revision,
       matchId,
       matches: JSON.parse(JSON.stringify([match, ...impact])) as JsonValue,
+      swissPolicies: tournament.stages
+        .filter(
+          (item) =>
+            item.config.swiss &&
+            (item.id === stage.id ||
+              impact.some((affected) => affected.stageId === item.id)),
+        )
+        .map((item) => ({
+          stageId: item.id,
+          policy: JSON.parse(JSON.stringify(item.config.swiss)) as JsonValue,
+        })),
     });
     tournament.metadata.correctionRecovery = recovery.slice(-5);
     clearDownstream(tournament, match, impact);
@@ -533,6 +550,17 @@ export function changeMatchState(
       revision: tournament.revision,
       matchId,
       matches: JSON.parse(JSON.stringify([match, ...impact])) as JsonValue,
+      swissPolicies: tournament.stages
+        .filter(
+          (item) =>
+            item.config.swiss &&
+            (item.id === stage.id ||
+              impact.some((affected) => affected.stageId === item.id)),
+        )
+        .map((item) => ({
+          stageId: item.id,
+          policy: JSON.parse(JSON.stringify(item.config.swiss)) as JsonValue,
+        })),
     });
     tournament.metadata.correctionRecovery = recovery.slice(-5);
     clearDownstream(tournament, match, impact);

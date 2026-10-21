@@ -12,6 +12,7 @@ export default tseslint.config(
       "playwright-report/**",
       "test-results/**",
       ".local/**",
+      "src/vendor/bbp/dutch.js",
     ],
   },
   js.configs.recommended,

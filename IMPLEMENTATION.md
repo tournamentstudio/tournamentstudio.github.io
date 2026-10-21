@@ -8,9 +8,9 @@ The starting local folder and GitHub repository were empty on 20 October 2026.
 - [x] Implement IndexedDB persistence, revisions, vaults, and portable data
 - [x] Build operator workspace, theme controls, and local presentation
 - [x] Exercise offline editing, cross-profile sharing, and privacy boundaries
-- [x] Document supported behavior and remaining work
+- [x] Document supported behavior and platform boundaries
 - [x] Finish browser validation, including corrected assertion reruns
-- [x] Configure the main-branch GitHub Pages release workflow
+- [x] Configure local builds and GitHub Pages publication from main/docs
 
 ## Working implementation
 
@@ -33,7 +33,7 @@ manual registration/result packets work without a backend. Vault documents and
 their revision snapshots are encrypted. Public projections exclude referee
 secrets and private notes.
 
-## Validation checkpoint
+## Initial validation checkpoint
 
 As of 20 October 2026:
 
@@ -58,18 +58,52 @@ Gol Ya Pooch groups and playoffs, Swiss with 17 entrants and five rounds,
 cross-profile imports, encrypted recovery, update conflicts, safe corrections,
 local presentation updates, Persian mobile layout, and cached offline editing.
 
-## Remaining work
+## Completion checkpoint, 21 October 2026
 
-The main product gaps are exact stage-slot mappings and wildcard comparison,
-aggregate ties, richer battle-royale scoring, complete Persian diagnostics,
-event/season collections, large-list rendering, and broader graphic exports.
-The feature matrix records narrower UI and format limits in
-[FEATURES.md](FEATURES.md).
+The initial stage-slot, wildcard, aggregate, battle-royale, localization,
+collection, rendering and export gaps were implemented in later revisions.
+Multi-format predictions, private player observations, signed packets and
+organizer-entered travel networks are also working. [FEATURES.md](FEATURES.md)
+records each supplied policy and its bounds.
 
-GitHub Pages routing, base-path handling, and the deployment workflow are
-configured. Every main-branch deployment runs the checks and 19 Chromium cases
-before publishing. Actual deployment outcomes and source revisions are recorded
-in the repository's GitHub Actions runs; a workflow file alone does not prove
-that publication succeeded.
+The final two partial feature rows have working implementations:
+
+- FIDE Dutch 2026 uses the compiled local BBP engine with a pinned exchange-order
+  correction. It retains pairing numbers, assigns opponents and colors together,
+  handles withdrawals and zero-credit late entry, and runs in cancelable workers.
+- Mobile focus containment, inert backgrounds, current-page semantics, route
+  titles/focus, section announcements and public scoreboard announcements are
+  implemented for English and Persian. Browser accessibility-tree assertions and
+  keyboard tests cover their behavior.
+
+New regression coverage also checks fresh-season resets, Swiss correction
+recovery, source qualifier changes and recipes with subsets or manual order.
+Previous policies remain recoverable when an upstream correction invalidates a
+Swiss stage. Repeated events keep player metric definitions and clear last
+season's observations.
+
+Local type checking, lint, production build and all 991 unit/integration tests
+passed. The full Chromium, Firefox and WebKit run passed 595 cases, with two
+camera-fixture cases skipped on Firefox and WebKit. All 150 rounds in 30
+deterministic tournaments matched native BBP opponents and colors. The final
+27-case structure/acceleration/reset run passed in all three browsers, including
+six new checks for resetting and redrawing qualified Swiss entrants. Separate
+golden fixtures cover the intentional local
+exchange-order correction. The 21 focused pairing/worker browser cases passed
+in Chromium, Firefox and WebKit, including cached offline generation and
+cross-profile reconstruction. A 512-player engine check completed six rounds;
+draws took 5.3 to 8.9 seconds on the local desktop, which is why browser work is
+cancelable and isolated from the interface.
+
+No software feature row is currently marked partial or unimplemented. Static
+hosting excludes central accounts, remote synchronization and password recovery.
+FIDE endorsement, human assistive-device speech-quality audits and independent
+certification are not claimed. These are external verification boundaries,
+not hidden implementations.
+
+GitHub Actions is disabled. There are no repository CI workflows. Tests and
+builds run locally; GitHub Pages publishes the checked-in static output from
+`main/docs`. A release is verified by its Pages deployment state and the hashes
+of the files served at the production URL.
 
 User constraints: work on main, keep existing history, use the configured user author, no coauthor trailers, commit subjects under 50 characters.

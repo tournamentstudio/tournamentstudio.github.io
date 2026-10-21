@@ -1,4 +1,42 @@
 export const swissTranslations: Record<string, string> = {
+  "Generated FIDE rounds require their original pairing numbers.": "دورهای ساخته‌شده فیده باید شماره‌های زوج‌بندی اولیه خود را حفظ کنند.",
+  "The FIDE pairing engine reached its memory or computation limit. Reduce the field or round count.": "موتور زوج‌بندی فیده به محدودیت حافظه یا محاسبه رسیده است. تعداد شرکت‌کنندگان یا دورها را کاهش دهید.",
+  "FIDE Dutch requires single-game scoring, draws, and 1 / 0.5 / 0 match points.":
+    "سامانه هلندی فیده به بازی تک‌دست، امکان تساوی و امتیاز ۱ برای برد، ۰٫۵ برای تساوی و ۰ برای باخت نیاز دارد.",
+  "FIDE Dutch cannot combine generic acceleration, side preferences, or forbidden pairs.":
+    "سامانه هلندی فیده با شتاب عمومی، ترجیح سمت یا رویارویی ممنوع ترکیب نمی‌شود.",
+  "FIDE Dutch late entrants must receive zero points for missed rounds.":
+    "شرکت‌کننده دیرهنگام در سامانه هلندی فیده باید برای دورهای ازدست‌رفته امتیاز صفر بگیرد.",
+  "FIDE Dutch does not accept standings point adjustments.":
+    "سامانه هلندی فیده تعدیل امتیاز جدول را نمی‌پذیرد.",
+  "FIDE pairing numbers must list every stage entrant exactly once.":
+    "شماره‌های زوج‌بندی فیده باید هر شرکت‌کننده مرحله را دقیقاً یک بار شامل شوند.",
+  "FIDE Dutch requires ranked or manual initial order.":
+    "سامانه هلندی فیده به ترتیب اولیه رتبه‌بندی‌شده یا دستی نیاز دارد.",
+  "FIDE Dutch pairings and colors are assigned by the declared engine and cannot be edited manually.":
+    "زوج‌بندی و رنگ‌های هلندی فیده با موتور اعلام‌شده تعیین می‌شوند و قابل ویرایش دستی نیستند.",
+  "The FIDE system, initial color, and pairing numbers are fixed after the first draw. Reset the stage before changing them.":
+    "سامانه فیده، رنگ اولیه و شماره‌های زوج‌بندی پس از قرعه نخست ثابت می‌شوند. پیش از تغییر آن‌ها مرحله را بازنشانی کنید.",
+  "Choose the FIDE Dutch pairing policy.":
+    "سیاست زوج‌بندی هلندی فیده را انتخاب کنید.",
+  "The FIDE pairing round is outside the declared tournament.":
+    "شماره دور زوج‌بندی فیده خارج از محدوده دورهای اعلام‌شده مسابقات است.",
+  "The FIDE match history has an invalid entrant or round.":
+    "سابقه دیدارهای فیده شامل شرکت‌کننده یا دور نامعتبر است.",
+  "The FIDE history assigns an entrant twice in one round.":
+    "در سابقه فیده یک شرکت‌کننده دو بار در یک دور حضور دارد.",
+  "Complete every previous FIDE round before drawing the next round.":
+    "پیش از قرعه دور بعد، همه دورهای قبلی فیده را کامل کنید.",
+  "FIDE Dutch needs a played, drawn, or unplayed forfeit ruling for every completed game.":
+    "هلندی فیده برای هر دیدار کامل‌شده به نتیجه بازی انجام‌شده، تساوی یا حکم باخت بدون بازی نیاز دارد.",
+  "The FIDE result must identify one winner or an explicit draw.":
+    "نتیجه فیده باید یک برنده یا تساوی صریح را مشخص کند.",
+  "The FIDE Dutch engine could not produce a complete legal pairing. Review the results, active entrants, and round count.":
+    "موتور هلندی فیده نتوانست زوج‌بندی قانونی کامل بسازد. نتایج، شرکت‌کنندگان فعال و تعداد دورها را بررسی کنید.",
+  "The FIDE pairing input exceeds its safe format limits.":
+    "ورودی زوج‌بندی فیده از محدودیت‌های ایمن قالب فراتر رفته است.",
+  "The FIDE pairing engine returned invalid output.":
+    "موتور زوج‌بندی فیده خروجی نامعتبر برگرداند.",
   "Swiss acceleration needs a fixed proper subset of starting entrants and must end before the final round.":
     "شتاب سوئیسی به یک زیرگروه ثابت از شرکت‌کنندگان آغازین نیاز دارد و باید پیش از دور پایانی تمام شود.",
   "Swiss acceleration is fixed after the first draw. Reset the stage before changing it.":
