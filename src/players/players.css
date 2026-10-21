@@ -1,0 +1,102 @@
+.player-statistics-studio {
+  min-width: 0;
+}
+.player-statistics-studio .section-heading > div {
+  min-width: 0;
+}
+.player-statistics-studio p,
+.player-statistics-studio bdi,
+.player-event-form p,
+.player-event-form bdi {
+  overflow-wrap: anywhere;
+}
+.player-statistics-studio .button-row {
+  flex-wrap: wrap;
+}
+.player-statistics-studio .button {
+  white-space: normal;
+  height: auto;
+  min-height: 40px;
+}
+.player-metric-list {
+  margin-block: 1.2rem;
+}
+.player-metric-list ul {
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.6rem;
+}
+.player-metric-list li {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  justify-content: space-between;
+  padding-block: 0.4rem;
+  border-bottom: 1px solid var(--line);
+}
+.player-metric-list li > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.player-statistics-studio .table-scroll table {
+  min-width: 640px;
+}
+.player-timeline {
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 1rem;
+}
+.player-timeline > li {
+  border: 1px solid var(--line);
+  border-inline-start: 4px solid var(--forest);
+  border-radius: 12px;
+  padding: 1rem;
+  min-width: 0;
+}
+.player-event-heading {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
+}
+.player-event-heading strong {
+  min-width: 0;
+}
+.player-review-warning {
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-inline-start: 4px solid var(--forest);
+}
+.player-private-note {
+  font-size: 0.9rem;
+}
+.player-event-form .form-grid > *,
+.player-metric-form .form-grid > *,
+.player-filters > * {
+  min-width: 0;
+}
+.player-event-form input,
+.player-event-form select,
+.player-event-form textarea,
+.player-metric-form input,
+.player-metric-form select,
+.player-filters select {
+  min-width: 0;
+  width: 100%;
+}
+@media (max-width: 600px) {
+  .player-event-form .form-grid,
+  .player-metric-form .form-grid,
+  .player-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .player-statistics-studio .button-row > .button {
+    flex: 1 1 100%;
+  }
+  .player-statistics-studio .table-scroll {
+    max-width: 100%;
+  }
+}

@@ -669,6 +669,25 @@ cost per kilometer. Preview a venue allocation with conflict checks and a stated
 search outcome. It estimates repeated base-to-venue journeys, not road routes or
 the actual itinerary between successive matches. Edit aggregate venues per leg.
 
+For a journey between venues, open **Schedule > Offline routes and itineraries**.
+Add named locations and route links with known distance and duration. Mark a link
+as bidirectional only when it works both ways. Map each entrant's home and each
+venue to a location. Choose an entrant, departure time, shortest-distance or
+shortest-time objective, cost per kilometer and optional return home.
+
+The itinerary follows saved confirmed bookings, including individual aggregate
+legs. Rest is reserved before travel between matches. It reports late arrivals,
+overlapping bookings, missing mappings and disconnected paths. After an unknown
+trip, later arrival times stay unknown. It does not reschedule matches or fetch
+maps, traffic or driving directions. Costs and travel durations use the values
+you supplied. Incomplete totals are labeled as partial.
+
+Export the itinerary as CSV or the network as JSON. Network files include private
+location names and home mappings. Import requires a preview and explicit
+replacement; mappings must reference this tournament's entrant and venue IDs.
+Deleting a node requires confirmation and removes its links and mappings. Previous
+saved revisions remain recoverable. Public tournament exports omit the network.
+
 ## Change the appearance
 
 Open **Theme Studio** to see choices related to your game. Every activity has at
@@ -828,13 +847,76 @@ Map each entrant explicitly to an existing identity or a new one. Equal names do
 not establish identity. Confirm replacement when updating a source; its previous
 state remains recoverable in History.
 
-Before any match in a generated single-elimination stage starts, build a prediction
-for every played bracket path and freeze it. Export its TSB1 packet for manual
-collection. Imported entries require acknowledgement that identity and claimed
-freeze time are unverified. The local leaderboard gives one point per correctly
-predicted completed winner and shared ranks for equal points. Draw changes retain
-old entries but exclude incompatible ones. These records are private tournament
-metadata; explicit records exports contain the selected names and predictions.
+In **Statistics**, choose a generated stage and enter a prediction name. Select
+the winner or draw for every match. Bracket choices determine future opponents,
+including loser paths and conditional resets. Multi-entrant matches use a full
+placement order; tied places use ranks such as 1, 1, 3. Freeze the completed entry
+before recorded play. Swiss, three-loss and challenge formats cover only the
+current generated round; make a separate entry after the next round is drawn.
+
+Export the TSB1 code/file for manual collection. Imported entries require
+acknowledgement that identity and claimed freeze time are unverified. A correct
+outcome earns one point; a placement prediction needs the entire ranking to match.
+An administrative or manual ruling without a complete finishing order voids the
+placement prediction instead of inventing positions from placeholder scores.
+Equal totals share rank. Use the leaderboard scope selector to compare entries
+from the same stage/round and packet version. Structure or scoring-rule changes
+retain old entries but exclude incompatible ones. Legacy single-elimination
+packets still import. All entries are private tournament metadata; explicit
+prediction exports contain their selected names and picks.
+
+## Record individual player observations
+
+Add actual roster players in **Participants**, then open **Statistics > Player
+statistics**. Load metric suggestions for the sport or define a numeric metric
+with its unit, bounds and sum/average/min/max aggregation. Choose **Record player
+event**, then select the match, team, roster player and metric. Enter the observed
+value and, if useful, elapsed seconds, period and private notes.
+
+These observations do not alter official match scores. Missing observations are
+not counted as zero. Filter the timeline and totals by player or match. Use
+**Review player event** to correct, remove or restore a record with a reason.
+Changing a completed result, match entrants or a roster can move observations to
+**Needs review**. They stay in history but leave totals until reviewed and saved
+again. The first official result keeps observations for the same entrants.
+
+**Export player CSV** asks you to confirm the private export. Full private
+backups retain the observations and audit trail. Public links, spectator screens,
+recipes and visual exports omit player observations and roster identities.
+
+## Sign and verify portable packets
+
+Open **Share Center > Signed packets and trusted keys**. Enter a separate secret
+and create a signing key. Download its encrypted backup and export the public key.
+Keep the backup and secret apart. The private key is available only in this tab;
+leaving Share Center, explicit lock or 15 inactive minutes discards it. Recover
+the encrypted backup with its secret to sign again.
+
+Paste a supported portable code, or load an offline registration/result packet,
+and sign it. You can sign an encrypted code without exposing its contents. The
+recipient verifies the TSS1 packet, sees its key fingerprint, then reviews the
+extracted import or downloads the contents for the relevant workspace importer.
+Verification does not automatically accept a result or update.
+
+To trust a public key, compare the complete fingerprint with the sender through
+an independently trusted conversation, then enter that fingerprint and a local
+label. A public key included in a packet starts untrusted. Trust changes update
+other open tabs in this browser profile. Signatures prove key possession, not
+human identity or when the packet was created. Ordinary revision and duplicate
+checks still apply. Removing local trust does not revoke distributed packets.
+
+## Configure accelerated Swiss pairing
+
+Before the first draw, open **Structure > Swiss sides and late entry** and enable
+**Use temporary pairing points**. Set the opening-round count and bonus. The
+default fixed group is the higher-seeded half; expand the group to change members.
+It must contain at least one entrant and fewer than the full starting field, and
+the bonus must end before the final round. Apply the policy before drawing.
+
+The bonus influences pairing only. It never changes official points, Buchholz,
+win totals or bye priority. Group membership and bonus lock after drawing; later
+admissions receive no acceleration. This named local policy is not a federation
+pairing certification.
 
 ## Exchange registrations without a server
 

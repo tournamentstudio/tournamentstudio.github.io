@@ -876,8 +876,8 @@ function Studio({
                     void refresh();
                   }
                 }}
-                onImport={() => {
-                  setImportCode("");
+                onImport={(code = "") => {
+                  setImportCode(code);
                   setImportOpen(true);
                 }}
                 secret={secret}

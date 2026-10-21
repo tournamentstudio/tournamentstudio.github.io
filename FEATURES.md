@@ -28,7 +28,8 @@ succeeded.
 | Groups and pools | Implemented | Balanced snake distribution, uneven groups, round robin within each group, group standings, configurable qualifiers per group. |
 | GSL groups | Implemented | Groups of exactly four with openers, winners match, elimination match and qualification decider. Field size must be divisible by four. |
 | Swiss | Implemented | Score-ordered deterministic pairing, no rematches, fresh BYEs, side preferences, optional standalone late entries with explicit missed-round credits, and a validated editor for the latest unplayed round. Pairing failures are reported. |
-| Swiss federation rules | Partially implemented | Generic balanced side preferences and explicit late-entry credits are available. No federation certification, federation-specific color rules or accelerated pairing. |
+| Swiss acceleration | Implemented | Named fixed-group-v1 policy assigns virtual pairing points to an explicit starting group for opening rounds. The group and bonus lock after drawing; official points, tie-breaks and bye order stay unchanged. Recipes remap group identities. |
+| Swiss federation rules | Partially implemented | Generic balanced side preferences, late-entry credits and named acceleration are available. Federation-specific pairing/color algorithms and certification are not supplied. |
 | Free-for-all | Implemented | More than two entrants per match, balanced heats, repeated rounds, placement scores and ties. A one-entrant heat is rejected. |
 | Battle royale scoring | Implemented | Multi-entrant heats with placement awards, measured eliminations/survival values and weighted dimensions. Tied placements average the awards of occupied positions. Organizers enter the evidence; no game-server feed is required. |
 | Gauntlet | Implemented | Lower seeds play first; each winner meets the next higher seed. |
@@ -72,7 +73,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for algorithms and measured engine tests.
 | Geographic distance rules | Implemented | Version 5 knockout draws use manual base coordinates and an inclusive minimum/maximum kilometer range. Independent winners/losers round limits and existing final/third-place targets hold for every possible outcome. Checked jointly with pots, affiliations, pins and BYEs. Coordinates stay out of public snapshots. |
 | Venue-distance restrictions | Implemented | Version 6 assigns existing courts, tables or rooms to selected knockout match positions and checks inclusive base-to-venue distance limits for every possible entrant. Covers winners, losers, final, reset and third-place slots, including automatic advances. Scheduling retains the assigned venue; public copies omit coordinates. |
 | Automatic knockout venue selection | Implemented | Preview candidate venues for selected winners, losers, final, reset and third-place slots. A bounded deterministic search retains fixed assignments and checks all possible entrant paths. Optional availability testing finds a fresh whole-tournament schedule on a copy; saved times are not reserved or changed. Explicit application saves ordinary v6 rules. |
-| Travel routes and cost optimization | Partially implemented | Preview venue assignments for up to 12 scheduled unplayed matches with confirmed entrants. Minimize base-to-venue spherical distances using explicit route-factor, speed and cost assumptions, with availability/conflict checks. Bounded search reports whether optimality was proved. No road routing, geocoding, itinerary optimization or measured travel time. |
+| Travel routes and cost optimization | Implemented | Bounded venue assignment for up to 12 scheduled matches using explicit spherical-distance assumptions, plus a private offline network of up to 128 locations and 512 directed/bidirectional links. Enter distances and durations, map homes/venues, then choose shortest-distance or shortest-time paths through confirmed bookings, including aggregate legs and return trips. Rest, late arrivals, overlap, missing links and unscheduled stops are reported. CSV/JSON export and reviewed network import work. No supplied road map, geocoding, traffic or measured travel time. |
 | Draw safety | Implemented | Played/live stages cannot regenerate silently. Dependent generated stages block unsafe regeneration. |
 | Draw preview and animation | Implemented | Group and knockout previews validate before application. An animated draw ceremony replays the exact preview order with manual, auto, replay and keyboard controls; it never changes the draw or results. |
 | Tournament simulator | Implemented | Produces synthetic results in a separate preview; does not save them to the working tournament. |
@@ -172,7 +173,8 @@ Theme collections:
 | Capability | Status | Actual behavior |
 | --- | --- | --- |
 | Sport presets | Implemented | Generic, football, futsal, basketball, volleyball, tennis, table tennis, badminton, chess, esports, racing, board games, quiz/academics and Gol Ya Pooch. |
-| Sport-specific statistics | Implemented | Typed entrant-level measured/judge/placement dimensions with sum/mean/min/max summaries, including fouls, possession, eliminations, survival and lap times when entered. Missing measurements stay missing; no player-event feed is invented. |
+| Sport-specific statistics | Implemented | Typed entrant-level measured/judge/placement dimensions and private roster-player observations with sport templates and custom numeric metrics. Sum/mean/min/max summaries use actual entered evidence. Missing measurements stay missing. |
+| Player-event timeline | Implemented | Match/team/player identity, period, elapsed time, notes and recorded value; private totals, match history and CSV. Corrections/removal/restoration keep reasons and prior values. Result or roster changes quarantine affected observations for review. Public projections omit the entire extension. Limits: 50 metrics, 5,000 events and 30 prior edits per event, plus tournament revisions. |
 | Custom reusable sport presets | Implemented | Named local library with save, apply, import/export and delete. Presets contain rules, entrant kind, duration and theme ID; no entrants, results or raster assets. Applying replacement rules is blocked after play. |
 | Gol Ya Pooch teams and rosters | Implemented | Default three-player rule; organizer enters the actual player names and roles in Participants. |
 | Gol Ya Pooch quick scoring | Implemented | Enter totals and confirm the result through the normal match engine. |
@@ -199,6 +201,7 @@ Theme collections:
 | Protected vault | Implemented | Encrypted current document and every revision command/checkpoint, secret required to open and explicit lock. Protected library entries omit private title, sport and format metadata. |
 | Inactivity locking | Implemented | Protected tournament/event tabs lock after 15 inactive minutes by default, with off/1/5/15/30/60 settings. Trusted input resets only that tab; incoming saves do not. Lock discards decrypted previews and unconfirmed drafts, retains confirmed encrypted writes, and guards late callbacks. |
 | Cryptography | Implemented | AES-256-GCM, random salts/nonces, PBKDF2-SHA256 at 600,000 iterations and authenticated contexts. |
+| Signed packets and trusted keys | Implemented | TSS1 uses ECDSA P-256/SHA-256 around bounded portable data, including encrypted codes. Public-key trust requires a separately confirmed fingerprint. Private keys stay in memory with encrypted backups and explicit/inactivity locks. Verification leads to extraction and normal import review, never automatic approval. No claim of verified human identity, trustworthy timestamps or remote revocation. |
 | Password reset | Unsupported due to static-hosting constraints | There is no account or recovery authority. An encrypted archive needs its correct secret. |
 | Snapshot link and text code | Implemented | Compressed, versioned data-bearing fragment and `TS1` code with integrity checks, Unicode and optional encryption. |
 | Separate-secret encrypted sharing | Implemented | Link, code or archive can require a separately supplied secret. |
@@ -225,10 +228,11 @@ Theme collections:
 | Participant/match CSV and schedule ICS | Implemented | Portable tabular data and calendar events, with formula/injection defenses. |
 | Scoreboard images, posters and slide files | Implemented | SVG/PNG scoreboards, champion posters and paginated standings. Selected presentation scenes export as a ZIP of standalone SVGs, manifest and offline HTML viewer. These are snapshots; no PPTX or running countdown is implied. |
 | Statistics | Implemented | Recorded wins/losses/draws, win percentage, scores, difference, points, recent results and a points chart; BYEs do not inflate played totals. |
-| Elo, rating history, prediction brackets | Implemented | Configurable Elo from completed played/drawn two-entrant matches, explicit cross-tournament identity mappings and TSH1 result packets. Frozen single-elimination prediction brackets use TSB1 packets and a local leaderboard. Imported identity/time claims are unverified; other prediction formats are not supplied. |
+| Elo and rating history | Implemented | Configurable Elo from completed played/drawn two-entrant matches, explicit cross-tournament identity mappings and TSH1 result packets. |
+| Multi-format predictions | Implemented | TSB1 version 2 supports generated static stages and dynamic-round scopes: winner/loser paths, draws, conditional resets and full placement rankings with ties. Swiss, three-loss and challenge formats predict only the generated round. Exact correct outcomes score one point, with shared ranks and separate scope/schema leaderboards. Legacy version-1 packets remain readable. Imported identity/time claims remain unverified. |
 | Events and seasons | Implemented | Collections, divisions, explicit shared directory, weighted standings, reasoned adjustments, shared schedule conflicts, public presentation, archive/restore and encrypted packages. Reviewed promotion/relegation creates new independent league divisions; source seasons remain unchanged. |
 | English/Persian interface | Implemented | Bilingual main screens, RTL, locale formatting, mixed-script names, bundled fonts, generated match labels and mapped engine/import diagnostics. Unknown external errors retain their original details after a Persian explanation. |
-| Keyboard and screen-reader support | Partially implemented | Native controls, linked field hints, dialog focus trapping/restoration and ordering alternatives. Targeted keyboard and automated AA checks cover both languages; a complete manual WCAG 2.2 AA audit remains. |
+| Keyboard and screen-reader support | Partially implemented | Native controls, linked field hints, dialog focus trapping/restoration and ordering alternatives. Targeted keyboard and automated AA checks cover both languages, including new player, prediction, signature and route forms. ACCESSIBILITY.md records repeatable checks and outstanding human assistive-device audits. |
 | Reduced motion | Implemented | Presentation respects OS preference and the theme setting. |
 | Offline PWA | Implemented | Manifest, local icons, app-shell precache, update prompt and offline state. Initial caching must finish before offline use. Browser test results are reported separately. |
 | GitHub Pages configuration | Implemented | Static hash routes, owner/repository-derived base and local build publication from main/docs. No repository CI workflows. Actual publication depends on GitHub permissions/settings. |
@@ -242,12 +246,12 @@ Theme collections:
 ## Remaining boundaries
 
 The working policies above do not imply federation certification or support for
-every tournament convention. Specific extensions still absent are accelerated
-or federation-specific Swiss rules, predictions outside single elimination,
-a player-event statistics timeline and trusted signatures.
-Road routing, automated video/game verification and certified timing are not
-provided. The accessibility work has targeted automated and keyboard coverage;
-it is not an independent WCAG certification.
+every tournament convention. Federation-specific Swiss pairing/color algorithms,
+automated video/game verification and certified timing are not supplied.
+Travel paths require organizer-entered network data; live maps, geocoding,
+traffic and measured travel times are not supplied. Accessibility has targeted
+automated and keyboard coverage; human assistive-device audits in
+ACCESSIBILITY.md remain and no independent WCAG certification is claimed.
 
 These are distinct from the hosted services this static application deliberately
 does not supply. New formats and rule variants need explicit contracts and tests

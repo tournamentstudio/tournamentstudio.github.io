@@ -1,15 +1,22 @@
 import type { Tournament } from "../domain/types";
-import { hasMatchEvidence } from "../engine/match-evidence";
+import { tournamentMatchEvidence } from "../engine/match-evidence";
 import { canonicalize } from "../security/codec";
 import { compareRevisions } from "../sharing/history-diff";
+import { playerEventMatchIds } from "../players/model";
 
 export function restorationImpact(current: Tournament, target: Tournament) {
   const changes = compareRevisions(current, target, true);
   const structural =
     canonicalize(current.rules) !== canonicalize(target.rules) ||
     canonicalize(current.stages) !== canonicalize(target.stages);
+  const hasEvidence = tournamentMatchEvidence(current);
+  const playerMatches = new Set(playerEventMatchIds(current));
+  const playerRecordsChanged =
+    canonicalize(current.metadata.playerStatistics ?? null) !==
+    canonicalize(target.metadata.playerStatistics ?? null);
   const affected = current.matches.filter((match) => {
-    if (!hasMatchEvidence(match)) return false;
+    if (!hasEvidence(match)) return false;
+    if (playerRecordsChanged && playerMatches.has(match.id)) return true;
     const old = target.matches.find((entry) => entry.id === match.id);
     if (!old || structural) return true;
     const competitionState = (entry: typeof match) => ({

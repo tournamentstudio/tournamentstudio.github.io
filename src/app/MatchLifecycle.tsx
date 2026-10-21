@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Match, Tournament } from "../domain/types";
 import { changeMatchState, getCorrectionImpact } from "../engine";
-import { hasMatchEvidence } from "../engine/match-evidence";
+import { tournamentMatchEvidence } from "../engine/match-evidence";
 import { ErrorText, Field, Notice } from "../components/ui";
 import { generatedMatchLabel, useI18n } from "../i18n";
 
@@ -22,7 +22,7 @@ export function MatchLifecycle({
   const [confirm, setConfirm] = useState(false);
   const [error, setError] = useState<unknown>();
   const affected = [match, ...getCorrectionImpact(tournament, match.id)].filter(
-    hasMatchEvidence,
+    tournamentMatchEvidence(tournament),
   );
   function apply(confirmed = false) {
     setError(undefined);

@@ -1,4 +1,6 @@
 import { validateCustomFields } from "./custom-fields";
+import { validatePlayerStatistics } from "../players/model";
+import { readRouteNetwork } from "../scheduling/route-network";
 import { z } from "zod";
 import { validateResult } from "../scoring";
 import { timingSchema } from "../timing/model";
@@ -19,7 +21,7 @@ import {
   overlaySchema,
   themeDesignSchema,
 } from "./display-options";
-import type { JsonValue, Tournament } from "./types";
+import type { JsonValue, Match, Tournament } from "./types";
 import { advancementErrors } from "./advancement";
 import { swissPolicyErrors, swissPolicySchema } from "./swiss";
 import {
@@ -567,6 +569,15 @@ export function validateTournament(input: unknown): Tournament {
   }
   const document: Tournament = parsed.data;
   assertUnique(document.participants, "participant");
+  for (const participant of document.participants) {
+    if (
+      new Set(participant.roster.map((player) => player.id)).size !==
+      participant.roster.length
+    )
+      throw new Error(
+        "Roster player identifiers must be unique within each team.",
+      );
+  }
   assertUnique(document.stages, "stage");
   assertUnique(document.matches, "match");
   assertUnique(document.schedule.resources, "resource");
@@ -928,7 +939,32 @@ export function validateTournament(input: unknown): Tournament {
   if (handled !== document.matches.length)
     throw new Error("Match dependencies must not contain a cycle.");
   validateCustomFields(document);
+  validatePlayerStatistics(document);
+  if (document.metadata.travelNetwork !== undefined) readRouteNetwork(document);
+  recoveredMatches(document);
   return document;
+}
+
+export function recoveredMatches(document: Tournament): Match[] {
+  if (document.metadata.correctionRecovery === undefined) return [];
+  const parsed = z
+    .array(
+      z
+        .object({
+          at: z.string().datetime({ offset: true }),
+          revision: z.number().int().min(0),
+          matchId: z.string().min(1).max(160),
+          matches: z.array(matchSchema).max(20000),
+        })
+        .strict(),
+    )
+    .max(5)
+    .safeParse(document.metadata.correctionRecovery);
+  if (!parsed.success)
+    throw new Error(
+      "The retained match recovery data is invalid. Restore a valid backup before changing protected results.",
+    );
+  return parsed.data.flatMap((record) => record.matches) as Match[];
 }
 
 export function parseTournament(text: string): Tournament {

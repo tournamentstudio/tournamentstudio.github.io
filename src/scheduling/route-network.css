@@ -1,0 +1,32 @@
+.route-network-studio {
+  min-width: 0;
+}
+.route-network-studio > section {
+  margin-block-start: 1rem;
+}
+.route-network-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: 0.8rem;
+}
+.route-network-studio input,
+.route-network-studio select,
+.route-network-studio textarea {
+  min-width: 0;
+  max-width: 100%;
+}
+.route-network-studio .field {
+  min-width: 0;
+}
+.route-network-studio p,
+.route-network-studio label,
+.route-itinerary strong {
+  overflow-wrap: anywhere;
+}
+.route-itinerary {
+  padding-inline-start: 1.4rem;
+}
+.route-itinerary li {
+  padding-block: 0.8rem;
+  border-bottom: 1px solid var(--line);
+}

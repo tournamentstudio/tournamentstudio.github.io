@@ -6,7 +6,7 @@ import {
   aggregateScores,
 } from "../domain/aggregate";
 import { getCorrectionImpact, recordResult } from "../engine";
-import { hasMatchEvidence } from "../engine/match-evidence";
+import { tournamentMatchEvidence } from "../engine/match-evidence";
 import { saveAggregateProgress } from "../engine/aggregate";
 import { ErrorText, Field, Modal, Notice } from "../components/ui";
 import { generatedMatchLabel, useI18n } from "../i18n";
@@ -72,7 +72,7 @@ export function AggregateMatchControl({
     policy.legs +
     (policy.tieBreak === "extra-leg" && regulationTied && !awayWinner ? 1 : 0);
   const tied = total.length === 2 && total[0] === total[1];
-  const impact = getCorrectionImpact(doc, match.id).filter(hasMatchEvidence);
+  const impact = getCorrectionImpact(doc, match.id).filter(tournamentMatchEvidence(doc));
   function commit(result: MatchResult, confirmed = false) {
     try {
       const next = recordResult(doc, match.id, result, confirmed);

@@ -15,6 +15,10 @@ import { scheduleTranslations } from "./schedule-messages";
 import { competitionTranslations } from "./competition-messages";
 import { golTranslations } from "./gol-messages";
 import { swissTranslations } from "./swiss-messages";
+import { playerTranslations } from "./player-messages";
+import { predictionTranslations } from "./prediction-messages";
+import { signatureTranslations } from "./signature-messages";
+import { routeTranslations } from "./route-messages";
 import { aggregateLadderTranslations } from "./aggregate-ladder-messages";
 import {
   advancementTranslations,
@@ -35,6 +39,10 @@ const messages = {
   ...competitionTranslations,
   ...golTranslations,
   ...swissTranslations,
+  ...playerTranslations,
+  ...predictionTranslations,
+  ...signatureTranslations,
+  ...routeTranslations,
   ...aggregateLadderTranslations,
 };
 const terms: Record<string, string> = {

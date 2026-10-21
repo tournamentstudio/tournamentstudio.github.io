@@ -97,8 +97,9 @@ can replace only the latest unplayed round, covering every eligible entrant
 exactly once, respecting rematch/forbidden-pair rules and one fresh BYE. It clears
 that round's schedule after confirmation. Standalone Swiss stages can admit new
 names with explicit missed-round point credits capped at one win per missed
-round. Credits do not invent opponent results or Buchholz evidence. Federation
-color rules, acceleration and certification are not supplied.
+round. Credits do not invent opponent results or Buchholz evidence. The named
+fixed-group-v1 acceleration policy is described below. Federation-specific
+pairing/color algorithms and certification are not supplied.
 
 Free-for-all heats do not automatically merge into a final. Add a destination
 stage and qualification rule for a final. A capacity that creates a one-entrant
@@ -582,12 +583,13 @@ precision. At most 16 imported sources and 2,048 explicitly mapped identities
 are kept. Equal names never merge automatically. TSH1 packets contain actual
 results, not trusted source identity.
 
-Single-elimination predictions freeze complete picks before local play starts.
-Their draw hash derives from source paths, not later resolved slots. TSB1 packets
+Legacy version-1 single-elimination predictions freeze complete picks before local
+play starts. Their draw hash derives from source paths, not later resolved slots. TSB1 packets
 claim a freeze time but cannot prove it or an author identity. Imported entries
 require acknowledgement. One correct completed winner earns one point; equal
 points share rank. Changed draws preserve incompatible entries but exclude them
 from the active leaderboard. Local records stay in private tournament metadata.
+Version-2 multi-format predictions are described below; legacy packets remain readable.
 
 ## Theme identities
 
@@ -693,6 +695,48 @@ Participant table adapters live in `src/app/participants` and the bounded Spread
 The sharing layer supports multi-stage recipes and optional revision archives. Selective update review uses a verified common base and replays result operations through the competition engine. Persistence rechecks the current hash/revision before a transactional write. Imports with history commit document and snapshot records together; a quota failure leaves neither partial table behind.
 
 Visual exports use public projections before SVG composition, font embedding, rasterization or ZIP creation. Localization maps diagnostics and generated labels at display time without rewriting stored documents or changing hashes. Dialog focus handling and field descriptions are shared UI behavior.
+
+## Predictions, player observations and signatures
+
+`src/records/prediction-model.ts` defines legacy and version-2 packet schemas and
+scope checks. `prediction-rows.ts` resolves hypothetical winner and loser sources
+without borrowing actual results. Static formats cover the generated stage;
+Swiss, three-loss elimination and challenge formats cover the generated round.
+Conditional reset outcomes and full placement rankings are explicit picks.
+Fingerprints bind relevant structure and scoring rules. Leaderboards compare
+only the same scope/schema and retain equal ranks for equal correct totals.
+Evidence guards include paused timers, aggregate legs and retained player events.
+
+`src/players/model.ts` owns observations independent of team score calculations.
+The domain validator checks its known metadata extension. Repository saves and
+engine corrections reconcile references before validation. A changed result,
+downstream match identity or roster removal quarantines affected events for
+review; audit snapshots survive. Restoration and selective merge reviews include
+player evidence. Public projections omit the entire extension and roster IDs.
+
+`src/security/signatures.ts` uses Web Crypto P-256 and strict key packages.
+`src/sharing/signatures.ts` signs canonical opaque payloads, including encrypted
+codes, then verifies before extraction. The Share Center does not auto-apply a
+verified payload. The existing import pipeline remains the authority for schema,
+identity, revision and conflict checks. A separate IndexedDB preference holds
+public keys only; independently confirmed fingerprints establish local trust.
+Signing keys remain non-exportable in memory after generation/recovery and are
+discarded on lock, unmount or inactivity. JavaScript cannot promise physical
+memory erasure.
+
+Swiss `fixed-group-v1` acceleration adds a fixed virtual bonus to selected starting
+entrants for declared opening rounds. The pairing engine uses these adjusted
+scores while the standings and bye order use actual points. The group and bonus
+lock after generation; recipes remap IDs. This policy is deliberately named and
+does not claim federation compliance.
+
+`src/scheduling/route-network.ts` validates a private bounded network and computes
+deterministic shortest paths using organizer-entered distance/time weights.
+Itinerary calculations expand aggregate-leg bookings, reserve rest before travel
+and propagate unknown arrival times after missing segments. No geocoding or road
+data is fetched. CSV rendering is a separate adapter; the domain validator does
+not depend on UI or document-export code. Normal saves remove mappings for
+explicitly deleted entrants/venues while retaining network geometry and history.
 
 ## Collections, display options and bounded work
 

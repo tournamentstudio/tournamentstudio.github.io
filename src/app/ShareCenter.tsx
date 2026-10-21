@@ -37,6 +37,7 @@ import { encodeEmbeddedCode } from "../sharing/embedded";
 import { prepareTransfer } from "../sharing/transfer";
 import { TransferAssistant, type TransferRequest } from "./TransferAssistant";
 import { QRTransfer } from "./QRTransfer";
+import { SignatureStudio } from "../sharing/SignatureStudio";
 
 export function ShareCenter({
   tournament: doc,
@@ -45,7 +46,7 @@ export function ShareCenter({
 }: {
   tournament: Tournament;
   secret?: string;
-  onImport: () => void;
+  onImport: (code?: string) => void;
 }) {
   const { t, locale } = useI18n();
   const [scope, setScope] = useState<"public" | "private">("public");
@@ -180,7 +181,7 @@ export function ShareCenter({
             )}
           </p>
         </div>
-        <button className="button secondary" onClick={onImport}>
+        <button className="button secondary" onClick={() => onImport()}>
           <Download size={16} />
           {t("Import a package", "ورود بسته")}
         </button>
@@ -607,10 +608,11 @@ export function ShareCenter({
           </div>
         </section>
       </div>
+      <SignatureStudio sourceCode={code} onPreview={onImport} />
       <Notice>
         {t(
-          "Read-only is a viewing mode, not copy protection. No share method here proves the sender’s identity. Checksums detect damage; they do not authenticate an organizer.",
-          "فقط‌خواندنی حالت نمایش است، نه جلوگیری از کپی. هیچ روش اشتراکی هویت فرستنده را ثابت نمی‌کند. چک‌سام خرابی را تشخیص می‌دهد، نه هویت برگزارکننده را.",
+          "Read-only is a viewing mode, not copy protection. Checksums detect damage. Signed packets can authenticate a previously trusted key; they do not independently establish a person's identity or authority.",
+          "فقط‌خواندنی حالت نمایش است، نه جلوگیری از کپی. چک‌سام خرابی را تشخیص می‌دهد. بسته امضاشده می‌تواند کلیدی را که قبلاً مورد اعتماد قرار گرفته تأیید کند؛ هویت یا اختیار شخص را به‌طور مستقل ثابت نمی‌کند.",
         )}
       </Notice>
     </div>

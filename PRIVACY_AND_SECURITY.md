@@ -45,6 +45,7 @@ The projection removes:
 - Match `private` fields, including a concealed object's position.
 - Referee names, private match notes, hand-by-hand referee logs, Gol clock/possession state and private timed-run splits/evidence.
 - Challenge invitation notes and state, local Elo source mappings and prediction records.
+- Player-statistics identities, observations, private notes, quarantined/deleted events and their audit history.
 - Team rosters, check-in state, tags, and custom participant metadata.
 - Participant base coordinates, including latitude and longitude.
 - Venue coordinates attached to courts, tables or rooms.
@@ -99,7 +100,23 @@ Update packets must match the local tournament ID, base revision, and base hash.
 
 Public updates omit private fields by using the public projection. Private update packets include private data. Select update encryption and share the secret separately when confidentiality is needed.
 
-The application does not implement digital signatures, trusted referee identities or remote revocation. TSH1 rating sources and TSB1 prediction packets are also unsigned. Local prediction freezing blocks late entry through the current UI, but an imported timestamp or device clock cannot prove when a prediction was made. Manual timing evidence is an organizer record, not automated game or video verification.
+Ordinary snapshots, rating sources, prediction packets, registration responses and result proposals remain unsigned unless the sender deliberately wraps them in a signed packet. Local prediction freezing blocks late entry through the current UI, but an imported timestamp or device clock cannot prove when a prediction was made. Manual timing evidence is an organizer record, not automated game or video verification.
+
+## Signed packets and local trust
+
+Share Center can create an ECDSA P-256 signing key, sign a portable code or offline registration/result JSON packet, and verify a received `TSS1` packet. Web Crypto signs the UTF-8 canonical envelope with SHA-256. The envelope binds the complete payload, algorithm, format version, public key and fingerprint. Verification rejects changed payloads, mismatched keys, unsupported versions and invalid signatures. It does not execute or automatically import the contents.
+
+A valid signature proves that the corresponding private key signed those bytes. It does not establish a person's real-world identity, referee authority, signing time or truth of the submitted result. A public key carried by a packet starts untrusted. To trust it, compare the complete 64-character SHA-256 fingerprint with the intended signer through a separate trusted channel, enter that fingerprint, assign a local label and confirm the match. The fingerprint is the hash of the raw uncompressed public key, not a hash of its label. An attacker who controls both the message and the channel used for comparison can substitute a key.
+
+The trusted-key list stores up to 100 public keys, fingerprints, local labels and confirmation times in IndexedDB preferences. This list is outside tournament vaults and is readable to anyone using the same browser profile. It is not a certificate authority or a shared directory. Confirmed changes update trust labels in other same-origin tabs. Removing a key removes local trust; it does not revoke existing signatures, delete another recipient's copy or send a remote revocation notice.
+
+An unlocked private signing key is non-exportable through Web Crypto and held in the current Share Center's memory. It is not stored in IndexedDB or local storage. Key creation briefly exports its private material in memory to make a `TSSK1` encrypted backup, then imports a non-exportable signing key. Backups use the authenticated encryption and password derivation described above. Exported `TSPK1` public keys contain no private material. The unlocking secret is cleared from the form after recovery; the encrypted backup and private key are discarded when locking, leaving Share Center, closing the tab or reaching 15 minutes without trusted input. Download the encrypted backup before leaving, and retain its secret separately. There is no lost-key recovery service.
+
+The signing-key timer is independent of the tournament vault setting and fixed at 15 minutes. Sleeping tabs check the deadline when focus returns. As with vaults, clearing application references cannot guarantee physical erasure of JavaScript memory, and an unlocked or compromised browser can request signatures. A person who steals the private key and secret can produce signatures indistinguishable from the owner's.
+
+Signing does not encrypt the payload. Encrypt private packages first, then sign the encrypted portable code; verification preserves that ciphertext without decrypting it. Embedded-key snapshot codes still carry their decryption secret inside the signed payload, so anyone with the complete packet can read them. Offline registration/result JSON packets may include private details and are not encrypted by the signing step.
+
+Payloads are limited to 2 MiB before envelope encoding. Encoded files are bounded at 6 MiB, public-key imports at 4 KiB decoded, and encrypted-key imports at 8 KiB decoded. There are no nested signed envelopes, executable signing extensions or imported algorithm choices. A successful check offers extraction or the existing import preview. The receiving workflow still validates schemas, tournament identity, revisions, duplicates and conflicts, and requires organizer acceptance. Signatures alone do not prevent replay. The application adds no trusted signing timestamp and makes no claim that a signed prediction was created before play.
 
 ## Imported files and assets
 
@@ -128,7 +145,7 @@ Core application scripts, fonts, icons, and styles are bundled. Uploaded content
 
 The vault has no independent cryptographic audit. This is an application-level protection for local documents, not protection against a compromised browser or device.
 
-Trusted digital signatures are not implemented. Inactivity locking defaults to 15 minutes and can be disabled or set to 1, 5, 15, 30 or 60 minutes in Storage Health or vault settings. Trusted user input resets the current tab; incoming scores do not. Expiry clears decrypted previews, unconfirmed forms and session history. Confirmed encrypted writes remain, and a late save cannot reopen the locked view. Sleeping browsers check the deadline when they resume. This is a device-clock safeguard, not protection from someone already using the unlocked tab. Protected presentation windows need their own unlock state; a separate OBS browser process does not inherit another browser's data.
+Tournament vault inactivity locking defaults to 15 minutes and can be disabled or set to 1, 5, 15, 30 or 60 minutes in Storage Health or vault settings. Trusted user input resets the current tab; incoming scores do not. Expiry clears decrypted previews, unconfirmed forms and session history. Confirmed encrypted writes remain, and a late save cannot reopen the locked view. Sleeping browsers check the deadline when they resume. This is a device-clock safeguard, not protection from someone already using the unlocked tab. Protected presentation windows need their own unlock state; a separate OBS browser process does not inherit another browser's data.
 
 Use the explicit lock control when leaving a shared computer. Close other unlocked windows, keep software current, and retain tested backups with their correct secrets.
 
@@ -136,11 +153,21 @@ Use the explicit lock control when leaving a shared computer. Close other unlock
 
 Waiting-list decisions, eligibility, payment status, availability and organizer notes live in participant metadata and are omitted from public projections. The private XLSX export intentionally includes these records and rosters. It does not process payments. Keep the file with other organizer backups.
 
+Player-event records are private organizer evidence. The application removes the complete `metadata.playerStatistics` subsystem and participant rosters from public snapshots, public update projections, spectator displays and public visual exports. There is no public player-statistics opt-in. Full private archives, private codes and encrypted private backups retain these records.
+
+The explicit player CSV export displays a privacy warning and includes active, quarantined and deleted events with captured names and identifiers, period/time, metric, value, unit, private notes, reasons, timestamps and revision counts. Formula-like text is escaped. It does not include every earlier before-value; the private archive retains event history. A result correction or changed roster identity quarantines affected evidence instead of silently assigning it to a different player. Quarantined evidence stays outside totals until an organizer reviews it. Each event retains up to 30 prior versions, with earlier tournament revisions recoverable within the normal history retention limit. Missing observations never become invented statistics.
+
 XLSX imports are limited to 2 MiB compressed and 8 MiB expanded across at most 100 ZIP entries. The reader refuses formulas, external relationships, macros, embedded objects, XML entities, unsafe paths and duplicate cells. Imported workbooks never execute code or load external links.
 
 A revision archive can contain private information deleted from the current tournament but retained in an older revision. Retained-history backups are private; public snapshot archives omit history. History comparisons default to public data; revealing private differences is an explicit local choice. Undo and restoration previews list changed areas and affected started matches without showing private values. The same archive encryption protects every included revision. Public visual exports use a fresh public projection and do not include the private revision table.
 
 ## Events, personal designs and QR transfers
+
+Offline route networks contain organizer-entered location names, entrant-home
+mappings and venue paths. They are private tournament metadata and inherit vault
+and backup protection. Public projections omit them. Explicit route JSON and
+itinerary CSV exports contain private journey details; share them deliberately.
+No maps, geocoding or traffic service receives these inputs.
 
 A protected event encrypts its directory, labels and configuration. Linking an already-protected tournament requires a protected event and an explicit unlock. Event lock clears the open collection and temporary tournament credentials. Decrypted data remains accessible to someone using the unlocked session. Public event projections remove private descriptions and adjustment reasons, and use the tournament public projection for every linked competition. Private event exports always require a separate secret; encrypted imports retain protection.
 

@@ -1,6 +1,6 @@
 import type { Stage, Tournament } from "../../domain/types";
 import { ladderPolicy } from "../../domain/ladder";
-import { hasMatchEvidence } from "../../engine/match-evidence";
+import { tournamentMatchEvidence } from "../../engine/match-evidence";
 
 export function sourceGroups(tournament: Tournament, stage?: Stage): string[] {
   if (!stage) return [];
@@ -57,7 +57,7 @@ export function stageProtection(tournament: Tournament, id: string) {
       descendants.has(stage.id) &&
       tournament.matches.some((match) => match.stageId === stage.id),
   );
-  const played = matches.some(hasMatchEvidence);
+  const played = matches.some(tournamentMatchEvidence(tournament));
   const outcomeConsumers = tournament.stages.some((stage) =>
     stage.sources.some(
       (source) =>

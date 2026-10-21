@@ -627,16 +627,78 @@ An organizer maps every imported entrant to an explicit local identity. Rating
 storage supports 16 sources and 2,048 identities. Starting rating and K remain
 configuration, so the same evidence can be recalculated without rewriting it.
 
-`TSB1` carries a strict version-1 prediction with ID, tournament/stage IDs,
-display name, claimed `frozenAt`, base revision, draw hash and match/winner picks.
-The hash uses source-slot structure instead of later resolved entrants. The local
-single-elimination workflow freezes a complete set before play; imported timing
-and identity claims remain unverified. At most 100 predictions are retained.
+`TSB1` reads legacy version-1 single-elimination predictions and writes version-2
+predictions. Both contain ID, tournament/stage IDs, display name, claimed
+`frozenAt`, base revision and draw hash. Version 2 adds an explicit whole-stage
+or generated-round scope. Picks contain a winner, draw, full placement ranking
+or a conditional reset that will not be needed. Tied placements use competition
+ranks (1, 1, 3). Stage fingerprints bind source-slot structure and scoring rules;
+dynamic-round fingerprints bind actual generated fixtures without depending on
+future pairings or late entrants. Imported time and identity claims remain
+unverified. At most 100 predictions are retained; incompatible scopes and legacy
+scoring have separate leaderboards.
 
 Both packets accept text or text-file input capped at 2 MB and require preview.
 Local records live in private `tournament.metadata.records`, inherit vault/history
 protection, and are excluded from public snapshots. Their explicit packet exports
 do contain the selected names/outcomes or picks. Checksums are not signatures.
+
+## Player observations and Swiss acceleration
+
+Private `metadata.playerStatistics` uses strict version 1 with up to 50 metric
+definitions and 5,000 events. A metric defines integer/decimal input, finite
+bounds, unit and sum/average/min/max aggregation. Each event retains its match,
+team and roster-player IDs, entrant snapshot, captured display labels, value,
+optional elapsed seconds, period and notes. Events have active/deleted/quarantined
+status and up to 30 retained prior edits with reasons. Metric type, unit and
+aggregation cannot change after recorded use. Full private packages and revision
+archives retain this data; public projections and recipes omit it.
+
+Reconciliation before normal saves and engine corrections quarantines observations
+whose match or roster references changed, or whose existing official result was
+changed or removed. The first result does not invalidate observations from the
+same entrants. Quarantined and deleted events remain evidence for draw/freeze
+guards and can be reviewed without silently affecting official scores.
+
+Optional `stage.config.swiss.acceleration` has policy `fixed-group-v1`, positive
+`points`, opening `rounds`, and a distinct proper subset of starting
+`participantIds`. It must end before the final round. IDs remain fixed after the
+first draw and are remapped by recipes. Bonus points affect pairing scores only;
+standings, tie-breaks and the actual-score bye order do not include them.
+
+## Signed portable packets
+
+`TSS1` contains URL-safe base64 canonical JSON with format
+`tournastudio-signed-packet`, version 1, `ECDSA-P256-SHA256`, a strict public JWK,
+its fingerprint, opaque canonical portable payload and a 64-byte signature.
+The signature covers every body field. The fingerprint is the hexadecimal
+SHA-256 of the uncompressed raw P-256 public key. Accepted payloads are bounded
+portable codes or registration/result JSON; nesting signatures or signing keys
+is rejected. The inner payload can be encrypted without decrypting it to sign.
+Verification proves key possession and unchanged bytes, not identity or time.
+
+`TSPK1` carries a versioned public-key package. `TSSK1` carries a versioned private
+JWK package inside the existing authenticated encryption envelope with package
+context. Private keys are imported non-exportable for use in memory. Only public
+keys, user labels and claimed confirmation dates persist in the separate local
+trust list. Trust requires an independently confirmed fingerprint. These outer
+packets do not bypass inner schema, revision, duplicate or conflict checks.
+
+## Offline route network
+
+Private `metadata.travelNetwork` uses version 1 with up to 128 nodes and 512 edges.
+Nodes contain ID/name. Edges contain ID/from/to, nonnegative finite `km` and
+`minutes`, and `bidirectional`. Home mappings bind participant IDs to node IDs;
+venue mappings bind resource IDs to node IDs. Duplicate identities or mappings,
+self-links and unknown endpoints fail validation. Portable JSON input is capped
+at 512 KiB. Route data is omitted from public projections and recipes.
+
+Shortest paths use distance or duration, then the other measure, link count and
+stable ID ordering for ties. Itineraries expand saved aggregate-leg bookings,
+include only confirmed entrants, and preserve uncertainty after missing routes.
+Deleting an entrant or resource removes only its mapping on a normal write;
+network geometry remains and the prior revision is recoverable. Exact update
+packets still retain the sender's target hash without implicit changes.
 
 ## Participant tables
 

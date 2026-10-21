@@ -24,6 +24,8 @@ import {
 } from "./revision-store";
 export type { RevisionEntry } from "./revision-store";
 import { restorationImpact } from "./restoration";
+import { reconcilePlayerStatistics } from "../players/model";
+import { reconcileRouteNetwork } from "../scheduling/route-network";
 
 export interface LibraryEntry {
   id: string;
@@ -396,8 +398,7 @@ export const repository = {
     action = "Updated tournament",
     secret?: string,
   ): Promise<Tournament> {
-    const validated = validateTournament(input);
-    const current = await db.documents.get(validated.id);
+    const current = await db.documents.get(input.id);
     if (!current || current.revision !== expectedRevision)
       throw new RevisionConflictError(
         expectedRevision,
@@ -405,6 +406,12 @@ export const repository = {
       );
     // Unlocking is checked on every protected write. A wrong secret never replaces a vault.
     const previous = await openRecord(current, secret);
+    const validated = validateTournament(
+      reconcilePlayerStatistics(
+        previous,
+        reconcileRouteNetwork(previous, input),
+      ),
+    );
     const at = new Date().toISOString();
     const document = await sealDocument({
       ...validated,

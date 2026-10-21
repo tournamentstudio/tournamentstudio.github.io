@@ -10,7 +10,7 @@ import {
   type MetricValues,
 } from "../scoring/metrics";
 import { getCorrectionImpact, recordResult } from "../engine";
-import { hasMatchEvidence } from "../engine/match-evidence";
+import { tournamentMatchEvidence } from "../engine/match-evidence";
 import { Field, Notice, ErrorText, Modal } from "../components/ui";
 import { useI18n, generatedMatchLabel, groupLabel } from "../i18n";
 import { getTheme, themeStyle } from "../themes";
@@ -99,7 +99,7 @@ function StandardMatchControl({
     doc.rules.scoring === "low" ||
     doc.rules.scoring === "time" ||
     doc.stages.find((s) => s.id === match.stageId)?.format === "time-trial";
-  const impact = getCorrectionImpact(doc, match.id).filter(hasMatchEvidence);
+  const impact = getCorrectionImpact(doc, match.id).filter(tournamentMatchEvidence(doc));
   function commit(result: MatchResult, confirmed = false) {
     try {
       const next = recordResult(doc, match.id, result, confirmed);

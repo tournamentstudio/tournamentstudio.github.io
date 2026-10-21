@@ -741,6 +741,15 @@ export function remapRecipeReferences(
         ]),
       ),
       lateEntries: [],
+      ...(config.swiss.acceleration
+        ? {
+            acceleration: {
+              ...config.swiss.acceleration,
+              participantIds:
+                config.swiss.acceleration.participantIds.map(resolve),
+            },
+          }
+        : {}),
     };
   return config;
 }

@@ -1,7 +1,7 @@
 import type { Match, Stage, Tournament } from "../domain/types";
 import { getStandings } from "../standings";
 import { entrant, newMatch } from "./formats";
-import { swissPolicy } from "../domain/swiss";
+import { swissPairingBonus, swissPolicy } from "../domain/swiss";
 import { orientSwissPair } from "./swiss-colors";
 
 export class PairingError extends Error {
@@ -44,21 +44,34 @@ export function swissRound(
       .filter((participant) => participant.status === "active")
       .map((participant) => participant.id),
   );
-  const joined = new Map(swissPolicy(stage).lateEntries.map((entry) => [entry.participantId, entry.joinedRound]));
-  const standings = getStandings(tournament, stage.id).filter((row) =>
-    active.has(row.participantId) && (joined.get(row.participantId) ?? 1) <= round,
+  const joined = new Map(
+    swissPolicy(stage).lateEntries.map((entry) => [
+      entry.participantId,
+      entry.joinedRound,
+    ]),
+  );
+  const standings = getStandings(tournament, stage.id).filter(
+    (row) =>
+      active.has(row.participantId) &&
+      (joined.get(row.participantId) ?? 1) <= round,
   );
   if (standings.length < 2)
     throw new PairingError(
       "Swiss pairing needs at least two active participants.",
     );
   const scores = new Map(
-    standings.map((row) => [row.participantId, row.points]),
+    standings.map((row) => [
+      row.participantId,
+      row.points + swissPairingBonus(stage, row.participantId, round),
+    ]),
   );
-  const ordered = standings.map((row) => row.participantId);
+  const actualOrder = standings.map((row) => row.participantId);
+  const ordered = [...actualOrder].sort(
+    (a, b) => scores.get(b)! - scores.get(a)!,
+  );
   const byeOptions =
     ordered.length % 2
-      ? [...ordered].reverse().filter((id) => !byes.has(id))
+      ? [...actualOrder].reverse().filter((id) => !byes.has(id))
       : [undefined];
   if (!byeOptions.length)
     throw new PairingError(

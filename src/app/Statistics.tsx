@@ -6,10 +6,12 @@ import { useI18n, generatedMatchLabel } from "../i18n";
 import { MetricStatistics } from "../scoring/MetricStatistics";
 import type { EditorProps } from "./Participants";
 import { RecordsStudio } from "../records/RecordsStudio";
+import { PlayerStatisticsStudio } from "../players/PlayerStatisticsStudio";
 export function Statistics(props: EditorProps) {
   return (
     <>
       <StatisticsSummary tournament={props.tournament} />
+      <PlayerStatisticsStudio {...props} />
       <RecordsStudio {...props} />
     </>
   );

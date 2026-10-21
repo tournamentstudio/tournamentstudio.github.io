@@ -26,6 +26,7 @@ import { ScheduleTimeline } from "../scheduling/ScheduleTimeline";
 import { LegScheduleEditor } from "../scheduling/LegScheduleEditor";
 import { legCount } from "../scheduling/legs";
 import { TravelPlanner } from "../scheduling/TravelPlanner";
+import { RouteNetworkStudio } from "../scheduling/RouteNetworkStudio";
 import {
   updateDirectBooking,
   updateScheduleSettings,
@@ -182,6 +183,7 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
       <ScheduleTimeline tournament={doc} onChange={onChange} />
       <LegScheduleEditor tournament={doc} onChange={onChange} />
       <TravelPlanner tournament={doc} onChange={onChange} />
+      <RouteNetworkStudio tournament={doc} onChange={onChange} />
       {stale && (
         <Notice danger>
           <p>

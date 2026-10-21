@@ -2,6 +2,7 @@ import type { ScheduleSettings, Tournament } from "../domain/types";
 import { validateTournament } from "../domain/validate";
 import { hasMatchEvidence } from "../engine/match-evidence";
 import { assignedKnockoutVenue } from "../engine/venue-distance";
+import { reconcileRouteNetwork } from "./route-network";
 
 export function updateScheduleSettings(
   input: Tournament,
@@ -14,7 +15,9 @@ export function updateScheduleSettings(
     throw new Error(
       "Default match duration is locked after play starts. Review individual unfinished bookings instead.",
     );
-  return validateTournament({ ...input, schedule: settings });
+  return validateTournament(
+    reconcileRouteNetwork(input, { ...input, schedule: settings }),
+  );
 }
 
 export function updateDirectBooking(

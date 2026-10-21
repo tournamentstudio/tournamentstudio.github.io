@@ -7,7 +7,8 @@ import type {
   Tournament,
 } from "../domain/types";
 import { validateResult } from "../scoring";
-import { hasMatchEvidence } from "./match-evidence";
+import { tournamentMatchEvidence } from "./match-evidence";
+import { reconcilePlayerStatistics } from "../players/model";
 import { simulatedMetrics, weightedScores } from "../scoring/metrics";
 import { golElapsed } from "../domain/gol";
 import { aggregatePolicyErrors, aggregateScores } from "../domain/aggregate";
@@ -138,13 +139,14 @@ export function generateStage(input: Tournament, stageId: string): Tournament {
   const errors = validateGraph(tournament);
   if (errors.length) throw new Error(errors.join(" "));
   const stage = requireStage(tournament, stageId);
+  const hasEvidence = tournamentMatchEvidence(tournament);
   if (stage.format === "ladder" && readInvitations(stage).length)
     throw new Error(
       "Reset the unplayed challenge stage before replacing its invitation history.",
     );
   if (
     tournament.matches.some(
-      (match) => match.stageId === stageId && hasMatchEvidence(match),
+      (match) => match.stageId === stageId && hasEvidence(match),
     )
   ) {
     throw new Error(
@@ -432,7 +434,7 @@ export function recordResult(
   const stage = requireStage(tournament, match.stageId);
   const normalized = validateResult(match, stage, tournament.rules, result);
   const impact = match.result ? getCorrectionImpact(tournament, matchId) : [];
-  const played = impact.filter(hasMatchEvidence);
+  const played = impact.filter(tournamentMatchEvidence(tournament));
   if (played.length && !confirmInvalidate)
     throw new CorrectionRequiredError(played);
   if (match.result) {
@@ -472,7 +474,11 @@ export function recordResult(
   });
   tournament.history = tournament.history.slice(-500);
   refresh(tournament);
-  return tournament;
+  return reconcilePlayerStatistics(
+    input,
+    tournament,
+    impact.map((item) => item.id),
+  );
 }
 
 export function changeMatchState(
@@ -516,7 +522,7 @@ export function changeMatchState(
   if (match.result && !confirmInvalidate)
     throw new CorrectionRequiredError([
       match,
-      ...impact.filter(hasMatchEvidence),
+      ...impact.filter(tournamentMatchEvidence(tournament)),
     ]);
   if (match.result) {
     const recovery = Array.isArray(tournament.metadata.correctionRecovery)
@@ -562,7 +568,11 @@ export function changeMatchState(
     action: `Changed ${match.label} to ${state}`,
   });
   tournament.history = tournament.history.slice(-500);
-  return tournament;
+  return reconcilePlayerStatistics(
+    input,
+    tournament,
+    impact.map((item) => item.id),
+  );
 }
 
 function resolveMatches(tournament: Tournament): void {

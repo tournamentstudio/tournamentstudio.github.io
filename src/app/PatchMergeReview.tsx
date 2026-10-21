@@ -273,8 +273,8 @@ export function PatchMergeReview({
             <Notice>
               <p>
                 {t(
-                  "These played matches will be reopened or removed because an upstream result changed. The previous saved revision remains in History.",
-                  "این دیدارهای انجام‌شده به علت تغییر نتیجه پیشین بازگشایی یا حذف می‌شوند. نسخه ذخیره‌شده قبلی در تاریخچه می‌ماند.",
+                  "These matches have recorded activity affected by the selected changes. Dependent results may reopen, and player events affected by a result or roster change need review before they count again. The previous saved revision remains in History.",
+                  "این دیدارها فعالیت ثبت‌شده‌ای دارند که تغییرهای انتخابی بر آن اثر می‌گذارد. نتیجه‌های وابسته ممکن است بازگشایی شوند و رویدادهای بازیکن پس از تغییر نتیجه یا ترکیب تیم تا بازبینی دوباره در آمار محاسبه نمی‌شوند. نسخه قبلی در تاریخچه می‌ماند.",
                 )}
               </p>
               <ul>

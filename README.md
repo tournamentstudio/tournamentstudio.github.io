@@ -27,8 +27,10 @@ The application is a static React and TypeScript bundle hosted on GitHub Pages. 
 - Aggregate knockout ties with 2 to 8 legs, per-leg scheduling, optional regulation away-goal tiebreaks and recoverable corrections.
 - Schedules with rest and availability checks, timeline editing, delay previews, bounded scheduling and venue-travel optimization, plus CSV and calendar export.
 - Events and seasons with explicit shared identities, division movement, local Elo histories and portable prediction brackets.
+- Predictions for static stages and generated dynamic rounds, including draws, loser paths, conditional resets and tied multi-entrant placements.
+- Private roster-player observations, sport metric templates, reviewed corrections, player totals and CSV exports.
 
-These are defined local rulesets. Swiss offers constrained score-based pairing, manual review, side preferences and optional late-entry credits without claiming federation certification. Three-loss elimination uses dynamic rounds. Ladders offer adjacent challenges, reviewed invitations or an incumbent queue. Exact policies and limits are in [ARCHITECTURE.md](ARCHITECTURE.md).
+These are defined local rulesets. Swiss offers constrained score-based pairing, manual review, side preferences, optional late-entry credits and fixed-group acceleration without claiming federation certification. Acceleration adds temporary pairing points only; official standings stay unchanged. Three-loss elimination uses dynamic rounds. Ladders offer adjacent challenges, reviewed invitations or an incumbent queue. Exact policies and limits are in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## At the tournament desk
 
@@ -47,6 +49,8 @@ Gol Ya Pooch has a three-player default roster, quick scoring and a detailed ref
 Events & seasons combines weighted placement awards across linked competitions, using explicit identity mappings. Reviewed division movement creates a new season without changing the previous one. Event packages include their competitions and private exports require encryption.
 
 The Share Center recommends transports and can export multipart QR images. QR image decoding is local, and the camera starts only on request. Large lists use bounded pages; restricted draws run in cancelable workers with an explicit fallback when workers are unavailable.
+
+Schedule includes a private offline route network. Enter known locations, link distances and durations, and map entrant homes and venues. The itinerary follows confirmed bookings, reports late or unknown arrivals, and exports CSV. It can choose shortest-distance or shortest-time paths within that entered network; no map, geocoder or traffic service is contacted.
 
 ## Run it locally
 
@@ -87,6 +91,7 @@ Share Center offers:
 - A full `.tourney` backup with optional saved revisions, encrypted together when a secret is selected.
 - A `TSR1` single-stage or `TSR2` multi-stage recipe with structure and settings rather than names or results. Result-specific stage connections require a snapshot.
 - A `TSP1` update packet with optional encryption, exact-base application, and an explicit review for divergent copies with a retained base.
+- A `TSS1` signature around a portable packet, with encrypted signing-key backups and a local list of independently confirmed public keys. Verification still requires normal import review.
 - Export Studio provides SVG/PNG scoreboards, standings and champion posters, standalone printable HTML, and slide archives with an offline viewer. Brackets, CSV, participant XLSX and calendar files are also available. PDF uses the browser's Save as PDF option.
 
 Snapshot links carry their data in the URL fragment. An arbitrary local ID cannot retrieve another person's tournament. Recipients have independent copies, and distributed snapshots cannot be revoked. A read-only preview does not prevent copying.
@@ -117,7 +122,7 @@ The service worker caches the application shell and bundled assets. It offers an
 
 ## Project map
 
-`src/domain` defines and validates data. `src/engine`, `src/scoring`, `src/standings`, and `src/scheduling` implement competition rules independently of React. `src/persistence` handles local transactions, `src/collections` manages events/seasons, `src/records` supplies ratings/predictions, and `src/timing` stores local run clocks. `src/security` and `src/sharing` handle untrusted imports and portable packages. `src/themes`, `src/presentation`, and `src/export` render public views. `src/app` connects these modules to the interface.
+`src/domain` defines and validates data. `src/engine`, `src/scoring`, `src/standings`, and `src/scheduling` implement competition rules independently of React. `src/persistence` handles local transactions, `src/collections` manages events/seasons, `src/records` supplies ratings/predictions, `src/players` stores roster-player observations, and `src/timing` stores local run clocks. `src/security` and `src/sharing` handle untrusted imports and portable packages. `src/themes`, `src/presentation`, and `src/export` render public views. `src/app` connects these modules to the interface.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for contracts and [FEATURES.md](FEATURES.md) for the full status matrix.
 
@@ -125,7 +130,9 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for contracts and [FEATURES.md](FEATURES.
 
 There is no hosted registration service, account system, payment processing, cloud storage, or cross-device live collaboration. Registration and scorekeeper responses are explicit file exchanges.
 
-Remaining extensions include federation-specific Swiss rules, prediction formats beyond single elimination, player-event statistics and trusted signatures. Broadcast overlays and custom design controls are available. Travel planning minimizes spherical base-to-venue estimates under stated speed, route-factor and cost assumptions; it does not calculate roads or a travel itinerary. Venue rules reserve eligible entrants for match slots, including walkovers; they do not estimate actual trips. Public snapshots omit coordinates; private backups retain them. Affiliation protection for a grand final or reset requires distinct labels for all entrants because any pair can reach those matches. Distance protection requires every entrant pair to meet the selected interval. Geographic placement restrictions cover the third-place target; they do not constrain every match in a full classification tree. Counts are capped at 512 entrants and 20,000 matches per document. A 512-entrant round robin exceeds the match cap; the limit is not a promise that every format supports the same field size.
+Federation-specific Swiss certification, automated game/video verification and certified timing are outside the supplied local policies. Accessibility checks and remaining human-device audit steps are documented in [ACCESSIBILITY.md](ACCESSIBILITY.md). A signature proves possession of a key; a separately checked fingerprint is needed to associate it with a person, and timestamps remain claims.
+
+Venue rules reserve eligible entrants for match slots, including walkovers; they do not estimate actual trips. Public snapshots omit coordinates and private route data; private backups retain them. Affiliation protection for a grand final or reset requires distinct labels for all entrants because any pair can reach those matches. Distance protection requires every entrant pair to meet the selected interval. Geographic placement restrictions cover the third-place target; they do not constrain every match in a full classification tree. Counts are capped at 512 entrants and 20,000 matches per document. A 512-entrant round robin exceeds the match cap; the limit is not a promise that every format supports the same field size.
 
 Modern Chromium, Firefox, and WebKit are the browser targets. PWA installation and persistent-storage permission vary by browser. A secure context is required for crypto and service workers; HTTPS and localhost qualify.
 

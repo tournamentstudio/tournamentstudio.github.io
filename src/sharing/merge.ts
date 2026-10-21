@@ -1,8 +1,14 @@
 import type { Match, Tournament } from "../domain/types";
+import { reconcileRouteNetwork } from "../scheduling/route-network";
 import { validateTournament } from "../domain/validate";
 import { getCorrectionImpact, recordResult } from "../engine";
 import { canonicalize } from "../security/codec";
 import { applyPatch, hashDocument, type TournamentPatch } from "./index";
+import { tournamentMatchEvidence } from "../engine/match-evidence";
+import {
+  readPlayerStatistics,
+  reconcilePlayerStatistics,
+} from "../players/model";
 
 export interface PatchReviewEntry {
   index: number;
@@ -144,7 +150,7 @@ function blockedReason(
   }
   if (
     ["sport", "rules"].includes(field) &&
-    current.matches.some((match) => match.result || match.status === "live")
+    current.matches.some(tournamentMatchEvidence(current))
   )
     return "played-rules";
   if (
@@ -305,15 +311,17 @@ export async function previewSelectivePatch(
         throw new Error(
           "The selected result has different entrants from the local match.",
         );
-      if (local.result)
+      if (local.result) {
+        const hasEvidence = tournamentMatchEvidence(next);
         for (const match of getCorrectionImpact(next, id)) {
-          if (["completed", "live", "contested"].includes(match.status))
+          if (hasEvidence(match))
             affected.set(match.id, {
               id: match.id,
               label: match.label,
               status: match.status,
             });
         }
+      }
       next = recordResult(next, id, incoming.result, true);
     }
     const result = next.matches.find(
@@ -333,6 +341,26 @@ export async function previewSelectivePatch(
       : []),
     patch.id,
   ].slice(-500);
+  next = reconcilePlayerStatistics(
+    current,
+    reconcileRouteNetwork(current, next),
+  );
+  const priorEvents = new Map(
+    readPlayerStatistics(current).events.map((event) => [event.id, event]),
+  );
+  for (const event of readPlayerStatistics(next).events) {
+    if (
+      event.status !== "quarantined" ||
+      priorEvents.get(event.id)?.status !== "active"
+    )
+      continue;
+    const match = current.matches.find((item) => item.id === event.matchId);
+    affected.set(event.matchId, {
+      id: event.matchId,
+      label: match?.label ?? event.matchLabel,
+      status: match?.status ?? "pending",
+    });
+  }
   return {
     tournament: validateTournament(next),
     affected: [...affected.values()],

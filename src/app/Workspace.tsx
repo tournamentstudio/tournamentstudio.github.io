@@ -41,7 +41,6 @@ import { MatchControl } from "./MatchControl";
 import { Structure } from "./Structure";
 import { Rules } from "./Rules";
 import { Schedule } from "./Schedule";
-import { Statistics } from "./Statistics";
 import { UndoControls, type UndoActions } from "./UndoControls";
 import { LadderDesk } from "./LadderDesk";
 import { ladderPolicy } from "../domain/ladder";
@@ -52,6 +51,9 @@ import { GameIdentity, ThemeMotif } from "../themes/ThemeMotif";
 import "./game-experience.css";
 const ThemeStudio = lazy(() =>
   import("../themes/ThemeStudio").then((m) => ({ default: m.ThemeStudio })),
+);
+const Statistics = lazy(() =>
+  import("./Statistics").then((module) => ({ default: module.Statistics })),
 );
 const PresentationStudio = lazy(() =>
   import("../presentation/PresentationStudio").then((m) => ({
@@ -105,7 +107,7 @@ export function Workspace({
   tournament: Tournament;
   onChange: (t: Tournament, a: string) => void;
   onImported: (t: Tournament) => void;
-  onImport: () => void;
+  onImport: (code?: string) => void;
   secret?: string;
   isProtected: boolean;
   onProtect: (s: string) => Promise<void>;

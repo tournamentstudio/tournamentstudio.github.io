@@ -15,6 +15,7 @@ async function saved(page: Page) {
   await expect(page.locator(".workspace-fieldset")).not.toBeDisabled();
 }
 async function section(page: Page, name: string) {
+  await page.bringToFront();
   await page
     .getByRole("navigation", { name: "Tournament sections" })
     .getByRole("button", { name, exact: true })
@@ -311,7 +312,7 @@ test("requires downstream confirmation during selective result correction", asyn
     dialog.getByRole("button", { name: "Apply selected changes", exact: true }),
   ).toBeDisabled();
   await expect(
-    dialog.getByText(/These played matches will be reopened/),
+    dialog.getByText(/These matches have recorded activity affected by the selected changes/),
   ).toBeVisible();
   await dialog.getByLabel("Confirm affected match changes").check();
   await dialog
