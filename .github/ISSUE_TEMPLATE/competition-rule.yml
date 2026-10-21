@@ -1,0 +1,27 @@
+name: Propose a competition rule
+description: Explain a pairing, scoring, ranking, or advancement policy.
+title: "[Rule] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check FEATURES.md for current policies and limits. Rules vary between competitions; a worked example helps define the variant you need.
+  - type: textarea
+    id: rule
+    attributes:
+      label: Which rule or format?
+      description: Name the activity and policy. Explain where the existing behavior falls short.
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Worked example
+      description: Use fictional entrants and list the input, pairings or results, and expected output. Include ties, BYEs, or withdrawals if they matter.
+    validations:
+      required: true
+  - type: textarea
+    id: reference
+    attributes:
+      label: Rule source and variants
+      description: Link a public rules document if available, or describe your local convention. Note which options must remain configurable.

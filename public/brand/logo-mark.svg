@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+<title id="title">TournaStudio</title>
+<desc id="desc">A lime tournament bracket on a forest green tile.</desc>
+<g transform="translate(0 0) scale(5.333333333333333)"><rect width="192" height="192" rx="44" fill="#173b32"/><g fill="none" stroke="#dafa91" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"><path d="M49 53h37v86H49M143 53h-25v43H86M118 96v43h25"/></g><circle cx="143" cy="53" r="11" fill="#dafa91"/><circle cx="143" cy="139" r="11" fill="#dafa91"/></g>
+</svg>

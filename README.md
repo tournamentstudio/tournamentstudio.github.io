@@ -1,3 +1,5 @@
+<p><img src="public/brand/logo-mark.svg" width="72" height="72" alt="TournaStudio bracket mark"></p>
+
 # TournaStudio
 
 I built TournaStudio so a tournament can belong to the people running it. Open the app, make a draw, record results, and take the whole competition with you as a file. There is no account, subscription, or application server.
@@ -119,6 +121,14 @@ There is no hosted registration service, account system, payment processing, clo
 Some requested capabilities remain unfinished: road travel and cost optimization, full placement brackets, two-legged ties, full season/event records, prediction brackets, XLSX, slide-file exports, advanced broadcast overlays, and parts of the theme editor. Distances are spherical estimates between entrant bases or from a base to a selected venue, calculated locally without address lookup. Venue rules reserve eligible entrants for match slots, including walkovers; they do not estimate actual trips. Public snapshots omit coordinates; private backups retain them. Affiliation protection for a grand final or reset requires distinct labels for all entrants because any pair can reach those matches. Distance protection requires every entrant pair to meet the selected interval. Placement separation covers the single-elimination third-place match. Counts are capped at 512 entrants and 20,000 matches per document. A 512-entrant round robin exceeds the match cap; the limit is not a promise that every format supports the same field size.
 
 Modern Chromium, Firefox, and WebKit are the browser targets. PWA installation and persistent-storage permission vary by browser. A secure context is required for crypto and service workers; HTTPS and localhost qualify.
+
+## Help shape the project
+
+I welcome fixes, tournament rules with worked examples, Persian translation improvements, and reports from real events. Start with [CONTRIBUTING.md](CONTRIBUTING.md) for setup and local checks. The [issue forms](https://github.com/tournamentstudio/tournamentstudio.github.io/issues/new/choose) help capture a reproducible bug or a proposed rule change.
+
+Use [Discussions](https://github.com/tournamentstudio/tournamentstudio.github.io/discussions) for questions and ideas. [SUPPORT.md](SUPPORT.md) covers common storage, backup and offline questions. Please keep private tournament files and recovery secrets out of public posts; use [SECURITY.md](SECURITY.md) to report a vulnerability privately.
+
+The [brand kit](public/brand/README.md) contains the logo, wordmark and social image, with editable vector sources.
 
 ## License
 

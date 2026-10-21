@@ -1,0 +1,27 @@
+name: Suggest a feature
+description: Describe an organizer or spectator workflow you want to improve.
+title: "[Feature] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check FEATURES.md and existing issues first. TournaStudio runs entirely in the browser without a backend. Describe the workflow you need, including any offline requirements.
+  - type: textarea
+    id: need
+    attributes:
+      label: What are you trying to do?
+      description: Describe the event or task, the obstacle, and any current workaround.
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: What would help?
+      description: Explain the expected behavior and give an example. Mockups are welcome but optional.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Constraints or alternatives
+      description: Optional details about devices, language, privacy, accessibility, or other ways to solve the same problem.

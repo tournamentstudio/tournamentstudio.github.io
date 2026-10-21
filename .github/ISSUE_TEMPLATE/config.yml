@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions and tournament setup
+    url: https://github.com/tournamentstudio/tournamentstudio.github.io/discussions
+    about: Ask for help with a workflow, format, or competition setup.
+  - name: User guide
+    url: https://github.com/tournamentstudio/tournamentstudio.github.io/blob/main/USER_GUIDE.md
+    about: Instructions for creating, scoring, sharing, and restoring tournaments.
+  - name: Private security report
+    url: https://github.com/tournamentstudio/tournamentstudio.github.io/security/advisories/new
+    about: Report a suspected vulnerability without publishing its details.

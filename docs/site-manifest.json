@@ -110,6 +110,30 @@
       "sha256": "321eb72d906d7f8011e1882a2d3d4cf052e1379f6b3cb01f2ee60b4ab6919717"
     },
     {
+      "path": "brand/logo-avatar.png",
+      "sha256": "4a9530a47056473c9d80234784f44a4566eeaa3955ab2ebdcf2a2c2e623d9c68"
+    },
+    {
+      "path": "brand/logo-mark.svg",
+      "sha256": "0b8e7ea1ca7e5e52e4d51935cbe0656aba51373510a3d6c5c74402d180fe8f53"
+    },
+    {
+      "path": "brand/README.md",
+      "sha256": "5b33143f304143b64a82bdce97371f03054152294a3d6a85c2de3997bf42861f"
+    },
+    {
+      "path": "brand/social-card.png",
+      "sha256": "92b88d145b6351f1e8d49afbbd9c4965a1ba8eaea8df8e781064f5fd7b20b403"
+    },
+    {
+      "path": "brand/social-card.svg",
+      "sha256": "c9cb5398a9a0cee0c44a12013c9ae83e10b3d630f8a5108d74ac50f3cabb13d6"
+    },
+    {
+      "path": "brand/wordmark.svg",
+      "sha256": "4376bddb73b60718b204260cd4ff5e3e8548fef0f197bef2bcaf1c4bb08370b6"
+    },
+    {
       "path": "icon-192.png",
       "sha256": "be9df57c45ffae0883d001081624cde9a21d94a0ea3badebdff6e8567b68e24f"
     },
@@ -139,7 +163,7 @@
     },
     {
       "path": "sw.js",
-      "sha256": "240f19cac0cd14959bf036559ed4a4691f68a62b5d14c47a5a613b342188f450"
+      "sha256": "639d040aa1244ada022f85082759657a51be1ec6b4ab3745f0d4aacb32902acb"
     },
     {
       "path": "workbox-2fbc6a65.js",
