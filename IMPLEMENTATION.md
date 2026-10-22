@@ -107,3 +107,38 @@ builds run locally; GitHub Pages publishes the checked-in static output from
 of the files served at the production URL.
 
 User constraints: work on main, keep existing history, use the configured user author, no coauthor trailers, commit subjects under 50 characters.
+
+## Post-release audit, 21 October 2026
+
+The audit reproduced and corrected these defects:
+
+- Persian card names containing half-spaces could widen a 320-pixel screen to
+  405 pixels. Fieldsets now shrink within their parent and legends wrap. Mobile
+  roster names use a full row, with role and removal controls underneath.
+- Presentation schedules and correction reviews displayed generated English
+  match labels in Persian mode. They now use the shared label translator.
+  Countdown seconds, rule values and revision numbers use localized digits.
+- Bracket panning and table arrow keys could change the presentation scene.
+  Scene shortcuts now respect nested controls, and Persian scene direction
+  matches the arrow buttons. Broadcast scores have public status announcements.
+- A delayed file import could replace the preview of a newer selection or
+  display an obsolete error. Results are bound to the selected input and current
+  document; changing either invalidates pending work.
+- Document saves and vault transitions could overwrite concurrent favorite,
+  trash, restore and backup changes. The final IndexedDB transaction now retains
+  the current library metadata.
+- A new schedule's UTC start was interpreted as local wall time. New starts now
+  include their UTC suffix. Start and resource availability inputs convert
+  absolute timestamps to device-local time, and edited values retain their
+  instant across devices. Legacy zone-less timestamps retain their interpretation.
+
+Regression tests cover these cases, including saving and reloading Persian
+forms, delayed valid and invalid imports, and concurrent library operations.
+The feature matrix retains its stated format and static-hosting limits.
+
+The audit browser run passed 631 cases with two camera-fixture skips. After the
+timezone correction, the rebuilt bundle passed all 120 affected scheduling and
+core tournament checks across Chromium, Firefox and WebKit. The final source
+passed 1,005 unit/integration tests, TypeScript checking, lint and production
+build. All four release tests passed; the production dependency audit reported
+zero vulnerabilities. GitHub CI remains disabled.

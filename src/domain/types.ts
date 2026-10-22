@@ -600,7 +600,7 @@ export function createTournament(
       sponsors: [],
     },
     schedule: {
-      startAt: at.slice(0, 16),
+      startAt: `${at.slice(0, 16)}:00.000Z`,
       matchMinutes: 20,
       restMinutes: 10,
       resources: [{ id: uid(), name: "Court 1" }],

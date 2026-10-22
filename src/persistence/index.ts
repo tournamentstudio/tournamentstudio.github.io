@@ -204,6 +204,22 @@ function snapshotFor(record: DocumentRecord, action: string): SnapshotRecord {
   };
 }
 
+function preserveLibraryState(
+  record: DocumentRecord,
+  current?: DocumentRecord,
+): DocumentRecord {
+  if (!current) return record;
+  // Library actions do not change document revisions and can finish while
+  // validation or encryption is running. Read their latest values at commit.
+  return {
+    ...record,
+    favorite: current.favorite,
+    trashedAt: current.trashedAt,
+    lastBackupAt: current.lastBackupAt,
+    lastBackupRevision: current.lastBackupRevision,
+  };
+}
+
 async function storeRecord(
   record: DocumentRecord,
   expectedRevision: number | undefined,
@@ -252,7 +268,7 @@ async function storeRecord(
           current?.revision ?? -1,
         );
       }
-      await db.documents.put(record);
+      await db.documents.put(preserveLibraryState(record, current));
       await db.snapshots.put(snapshot);
       if (checkpoint) await db.snapshots.put(checkpoint);
       if (expired.length)
@@ -694,7 +710,7 @@ export const repository = {
           current.revision,
           latest?.revision ?? -1,
         );
-      await db.documents.put(record);
+      await db.documents.put(preserveLibraryState(record, latest));
       await db.snapshots.bulkPut(snapshots);
     });
     notify(id, document.revision);
@@ -732,7 +748,7 @@ export const repository = {
           current.revision,
           latest?.revision ?? -1,
         );
-      await db.documents.put(record);
+      await db.documents.put(preserveLibraryState(record, latest));
       await db.snapshots.bulkPut(decrypted);
     });
     notify(id, document.revision);

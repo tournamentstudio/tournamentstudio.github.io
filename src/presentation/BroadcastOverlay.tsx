@@ -24,6 +24,10 @@ export function BroadcastOverlay({
     : selectedScoreboardMatch(safe);
   const names = match ? matchNames(safe, match, locale) : [];
   const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
+  const visibleScore = (index: number) =>
+    (match?.status === "live" ? match.liveScores?.[index] : undefined) ??
+    match?.result?.scores[index] ??
+    0;
   return (
     <div
       className={`broadcast-overlay themed ${preview ? "broadcast-preview" : ""}`}
@@ -39,6 +43,16 @@ export function BroadcastOverlay({
       }}
       aria-label={t("Broadcast scoreboard", "تابلو پخش")}
     >
+      <p className="sr-only" role="status" aria-atomic="true">
+        {t("Scoreboard", "تابلو امتیاز")}:{" "}
+        {names
+          .map((name, index) =>
+            safe.presentation.showScores
+              ? `${name}: ${visibleScore(index).toLocaleString(locale)}`
+              : name,
+          )
+          .join("; ")}
+      </p>
       {settings.showTournament && (
         <div className="broadcast-event-name">
           <bdi>{safe.title}</bdi>
@@ -56,13 +70,7 @@ export function BroadcastOverlay({
               </span>
               <strong>
                 {safe.presentation.showScores
-                  ? (
-                      (match.status === "live"
-                        ? match.liveScores?.[index]
-                        : undefined) ??
-                      match.result?.scores[index] ??
-                      0
-                    ).toLocaleString(locale)
+                  ? visibleScore(index).toLocaleString(locale)
                   : "·"}
               </strong>
             </div>

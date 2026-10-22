@@ -23,6 +23,13 @@
 body {
   margin: 0;
 }
+fieldset {
+  min-inline-size: 0;
+}
+legend {
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
+}
 .sr-only {
   position: absolute;
   width: 1px;
@@ -3817,6 +3824,16 @@ kbd {
   }
   .modal .field {
     font-size: 10px;
+  }
+  .roster-row {
+    grid-template-columns: minmax(0, 1fr) 36px;
+    row-gap: 8px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .roster-row > input {
+    grid-column: 1 / -1;
+    width: 100%;
   }
   .modal input,
   .modal select,

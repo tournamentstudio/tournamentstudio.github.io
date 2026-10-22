@@ -18,6 +18,7 @@ import { getTheme, themeStyle } from "../themes";
 import "./presentation.css";
 import { AdvancedSceneContent, type AdvancedScene } from "./advanced-scenes";
 import { BroadcastOverlay } from "./BroadcastOverlay";
+import { generatedMatchLabel } from "../i18n/match-labels";
 
 export const sceneTypes: { id: SceneType; en: string; fa: string }[] = [
   {
@@ -366,7 +367,7 @@ function SceneContent({
             .map((m) => (
               <div key={m.id}>
                 <span>
-                  {m.label}
+                  {generatedMatchLabel(m, locale)}
                   <br />
                   {matchNames(tournament, m, locale).join(" / ")}
                 </span>
@@ -411,9 +412,12 @@ function SceneContent({
         remaining = Math.max(0, duration - elapsed);
       return (
         <div className="presentation-title-scene">
-          <strong className="countdown-time">
+          <strong className="countdown-time" dir="ltr">
             {Math.floor(remaining / 60).toLocaleString(locale)}:
-            {String(remaining % 60).padStart(2, "0")}
+            {(remaining % 60).toLocaleString(locale, {
+              minimumIntegerDigits: 2,
+              useGrouping: false,
+            })}
           </strong>
           <p>
             {remaining
@@ -429,18 +433,21 @@ function SceneContent({
           <p>{scene.text}</p>
           <ul>
             <li>
-              {t("Win points", "امتیاز برد")}: {tournament.rules.pointsWin}
+              {t("Win points", "امتیاز برد")}:{" "}
+              {tournament.rules.pointsWin.toLocaleString(locale)}
             </li>
             <li>
-              {t("Draw points", "امتیاز مساوی")}: {tournament.rules.pointsDraw}
+              {t("Draw points", "امتیاز مساوی")}:{" "}
+              {tournament.rules.pointsDraw.toLocaleString(locale)}
             </li>
             <li>
-              {t("Best of", "بهترین از")}: {tournament.rules.bestOf}
+              {t("Best of", "بهترین از")}:{" "}
+              {tournament.rules.bestOf.toLocaleString(locale)}
             </li>
             {tournament.sport === "gol-ya-pooch" && (
               <li>
                 {t("Target score", "امتیاز هدف")}:{" "}
-                {tournament.rules.targetScore}
+                {tournament.rules.targetScore.toLocaleString(locale)}
               </li>
             )}
           </ul>
@@ -460,7 +467,7 @@ function SceneContent({
       return (
         <div className="presentation-title-scene">
           <div className="champion-mark" aria-hidden="true">
-            1
+            {(1).toLocaleString(locale)}
           </div>
           <p className="presentation-kicker">{t("CHAMPION", "قهرمان")}</p>
           <h1>
@@ -597,24 +604,32 @@ export function Presentation({
   }, [elapsed, playing, scene.duration, scenes.length]);
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return;
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onExit();
+        return;
+      }
+      const control =
+        event.target instanceof HTMLElement
+          ? event.target.closest(
+              "input, select, textarea, button, a, [tabindex]",
+            )
+          : undefined;
       if (
-        event.target instanceof HTMLInputElement ||
-        event.target instanceof HTMLSelectElement ||
-        event.target instanceof HTMLTextAreaElement ||
-        (event.target instanceof HTMLElement &&
-          (event.target.isContentEditable ||
-            (event.target.closest("button, a") && event.key !== "Escape")))
+        safe.presentation.overlay?.enabled ||
+        (control && control !== shell.current) ||
+        (event.target instanceof HTMLElement && event.target.isContentEditable)
       )
         return;
-      if (event.key === "Escape") onExit();
-      if (event.key === "ArrowRight") {
-        setIndex((i) => (i + 1) % Math.max(1, scenes.length));
-        setElapsed(0);
-      }
-      if (event.key === "ArrowLeft") {
+      if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+        event.preventDefault();
+        const forward =
+          event.key === (locale === "fa" ? "ArrowLeft" : "ArrowRight");
         setIndex(
           (i) =>
-            (i - 1 + Math.max(1, scenes.length)) % Math.max(1, scenes.length),
+            (i + (forward ? 1 : -1) + Math.max(1, scenes.length)) %
+            Math.max(1, scenes.length),
         );
         setElapsed(0);
       }
@@ -625,7 +640,7 @@ export function Presentation({
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [onExit, scenes.length]);
+  }, [onExit, scenes.length, locale, safe.presentation.overlay?.enabled]);
   return (
     <div
       ref={shell}
@@ -685,7 +700,7 @@ export function Presentation({
             <span>{safe.title}</span>
             <span>
               {t("LOCAL DISPLAY", "نمایش محلی")} · {t("Rev.", "نسخه")}{" "}
-              {safe.revision}
+              {safe.revision.toLocaleString(locale)}
             </span>
           </div>
           {safe.theme.design?.sponsorPosition === "top" && (
@@ -743,7 +758,7 @@ export function Presentation({
           onClick={() => step(-1)}
           aria-label={t("Previous scene", "نمای قبلی")}
         >
-          ←
+          {locale === "fa" ? "→" : "←"}
         </button>
         <button
           type="button"
@@ -760,7 +775,7 @@ export function Presentation({
           onClick={() => step(1)}
           aria-label={t("Next scene", "نمای بعدی")}
         >
-          →
+          {locale === "fa" ? "←" : "→"}
         </button>
         <span>
           {((index % Math.max(1, scenes.length)) + 1).toLocaleString(locale)} /{" "}

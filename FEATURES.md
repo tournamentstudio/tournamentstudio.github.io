@@ -192,7 +192,7 @@ Theme collections:
 | Save failure recovery | Implemented | Errors are shown; an unsaved copy can be exported or the saved document reloaded. |
 | Revision history | Implemented | Last 50 logical revisions with command deltas and periodic full checkpoints. Restore creates a new revision; individual revisions and retained history can be exported. |
 | Event-sourced history and visual diffs | Implemented | Validated command-v1 updates between checkpoint-v1 documents, full checkpoint every tenth consecutive revision or large change, atomic pruning/rebasing, encrypted protected history and paged revision comparisons. Private fields are hidden by default. |
-| Multi-tab conflicts | Implemented | Expected-revision checks reject stale writes; BroadcastChannel notifications follow the successful transaction. |
+| Multi-tab conflicts | Implemented | Expected-revision checks reject stale writes; BroadcastChannel notifications follow the successful transaction. Document saves and vault transitions retain concurrent favorite, trash, restore and backup changes. |
 | Trash and permanent deletion | Implemented | Restore from trash; separate confirmation before permanent deletion. |
 | Library tools | Implemented | Search, recent/name sorting, grid/list view, favorites, in-progress/trash filters and duplication. |
 | Sport/format library filters | Implemented | Filter local tournaments by sport and any included stage format. Protected library entries omit sport and format metadata. |
@@ -208,7 +208,7 @@ Theme collections:
 | Embedded-key encrypted links | Implemented | TSK1 wraps an encrypted snapshot with a generated 192-bit secret. Anyone holding the full link can decrypt it; the interface explains this before sharing. |
 | `.tourney` archives | Implemented | Validated two-entry ZIP with current document, embedded raster assets, theme and audit entries; optional encryption. |
 | Full revision-table export | Implemented | Optional archive v2 includes the current document and up to 50 retained snapshots. Each revision is validated and hashed; history imports atomically and can remain encrypted. Version 1 archives still import. |
-| Import preview / local copy / fork | Implemented | Preview first; preserve identity for a local copy or assign a new identity for an independent fork. |
+| Import preview / local copy / fork | Implemented | Preview first; preserve identity for a local copy or assign a new identity for an independent fork. Changing the selected input invalidates pending previews and errors from the previous selection. |
 | Replace current document | Implemented | Explicit confirmation and a recoverable previous revision. |
 | Compact recipe | Implemented | TSR1 handles single stages and TSR2 recreates multi-stage configuration with new IDs, positional entrant references and venue placeholders. Names, results, sponsor content and assets are omitted. Connections to recorded match outcomes require a full snapshot. |
 | Incremental updates | Implemented | Versioned `TSP1` packets with exact ID/base revision/base hash, target hash, allowed operations, preview and transactional application. |

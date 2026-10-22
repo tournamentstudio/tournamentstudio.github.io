@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Upload, LockKeyhole, Check, Copy, FileCheck2 } from "lucide-react";
 import type { Tournament } from "../domain/types";
 import { parseTournament } from "../domain/validate";
@@ -60,14 +60,35 @@ export function ImportCenter({
     review: PatchReview;
   }>();
   const [error, setError] = useState<unknown>();
-  const [busy, setBusy] = useState(false);
+  const [saving, setSaving] = useState(false);
   const computationScope = useMemo(
     () => ({ text, file, secret }),
     [text, file, secret],
   );
   const computation = useCompetitionTask(current, computationScope);
+  const [inspection, setInspection] = useState<{
+    scope: typeof computationScope;
+    current: typeof current;
+  }>();
+  const inspectionId = useRef(0);
+  const latestSource = useRef({ current, scope: computationScope });
+  latestSource.current = { current, scope: computationScope };
+  const busy =
+    saving ||
+    (inspection?.scope === computationScope && inspection.current === current);
+  useEffect(
+    () => () => {
+      inspectionId.current++;
+    },
+    [],
+  );
   async function inspect(raw = text) {
-    setBusy(true);
+    const id = ++inspectionId.current;
+    const valid = () =>
+      inspectionId.current === id &&
+      latestSource.current.scope === computationScope &&
+      latestSource.current.current === current;
+    setInspection({ scope: computationScope, current });
     setError(undefined);
     setRevisions([]);
     setMerge(undefined);
@@ -101,6 +122,7 @@ export function ImportCenter({
             await file.arrayBuffer(),
             secret || undefined,
           );
+          if (!valid()) return;
           value = bundle.tournament;
           setRevisions(bundle.revisions);
           setPreview(value);
@@ -110,6 +132,7 @@ export function ImportCenter({
         }
         code = (await file.text()).trim();
       }
+      if (!valid()) return;
       if (code.includes("#/open/"))
         code = decodeURIComponent(code.split("#/open/")[1]);
       if (code.replace(/\s/g, "").startsWith("TSP1:")) {
@@ -121,6 +144,7 @@ export function ImportCenter({
             ),
           );
         const packet = await decodePatch(code, secret || undefined);
+        if (!valid()) return;
         try {
           value = await applyPatch(current, packet);
         } catch (error) {
@@ -141,17 +165,21 @@ export function ImportCenter({
               ),
             );
           }
+          const review = await reviewPatch(current, base, packet);
+          if (!valid()) return;
           setMerge({
             base,
             packet,
-            review: await reviewPatch(current, base, packet),
+            review,
           });
           setPreview(undefined);
           return;
         }
+        if (!valid()) return;
         setPatch(packet);
       } else if (/^TSR[12]:/.test(code.replace(/\s/g, ""))) {
         value = await decodeRecipe(code);
+        if (!valid()) return;
         if (value.stages.length === 1) {
           const generated = requiresCompetitionWorker(value, value.stages[0].id)
             ? await computation.run({
@@ -160,7 +188,7 @@ export function ImportCenter({
                 stageId: value.stages[0].id,
               })
             : generateStage(value, value.stages[0].id);
-          if (!generated) return;
+          if (!generated || !valid()) return;
           value = generated;
         }
         setPatch(undefined);
@@ -169,16 +197,19 @@ export function ImportCenter({
         setPatch(undefined);
       } else {
         value = await decodeCode(code, secret || undefined);
+        if (!valid()) return;
         setPatch(undefined);
       }
+      if (!valid()) return;
       if (secret) setProtect(true);
       setPreview(value);
     } catch (e) {
+      if (!valid()) return;
       setError(e);
       setPreview(undefined);
       setPatch(undefined);
     } finally {
-      setBusy(false);
+      if (valid()) setInspection(undefined);
     }
   }
   useEffect(() => {
@@ -186,7 +217,7 @@ export function ImportCenter({
   }, []); // The transferred payload is inspected once on opening.
   async function commit(mode: "save" | "fork" | "replace") {
     if (!preview) return;
-    setBusy(true);
+    setSaving(true);
     try {
       if (patch) await onPatch(patch);
       else
@@ -195,7 +226,7 @@ export function ImportCenter({
     } catch (e) {
       setError(e);
     } finally {
-      setBusy(false);
+      setSaving(false);
     }
   }
   return (

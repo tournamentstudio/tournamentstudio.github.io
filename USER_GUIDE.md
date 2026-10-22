@@ -636,6 +636,9 @@ emblems are identical for both sides and never indicate the concealed position.
 In **Schedule**, set a start time, match duration and rest period. Add named courts,
 tables or rooms and their availability windows. Start-time entry uses the device
 timezone; the tournament has a separate display timezone in Settings.
+New and edited schedule values retain the same instant when shared with another
+device. Review older backups whose time values have no timezone offset before
+scheduling them on a device in a different timezone.
 
 Choose **Generate schedule**. Unknown future opponents are reserved
 conservatively, so a schedule can be longer than the simple playing-time estimate.

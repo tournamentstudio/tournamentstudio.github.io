@@ -20,6 +20,11 @@ coordinate schema. Venue coordinates are omitted from public projections and
 recipes. Resource IDs, names and availability remain public. Private packages
 preserve the complete resource object.
 
+New schedule starts and edited resource availability values use ISO timestamps
+with a UTC suffix. Schedule inputs display them in the device timezone. Legacy
+timestamps without an offset remain interpreted in the device timezone; imports
+preserve their original bytes rather than guessing an instant or changing hashes.
+
 Stage configuration and metadata can preserve safe JSON extensions. Extensions cannot contain executable values. Unknown top-level properties are rejected, rather than silently discarded. Unknown schema versions fail with an instruction to keep the source file and update the application. Fixed schema-1 fixtures and legacy untagged revisions are tested without rewriting their serialized data. There is no earlier published document schema to fabricate a migration for.
 
 Validation checks duplicate entity IDs, entrant references, winner identities, match sources, and cycles in stage and match dependencies. Scoring legality and pairing rules are checked separately by the competition engine.

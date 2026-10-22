@@ -31,6 +31,7 @@ import {
   updateDirectBooking,
   updateScheduleSettings,
 } from "../scheduling/settings";
+import { dateTimeInputToIso, localDateTime } from "../scheduling/local-time";
 
 export function Schedule({ tournament: doc, onChange }: EditorProps) {
   const { t, locale } = useI18n();
@@ -224,9 +225,12 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
           >
             <input
               type="datetime-local"
-              value={settings.startAt.slice(0, 16)}
+              value={localDateTime(settings.startAt)}
               onChange={(e) =>
-                setSettings({ ...settings, startAt: e.target.value })
+                setSettings({
+                  ...settings,
+                  startAt: dateTimeInputToIso(e.target.value),
+                })
               }
             />
           </Field>
@@ -353,7 +357,7 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
                 <Field label={t("Available from", "در دسترس از")}>
                   <input
                     type="datetime-local"
-                    value={r.availableFrom ?? ""}
+                    value={localDateTime(r.availableFrom)}
                     onChange={(e) =>
                       setSettings({
                         ...settings,
@@ -361,7 +365,9 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
                           x.id === r.id
                             ? {
                                 ...x,
-                                availableFrom: e.target.value || undefined,
+                                availableFrom:
+                                  dateTimeInputToIso(e.target.value) ||
+                                  undefined,
                               }
                             : x,
                         ),
@@ -372,7 +378,7 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
                 <Field label={t("Available until", "در دسترس تا")}>
                   <input
                     type="datetime-local"
-                    value={r.availableUntil ?? ""}
+                    value={localDateTime(r.availableUntil)}
                     onChange={(e) =>
                       setSettings({
                         ...settings,
@@ -380,7 +386,9 @@ export function Schedule({ tournament: doc, onChange }: EditorProps) {
                           x.id === r.id
                             ? {
                                 ...x,
-                                availableUntil: e.target.value || undefined,
+                                availableUntil:
+                                  dateTimeInputToIso(e.target.value) ||
+                                  undefined,
                               }
                             : x,
                         ),

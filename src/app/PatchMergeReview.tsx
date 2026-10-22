@@ -8,7 +8,7 @@ import {
 } from "../sharing/merge";
 import { ErrorText, Notice } from "../components/ui";
 import { Bracket } from "../components/Bracket";
-import { useI18n } from "../i18n";
+import { generatedMatchLabel, useI18n } from "../i18n";
 
 export interface MergeSelection {
   selected: number[];
@@ -279,7 +279,7 @@ export function PatchMergeReview({
               </p>
               <ul>
                 {preview.affected.map((match) => (
-                  <li key={match.id}>{match.label}</li>
+                  <li key={match.id}>{generatedMatchLabel(match, locale)}</li>
                 ))}
               </ul>
               <label className="check-row">
