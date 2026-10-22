@@ -22,8 +22,27 @@ preserve the complete resource object.
 
 New schedule starts and edited resource availability values use ISO timestamps
 with a UTC suffix. Schedule inputs display them in the device timezone. Legacy
-timestamps without an offset remain interpreted in the device timezone; imports
-preserve their original bytes rather than guessing an instant or changing hashes.
+timestamps without an offset remain interpreted in the device timezone unless
+the organizer explicitly corrects them in the import preview. The timezone review
+covers schedule starts, resource and participant availability, and match bookings.
+Aggregate-leg bookings already require an offset. The review leaves creation, audit and result timestamps,
+unknown metadata, and values with an explicit UTC suffix or offset unchanged.
+
+The organizer supplies the source IANA timezone for each selected field and may
+edit its wall-clock value. Conversion runs locally using the browser's timezone
+database, verifies each candidate by roundtrip, rejects nonexistent local times,
+and requires an explicit earlier/later choice for repeated times. A timezone
+recorded in the document is only a suggestion, not proof of the source timezone.
+The tournament's display timezone is not changed.
+
+Corrected save/fork imports append a newly hashed revision and preserve the
+original current document and included history in the same IndexedDB transaction.
+The usual latest-50-revision retention applies. Existing archive hashes are
+validated before correction; historical timestamps are not rewritten. A fork
+assigns a new ID throughout its history and recalculates the corresponding hashes.
+Corrected imports cannot replace an existing copy; they must be saved under an
+unused identity or forked. Unchanged imports retain normal replacement behavior.
+Verified update packets bypass timezone conversion so their hashes remain valid.
 
 Stage configuration and metadata can preserve safe JSON extensions. Extensions cannot contain executable values. Unknown top-level properties are rejected, rather than silently discarded. Unknown schema versions fail with an instruction to keep the source file and update the application. Fixed schema-1 fixtures and legacy untagged revisions are tested without rewriting their serialized data. There is no earlier published document schema to fabricate a migration for.
 

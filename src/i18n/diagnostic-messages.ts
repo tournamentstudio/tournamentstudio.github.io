@@ -281,4 +281,8 @@ export const diagnosticTranslations: Record<string, string> = {
   "The stored revision failed its integrity check.":
     "بررسی یکپارچگی نسخه ذخیره‌شده ناموفق بود.",
   "Tournament not found.": "مسابقات پیدا نشد.",
+  "Review the selected schedule times before importing.":
+    "پیش از ورود، زمان‌های انتخاب‌شده برنامه را بررسی کنید.",
+  "The timezone review needs a valid history label.":
+    "بررسی منطقه زمانی به عنوان معتبر برای تاریخچه نیاز دارد.",
 };

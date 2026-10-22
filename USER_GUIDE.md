@@ -637,8 +637,26 @@ In **Schedule**, set a start time, match duration and rest period. Add named cou
 tables or rooms and their availability windows. Start-time entry uses the device
 timezone; the tournament has a separate display timezone in Settings.
 New and edited schedule values retain the same instant when shared with another
-device. Review older backups whose time values have no timezone offset before
-scheduling them on a device in a different timezone.
+device. For older backups whose times lack an offset, the import preview opens a
+**Review older backup times** before saving. Choose **Keep original times** to preserve
+their existing device-local interpretation, or select the fields to correct.
+
+Choose the timezone in which each selected time was intended. The tournament's
+timezone is a starting suggestion only. Some older default start times were
+written as UTC clock values without the UTC suffix; choose **UTC** for those
+values. Resource availability or manually entered bookings may need a different
+timezone. Review each field's proposed UTC instant before confirming. You can
+edit a wall time if it was entered incorrectly. A repeated daylight-saving time
+requires an earlier or later occurrence; a skipped time must be edited or left
+unchanged. Values already containing an offset do not need this review.
+
+Apply the reviewed times, then save a local copy or fork. The corrected schedule
+becomes a new revision, and History retains the original times within its usual
+50-revision limit. If the same tournament is already saved here, fork it to keep
+both copies. Replacement is disabled for corrected imports. Canceling or going
+back does not write to storage. Update packets use their existing integrity and
+conflict review and do not rewrite legacy times. After a correction, later packets
+based on the uncorrected copy may need conflict review or a fresh full snapshot.
 
 Choose **Generate schedule**. Unknown future opponents are reserved
 conservatively, so a schedule can be longer than the simple playing-time estimate.

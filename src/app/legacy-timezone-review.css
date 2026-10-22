@@ -1,0 +1,114 @@
+.legacy-timezone-review {
+  display: grid;
+  gap: 14px;
+  min-inline-size: 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+.legacy-timezone-review h3,
+.legacy-timezone-review p {
+  margin: 0;
+  line-height: 1.7;
+}
+.legacy-timezone-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-inline-size: 0;
+}
+.legacy-timezone-actions .button {
+  max-inline-size: 100%;
+  white-space: normal;
+  line-height: 1.7;
+}
+.legacy-timezone-fields {
+  display: grid;
+  gap: 16px;
+  min-inline-size: 0;
+}
+.legacy-timezone-field {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  min-inline-size: 0;
+}
+.legacy-timezone-field legend {
+  padding-inline: 5px;
+  font-weight: 650;
+  line-height: 1.8;
+}
+.legacy-timezone-field .field,
+.legacy-timezone-field details {
+  min-inline-size: 0;
+}
+.legacy-timezone-field details > .field {
+  margin-block-start: 12px;
+}
+.legacy-timezone-field summary {
+  cursor: pointer;
+  line-height: 1.8;
+}
+.legacy-timezone-selection {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.8;
+}
+.legacy-timezone-selection input {
+  flex: 0 0 auto;
+  margin-block-start: 6px;
+}
+.legacy-timezone-original,
+.legacy-timezone-preview {
+  display: grid;
+  gap: 4px;
+  min-inline-size: 0;
+}
+.legacy-timezone-original bdi,
+.legacy-timezone-preview bdi,
+.legacy-timezone-candidates bdi {
+  display: block;
+  overflow-wrap: anywhere;
+  unicode-bidi: isolate;
+}
+.legacy-timezone-preview {
+  padding: 10px;
+  border-inline-start: 3px solid var(--forest);
+  background: #f3f7ef;
+  line-height: 1.7;
+}
+.legacy-timezone-error {
+  color: var(--danger);
+}
+.legacy-timezone-candidates {
+  margin: 0;
+  padding-inline-start: 20px;
+}
+.legacy-timezone-candidates li + li {
+  margin-block-start: 8px;
+}
+.legacy-timezone-status {
+  font-weight: 550;
+}
+@media (max-width: 480px) {
+  .legacy-timezone-review {
+    padding: 12px;
+  }
+  .legacy-timezone-field {
+    padding: 10px;
+  }
+  .legacy-timezone-actions > .button {
+    flex: 1 1 100%;
+  }
+  .legacy-timezone-actions > span {
+    flex-basis: 100%;
+    text-align: center;
+  }
+}

@@ -19,6 +19,12 @@ import { Field, Modal, Notice, ErrorText } from "../components/ui";
 import { Bracket } from "../components/Bracket";
 import { useI18n } from "../i18n";
 import { QRImport } from "./QRImport";
+import { LegacyTimezoneReview } from "./LegacyTimezoneReview";
+import {
+  listLegacyTimezoneFields,
+  type LegacyTimezoneChoice,
+} from "../sharing/legacy-timezones";
+import { prepareReviewedTimezoneImport } from "../sharing/reviewed-timezone-import";
 import { requiresCompetitionWorker } from "../workers/competition-task";
 import {
   CompetitionTaskNotice,
@@ -54,6 +60,16 @@ export function ImportCenter({
   const [preview, setPreview] = useState<Tournament>();
   const [patch, setPatch] = useState<TournamentPatch>();
   const [revisions, setRevisions] = useState<ArchiveRevision[]>([]);
+  const [timezoneChoices, setTimezoneChoices] =
+    useState<LegacyTimezoneChoice[]>();
+  const needsTimezoneReview = useMemo(
+    () =>
+      Boolean(preview && !patch && listLegacyTimezoneFields(preview).length),
+    [preview, patch],
+  );
+  const timezonePending = needsTimezoneReview && timezoneChoices === undefined;
+  const correctingTimes =
+    needsTimezoneReview && Boolean(timezoneChoices?.length);
   const [merge, setMerge] = useState<{
     base: Tournament;
     packet: TournamentPatch;
@@ -91,6 +107,7 @@ export function ImportCenter({
     setInspection({ scope: computationScope, current });
     setError(undefined);
     setRevisions([]);
+    setTimezoneChoices(undefined);
     setMerge(undefined);
     try {
       if (raw.length > 24 * 1024 * 1024)
@@ -216,12 +233,34 @@ export function ImportCenter({
     if (initialCode) void inspect(initialCode);
   }, []); // The transferred payload is inspected once on opening.
   async function commit(mode: "save" | "fork" | "replace") {
-    if (!preview) return;
+    if (
+      !preview ||
+      busy ||
+      timezonePending ||
+      (correctingTimes && mode === "replace")
+    )
+      return;
     setSaving(true);
     try {
       if (patch) await onPatch(patch);
-      else
-        await onImport(preview, mode, protect ? secret : undefined, revisions);
+      else {
+        const reviewed = await prepareReviewedTimezoneImport(
+          preview,
+          revisions,
+          timezoneChoices ?? [],
+          t(
+            "Correct imported schedule timezones",
+            "اصلاح منطقه زمانی برنامه واردشده",
+          ),
+          t("Original imported backup", "پشتیبان اصلی واردشده"),
+        );
+        await onImport(
+          reviewed.tournament,
+          mode,
+          protect ? secret : undefined,
+          reviewed.revisions,
+        );
+      }
       onClose();
     } catch (e) {
       setError(e);
@@ -393,6 +432,23 @@ export function ImportCenter({
               )}
             </Notice>
           )}
+          {needsTimezoneReview && (
+            <>
+              <LegacyTimezoneReview
+                tournament={preview}
+                onReview={setTimezoneChoices}
+                disabled={busy}
+              />
+              {correctingTimes && (
+                <Notice>
+                  {t(
+                    "Corrected times will be saved as a new revision. Save or fork retains the original times in History, within the latest 50 revisions. If this tournament already exists here, choose Fork with new identity. Replacement is unavailable for corrected imports so the backup's original revision stays recoverable.",
+                    "زمان‌های اصلاح‌شده در نسخه تازه ذخیره می‌شوند. با ذخیره یا کپی، زمان‌های اصلی در تاریخچه و در میان ۵۰ نسخه آخر باقی می‌مانند. اگر این مسابقات از قبل اینجا وجود دارد، «کپی با شناسه تازه» را انتخاب کنید. برای حفظ نسخه اصلی پشتیبان، جایگزینی پس از اصلاح زمان‌ها در دسترس نیست.",
+                  )}
+                </Notice>
+              )}
+            </>
+          )}
           <div className="import-bracket">
             <Bracket tournament={preview} locale={locale} readOnly />
           </div>
@@ -435,9 +491,11 @@ export function ImportCenter({
           <div className="modal-actions">
             <button
               className="button secondary"
+              disabled={busy}
               onClick={() => {
                 setPreview(undefined);
                 setPatch(undefined);
+                setTimezoneChoices(undefined);
               }}
             >
               {t("Back", "بازگشت")}
@@ -455,7 +513,9 @@ export function ImportCenter({
               <>
                 <button
                   className="button secondary"
-                  disabled={busy || (protect && secret.length < 8)}
+                  disabled={
+                    busy || timezonePending || (protect && secret.length < 8)
+                  }
                   onClick={() => commit("fork")}
                 >
                   <Copy size={16} />
@@ -463,7 +523,9 @@ export function ImportCenter({
                 </button>
                 <button
                   className="button primary"
-                  disabled={busy || (protect && secret.length < 8)}
+                  disabled={
+                    busy || timezonePending || (protect && secret.length < 8)
+                  }
                   onClick={() => commit("save")}
                 >
                   <Check size={17} />
@@ -472,7 +534,12 @@ export function ImportCenter({
                 {current?.id === preview.id && (
                   <button
                     className="button danger"
-                    disabled={busy || (protect && secret.length < 8)}
+                    disabled={
+                      busy ||
+                      timezonePending ||
+                      correctingTimes ||
+                      (protect && secret.length < 8)
+                    }
                     onClick={() => {
                       if (
                         window.confirm(
