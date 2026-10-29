@@ -1,8 +1,10 @@
 import type { Stage, Tournament } from "../../domain/types";
+import { swissPolicy } from "../../domain/swiss";
 import {
   previewAdvancement,
   previewGroupDraw,
   generateStage,
+  validateGraph,
 } from "../../engine";
 import { stageProtection } from "./helpers";
 
@@ -63,6 +65,9 @@ export function swissRestrictionConfig(
   const [tournament, stage] = editable(input, stageId);
   if (stage.format !== "swiss")
     throw new Error("Pairing restrictions need a Swiss stage.");
+  const federation = swissPolicy(stage).federation;
+  if (federation && pairs.length)
+    throw new Error("FIDE Dutch does not support forbidden-pair rules.");
   const entrants = previewAdvancement(tournament, stageId);
   if (!entrants.ready) throw new Error(entrants.issues.join(" "));
   const allowed = new Set(entrants.participantIds);
@@ -82,6 +87,9 @@ export function swissRestrictionConfig(
     seen.add(key);
   }
   stage.config.forbiddenPairs = structuredClone(pairs);
-  generateStage(tournament, stageId);
+  if (federation) {
+    const errors = validateGraph(tournament);
+    if (errors.length) throw new Error(errors.join(" "));
+  } else generateStage(tournament, stageId);
   return stage.config;
 }

@@ -86,6 +86,12 @@ Snapshot links contain compressed tournament data in the URL fragment. The fragm
 
 The application retains incoming code temporarily for the import screen and removes it from the visible route. Do not treat this as a guarantee that all prior copies of a URL have been erased.
 
+If the import screen cannot load, a local recovery dialog retains the received
+code in memory and offers copy or text download. Clipboard denial selects the
+text for manual copying. The app does not put the code back in the URL or save
+it to browser storage. Keep the code before closing or reloading; an embedded
+sharing key or private payload remains sensitive in the downloaded copy.
+
 Separate-secret encrypted snapshots, updates and archives require the secret from another channel. The optional TSK1 link includes a generated secret and opens without another password prompt. Anyone receiving the complete link can decrypt it. Encryption never establishes the recipient or sender identity.
 
 Read-only preview is an interface choice. A recipient who has the document can save or modify their own copy. Previously shared data cannot be remotely revoked.
@@ -119,6 +125,13 @@ Signing does not encrypt the payload. Encrypt private packages first, then sign 
 Payloads are limited to 2 MiB before envelope encoding. Encoded files are bounded at 6 MiB, public-key imports at 4 KiB decoded, and encrypted-key imports at 8 KiB decoded. There are no nested signed envelopes, executable signing extensions or imported algorithm choices. A successful check offers extraction or the existing import preview. The receiving workflow still validates schemas, tournament identity, revisions, duplicates and conflicts, and requires organizer acceptance. Signatures alone do not prevent replay. The application adds no trusted signing timestamp and makes no claim that a signed prediction was created before play.
 
 ## Imported files and assets
+
+Raster import checks inspect PNG, JPEG and WebP container bounds and dimensions
+before rendering. Images are limited to 16 million pixels and 16,384 pixels per
+axis; animated frames also have a combined full-canvas pixel budget. Direct
+uploads run the same check before browser decoding. These checks bound resources;
+the browser decoder still validates the compressed pixels. The current dependency
+review and remaining build-tool advisory are recorded in [MAINTENANCE_AUDIT.md](MAINTENANCE_AUDIT.md).
 
 Imports are untrusted data. The application checks:
 

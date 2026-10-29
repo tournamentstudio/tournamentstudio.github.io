@@ -23,6 +23,10 @@ test("512 entrants stay bounded while last-page edits, search, and schedules rem
   page,
 }, testInfo) => {
   test.setTimeout(90000);
+  if (testInfo.project.name === "slow-mobile") {
+    const session = await page.context().newCDPSession(page);
+    await session.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+  }
   const timings: Record<string, { milliseconds: number; elements: number }> =
     {};
   timings.create = await measure(page, async () => {
@@ -128,6 +132,26 @@ test("512 entrants stay bounded while last-page edits, search, and schedules rem
     .getByRole("searchbox", { name: "Search entrants", exact: true })
     .fill("Tehran finalist 512");
   await expect(page.locator(".data-table tbody tr")).toHaveCount(1);
+  timings.bracket = await measure(page, async () => {
+    await section(page, "Brackets");
+    await expect(page.locator(".bracket-svg")).toBeVisible();
+  });
+  const spectator = await page.context().newPage();
+  try {
+    if (testInfo.project.name === "slow-mobile") {
+      const session = await page.context().newCDPSession(spectator);
+      await session.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+    }
+    timings.presentation = await measure(spectator, async () => {
+      await spectator.goto(page.url().replace("#/t/", "#/present/"));
+      await spectator
+        .getByRole("button", { name: "Next scene", exact: true })
+        .click();
+      await expect(spectator.locator(".bracket-svg")).toBeVisible();
+    });
+  } finally {
+    await spectator.close();
+  }
   for (const [name, measurement] of Object.entries(timings)) {
     expect(measurement.elements, `${name} DOM size`).toBeLessThan(8000);
     expect(measurement.milliseconds, `${name} display latency`).toBeLessThan(
@@ -138,6 +162,8 @@ test("512 entrants stay bounded while last-page edits, search, and schedules rem
     body: JSON.stringify(
       {
         browser: testInfo.project.name,
+        cpuSlowdown: testInfo.project.name === "slow-mobile" ? 4 : 1,
+        viewport: page.viewportSize(),
         participantCount: 512,
         matchCount: 511,
         timings,

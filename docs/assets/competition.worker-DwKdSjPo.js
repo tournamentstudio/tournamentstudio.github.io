@@ -1,1 +1,0 @@
-self.addEventListener("message",async t=>{try{const{generateStage:a,advanceStage:s,simulate:n}=await import("./index-BS76WIzt.js"),e=t.data,r=e.kind==="simulate"?n(e.tournament):e.kind==="draw"?a(e.tournament,e.stageId):s(e.tournament,e.stageId);self.postMessage({ok:!0,value:r})}catch(a){self.postMessage({ok:!1,message:a instanceof Error?a.message:String(a)})}});

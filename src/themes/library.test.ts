@@ -19,7 +19,8 @@ beforeEach(async () => {
 describe("personal theme library", () => {
   it("persists theme-only copies without tournament results or default asset copies", async () => {
     const t = createTournament("Private title", [], "single-elimination");
-    t.theme.logo = "data:image/png;base64,iVBORw0KGgo=";
+    t.theme.logo =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAADCAYAAAC56t6BAAAAFElEQVR4AWKS9E3+D8JMDFAAZwAAAAD//6EAap8AAAAGSURBVAMATecDlzb3eI8AAAAASUVORK5CYII=";
     const before = JSON.stringify(t);
     await savePersonalTheme("Persian courtyard", {
       ...t.theme,
@@ -36,7 +37,8 @@ describe("personal theme library", () => {
     expect(JSON.stringify(t)).toBe(before);
   });
   it("preserves explicitly selected local assets and supports rename, duplicate and delete", async () => {
-    const logo = "data:image/png;base64,iVBORw0KGgo=";
+    const logo =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAADCAYAAAC56t6BAAAAFElEQVR4AWKS9E3+D8JMDFAAZwAAAAD//6EAap8AAAAGSURBVAMATecDlzb3eI8AAAAASUVORK5CYII=";
     const first = await savePersonalTheme(
       "A",
       { preset: "minimal-light", reducedMotion: false, logo },

@@ -28,6 +28,8 @@ Playwright covers Chromium, Firefox, and WebKit. The accessibility assertions us
 
 Relevant checks include:
 
+- `tests/e2e/event-rehearsal.spec.ts`: 320-pixel touch and keyboard use, long mixed-script Gol hand logs, language changes, focus restoration and referee-dialog AA checks. Its event case also verifies a same-profile projector view during offline scoring.
+- `tests/e2e/startup-loading.spec.ts`: canceling a loading import dialog, restoring keyboard focus and recovering a received code when the import screen cannot load.
 - `tests/e2e/assistive-navigation.spec.ts`: English/Persian mobile focus containment, inert backgrounds, Escape/restoration, current page semantics, route titles, section names, keyboard scrolling, public score announcements, reduced motion and forced colors. Reflow checks use 640 by 360 and 320 by 180 CSS-pixel viewports, equivalent to the available layout area at 200% and 400% of a 1280 by 720 baseline.
 - `tests/e2e/fide-dutch.spec.ts`: translated Swiss policy errors and 320-pixel Persian controls.
 - `tests/e2e/persian-audit.spec.ts`: Persian half-space card names wrap within narrow fieldsets, and mobile roster names have a full row. Both workflows retain edits after reload.

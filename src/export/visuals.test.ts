@@ -32,6 +32,22 @@ function fixture(count = 8) {
 }
 
 describe("public graphics", () => {
+  it("isolates mixed-script wrapped lines at independent SVG positions", () => {
+    const value = "شاهین آفتاب\nSunshine champions";
+    const svg = visualText(value, 600, 720, 80, 1040, "fa", "#000000");
+    const lines = visualTextLines(value, 80, 1040);
+    const nodes = Array.from(svg.matchAll(/<text ([^>]+)>(.*?)<\/text>/g));
+    expect(nodes).toHaveLength(lines.length);
+    for (const [index, node] of nodes.entries()) {
+      expect(node[1]).toContain(`y="${720 + index * 120}"`);
+      expect(node[1]).toContain('unicode-bidi="isolate"');
+      expect(node[2]).toContain(`>${lines[index]}</tspan>`);
+      expect(node[2].match(/<tspan/g)).toHaveLength(1);
+    }
+    expect(nodes[0][1]).toContain('direction="rtl"');
+    expect(nodes.at(-1)![1]).toContain('direction="ltr"');
+    expect(svg).not.toContain('unicode-bidi="plaintext"');
+  });
   it("fits large numeric scores on one line without losing digits", () => {
     for (const value of ["123,456,789", "۱۲۳٬۴۵۶٬۷۸۹", "-123456.789"]) {
       const svg = visualScoreText(value, 1405, 200, 72, 180, "#000000");

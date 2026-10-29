@@ -12,7 +12,7 @@ it("paginates local sponsor artwork and escapes long bilingual names", async () 
     id: `s-${index}`,
     name: `${index} <script>حامی آفتاب & Partners`,
     tier: index === 0 ? "main" : "partner",
-    logo: "data:image/png;base64,iVBORw0KGgo=",
+    logo: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAADCAYAAAC56t6BAAAAFElEQVR4AWKS9E3+D8JMDFAAZwAAAAD//6EAap8AAAAGSURBVAMATecDlzb3eI8AAAAASUVORK5CYII=",
   }));
   doc.presentation.sponsorLayout = "spotlight";
   doc.presentation.scenes = [

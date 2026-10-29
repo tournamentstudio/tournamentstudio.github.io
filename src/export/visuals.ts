@@ -8,6 +8,8 @@ import { groupLabel } from "../i18n";
 import { validateRasterAsset } from "../security/codec";
 import { themeDesignSchema } from "../domain/display-options";
 import { escapeXML } from "./index";
+import { gameEmblemSVG, gameSceneSVG } from "./game-art";
+import { bracketTextDirection } from "../presentation/bracket-text";
 
 export interface VisualPage {
   title: string;
@@ -101,16 +103,21 @@ export function visualText(
 ) {
   const measure = measureVisualText(size);
   const lines = wrapMeasuredText(value, Math.max(1, width), measure);
-  return `<text x="${x}" y="${y}" fill="${color}" font-size="${size}" text-anchor="${anchor}" direction="${locale === "fa" ? "rtl" : "ltr"}" unicode-bidi="plaintext">${lines
+  // A separate text element prevents bidi reordering across wrapped SVG chunks.
+  return lines
     .map((line, i) => {
       const measured = measure(line);
+      const direction = bracketTextDirection(
+        line,
+        locale === "fa" ? "rtl" : "ltr",
+      );
       const fitted =
         measured > width && line
           ? ` font-size="${(size * Math.max(1, width)) / measured}"`
           : "";
-      return `<tspan x="${x}" dy="${i ? size * 1.5 : 0}"${fitted}>${escapeXML(line)}</tspan>`;
+      return `<text x="${x}" y="${y + i * size * 1.5}" fill="${color}" font-size="${size}" text-anchor="${anchor}" direction="${direction}" unicode-bidi="isolate"><tspan x="${x}" dy="0"${fitted}>${escapeXML(line)}</tspan></text>`;
     })
-    .join("")}</text>`;
+    .join("");
 }
 
 export function visualScoreText(
@@ -201,9 +208,10 @@ export function scoreboardSVG(
   const c = visualPalette(t),
     names = matchNames(t, match, locale);
   const compactField = names.length <= 2,
-    nameSize = compactField ? 52 : 38;
+    nameSize = compactField ? 52 : 38,
+    nameWidth = 970;
   const rows = names.map((name, i) => {
-    const lines = visualTextLines(name, nameSize, 1100).length;
+    const lines = visualTextLines(name, nameSize, nameWidth).length;
     return {
       name,
       index: i,
@@ -224,10 +232,18 @@ export function scoreboardSVG(
             0
           ).toLocaleString(locale)
         : "·";
-      const lineCount = visualTextLines(name, nameSize, 1100).length;
+      const lineCount = visualTextLines(name, nameSize, nameWidth).length;
       const textY =
         y + (height - (lineCount - 1) * nameSize * 1.5) / 2 + nameSize / 3;
-      const out = `<rect x="80" y="${y}" width="1440" height="${height - 12}" rx="${c.radius}" fill="${c.card}" stroke="${winner ? c.accent : c.muted}" stroke-opacity="${winner ? 1 : 0.2}"/>${visualText(name, 690, textY, nameSize, 1100, locale, winner ? c.accent : c.foreground)}${visualScoreText(score, 1405, y + height / 2 + 16, compactField ? 72 : 48, 180, c.foreground)}`;
+      const participant = t.participants.find(
+        (p) => p.id === match.slots[index].participantId,
+      );
+      const emblemY = y + (height - 12) / 2 - 44;
+      const mark =
+        participant?.logo && validateRasterAsset(participant.logo)
+          ? `<image data-entrant-logo="true" href="${escapeXML(participant.logo)}" x="118" y="${emblemY}" width="88" height="88" preserveAspectRatio="xMidYMid meet"/>`
+          : gameEmblemSVG(t.sport, c.accent, 118, emblemY, 88);
+      const out = `<rect x="80" y="${y}" width="1440" height="${height - 12}" rx="${c.radius}" fill="${c.card}" stroke="${winner ? c.accent : c.muted}" stroke-opacity="${winner ? 1 : 0.2}"/>${mark}<g data-text-region="scoreboard-name">${visualText(name, 735, textY, nameSize, nameWidth, locale, winner ? c.accent : c.foreground)}</g><g data-text-region="scoreboard-score">${visualScoreText(score, 1405, y + height / 2 + 16, compactField ? 72 : 48, 180, c.foreground)}</g>`;
       y += height;
       return out;
     })
@@ -242,7 +258,9 @@ export function scoreboardSVG(
   return visualFrame(
     t,
     status,
-    visualText(status, 800, 130, 32, 1400, locale, c.accent) + content,
+    visualText(status, 800, 130, 32, 1400, locale, c.accent) +
+      content +
+      gameSceneSVG(t.sport, c, 90, y + 8, 180),
     locale,
     1600,
     height,
@@ -265,16 +283,21 @@ export function championPosterSVG(
         "پیش از خروجی پوستر قهرمان، مرحله نهایی را کامل و تساوی رتبه اول را تعیین کنید.",
       ),
     );
+  const hasLogo = champion.logo && validateRasterAsset(champion.logo);
+  const nameY = hasLogo ? 820 : 720;
   const nameBottom =
-    720 + (visualTextLines(champion.name, 80, 1040).length - 1) * 120;
+    nameY + (visualTextLines(champion.name, 80, 1040).length - 1) * 120;
   const subtitleLines = visualTextLines(t.subtitle, 26, 1040).length;
   const subtitleHeight = (subtitleLines - 1) * 39;
   const height = Math.max(1600, nameBottom + 280 + subtitleHeight);
   const subtitleY = height - 180 - subtitleHeight;
+  const logo = hasLogo
+    ? `<image data-entrant-logo="true" href="${escapeXML(champion.logo!)}" x="552" y="590" width="96" height="96" preserveAspectRatio="xMidYMid meet"/>`
+    : "";
   return visualFrame(
     t,
     champion.name,
-    `<circle cx="600" cy="340" r="118" fill="${c.card}" stroke="${c.accent}" stroke-width="4"/><path d="M525 315L555 350L600 285L645 350L675 315L658 395H542Z" fill="${c.accent}"/>${visualText(exportLabel(locale, "CHAMPION", "قهرمان"), 600, 560, 38, 1040, locale, c.accent)}<g data-text-region="champion-name">${visualText(champion.name, 600, 720, 80, 1040, locale, c.foreground)}</g><g data-text-region="champion-subtitle">${visualText(t.subtitle, 600, subtitleY, 26, 1040, locale, c.muted)}</g>`,
+    `${gameSceneSVG(t.sport, c, 280, 150, 640)}${visualText(exportLabel(locale, "CHAMPION", "قهرمان"), 600, 560, 38, 1040, locale, c.accent)}${logo}<g data-text-region="champion-name">${visualText(champion.name, 600, nameY, 80, 1040, locale, c.foreground)}</g><g data-text-region="champion-subtitle">${visualText(t.subtitle, 600, subtitleY, 26, 1040, locale, c.muted)}</g>`,
     locale,
     1200,
     height,

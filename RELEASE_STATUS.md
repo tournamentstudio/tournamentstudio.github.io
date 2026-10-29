@@ -1,109 +1,101 @@
 # TournaStudio release handoff
 
-The October 29, 2026 activity-artwork release adds game icons and fixes score
-drafts, clock-change scheduling and Persian progress labels.
-The application remains available at [tournamentstudio.github.io](https://tournamentstudio.github.io/).
-I can leave it published without running a local development server.
+The October 29, 2026 maintenance release adds activity artwork to graphic
+exports, reduces startup code, fixes mixed-script poster layout and protects
+received share codes when the import screen cannot load.
 
 ## Published application
 
+- App: [tournamentstudio.github.io](https://tournamentstudio.github.io/).
 - Repository: [tournamentstudio/tournamentstudio.github.io](https://github.com/tournamentstudio/tournamentstudio.github.io).
-- Release: [Game icons and match corrections](https://github.com/tournamentstudio/tournamentstudio.github.io/releases/tag/release-2026-10-29.2).
-- Publication: GitHub Pages serves the prepared static files from `main/docs`.
+- Release: [Game posters and safer local imports](https://github.com/tournamentstudio/tournamentstudio.github.io/releases/tag/release-2026-10-29.3).
+- Publication: GitHub Pages serves the prepared files from `main/docs`.
 - GitHub Actions is disabled. There are no repository CI workflows.
-- The hosted application does not need a development server running on my computer.
-- The source, tests, deployment files and documentation are committed to `main`.
+- The hosted app needs no development server running on my computer.
 
-Fourteen original activity icons now appear in creation, the local library,
-workspace identity and presentation. Selecting another theme keeps the chosen
-game's icon. Gol Ya Pooch uses closed fists and a bead, with bell and card
-controls inspired by Persian references. Both teams have identical public
-artwork; no private match state reaches the icon components.
+## What changed
 
-Reset form restores all saved match fields and live Gol hand totals. Editing
-after a correction preview invalidates that preview, including aggregate-leg
-changes. Undoing a Gol hand clears its concealed-position draft even when
-possession remains unchanged.
+Fourteen original activity scenes now appear in scoreboard and champion
+exports. Gol Ya Pooch uses closed hands, a bead, a bell, cards and an arch.
+Participant logos remain available. Each wrapped SVG line now has its own
+position and text direction, fixing mixed Persian/Latin overflow in Firefox
+and WebKit without discarding the names.
 
-The venue timeline covers actual device-local day boundaries, including
-23-hour, 25-hour and half-hour clock changes. Repeated times show UTC offsets;
-nonexistent clock times are rejected. Venue-only edits preserve the booked
-instant. Persian library labels use normal spacing, and Gol progress fractions
-keep score/target order with localized digits.
+The Dutch solver loads inside the competition worker when needed. Creation,
+imports, storage settings and the advisor also load on demand. Initial home
+JavaScript transfer fell from 500,061 to 272,504 bytes, about 46%, in the
+recorded localhost setup. Offline caching still includes those modules.
+[PERFORMANCE.md](PERFORMANCE.md) records the method and the 512-entrant check.
 
-The previous release's transactional save checks, stale-editor protection,
-cancelable QR imports and wrapped graphic exports remain in place.
+A scoped import recovery dialog keeps incoming share codes in memory after a
+module-loading failure. It supports copying, selected-text fallback, explicit
+download, retry and close. Codes are not restored to the URL or persisted to
+browser storage. Closing discards the temporary code.
 
-The preceding release fixed live English/Persian switching in mounted brackets. Default
-orientation follows the interface language; a manual choice remains until
-Follow language resets it. Names and scores have separate text areas, larger
-fonts enlarge cards, and long names retain their full accessible labels.
+PNG, JPEG and WebP imports receive container and dimension checks before
+rendering or decoding. The limits are 16 million pixels and 16,384 pixels per
+axis, with a combined animation frame budget. Existing byte limits remain.
+The browser decoder still validates compressed pixels.
 
-Editable titles, participant names, rosters and stage names follow the text's
-direction. SVG, PNG and print include bundled fonts. Print verifies those fonts
-loaded before opening the print dialog. Generated match labels translate in
-graphics, schedules, CSV, calendars and presentation slides; organizer labels
-and stored competition data remain unchanged.
+A complete eight-team Gol Ya Pooch rehearsal covers two groups, semifinals,
+a final, hand undo, timer pause, offline scoring, projector updates, private
+information exclusion and archive recovery in a fresh browser profile.
 
-Shared SVG clipping definitions keep a 512-entry bracket inside the existing
-page element-count limit. The older-backup timezone review from the previous
-release remains available.
-
-[FEATURES.md](FEATURES.md) records supported behavior.
-[USER_GUIDE.md](USER_GUIDE.md) explains operation, and
-[ARCHITECTURE.md](ARCHITECTURE.md) describes the module boundaries.
+The previous releases' result-correction safeguards, timezone review,
+transactional saves and bilingual bracket behavior remain in place.
+[FEATURES.md](FEATURES.md) records supported behavior; [USER_GUIDE.md](USER_GUIDE.md)
+explains operation.
 
 ## Local verification
 
-These checks were run locally against the correction build:
-
-| Check | Result |
+| Check | Actual result |
 | --- | --- |
 | TypeScript and ESLint | Passed |
-| Unit and integration suite | 1,129 tests passed across 95 files |
+| Unit and integration suite | 1,161 tests passed across 98 files |
 | Release packaging checks | 4 tests passed |
 | Production build | Passed |
-| Browser regression selection | 60 tests passed across Chromium, Firefox and WebKit; the 6 icon checks were repeated after the final Persian-label adjustment |
-| Prepared publication | 71 application files with SHA-256 entries |
+| Final browser selection | 80 tests passed across Chromium, Firefox and WebKit |
+| Simulated slower mobile check | 1 test passed with 512 entrants and 4x CPU slowdown |
+| Prepared publication | 90 application files verified against SHA-256 entries |
+| Production dependency audit | Zero advisories |
+| Full dependency audit | Four low-severity build-tool entries; see maintenance review |
 
-The browser selection covers game identity, theme changes, public icon privacy,
-complete form resets, correction preview invalidation, Gol hand undo, daylight-
-saving transitions, conflicting saves, language switching and 15 core workflows.
-The new schedule tests also inspect saved UTC instants after timeline moves and
-venue-only edits. The new regression cases ran in all three browser engines.
-One final Firefox repeat exceeded the import-status assertion timeout; the
-captured screen had reached the saved workspace. Both Firefox icon checks
-passed on an unchanged rerun.
+The final browser selection includes 15 core tournament workflows, exported
+SVG/PNG/HTML/slides, the Gol event rehearsal, failed and canceled import loading,
+Dutch pairing under the production CSP, vault replacement safety, mixed-script
+fields and Persian keyboard/AA checks. Actual desktop and mobile screenshots
+were inspected. An earlier Firefox export run had a browser-context teardown
+protocol error; its unchanged single-case repeat and the final combined run
+passed. Credentials and authored-text scans found no issues in the changes.
 
-Core workflows include knockout completion, groups and playoffs, Swiss,
-independent snapshot copies, versioned patches, encrypted backup recovery,
-safe result correction, confirmed presentation updates and offline scoring.
-Desktop and mobile browser screenshots were inspected. Credentials and
-authored-text scans found no issues in the release changes.
-
-Repeat the final local checks with:
+Repeat locally after installing the browsers:
 
 ```sh
 npm run check
 npm run test:release
-npx playwright test tests/e2e/themes.spec.ts tests/e2e/game-icons.spec.ts tests/e2e/match-control-drafts.spec.ts tests/e2e/timeline-clock-changes.spec.ts
-npx playwright test tests/e2e/tournament.spec.ts tests/e2e/same-revision-conflicts.spec.ts tests/e2e/language-switch-layout.spec.ts --project=chromium
+npx playwright test tests/e2e/startup-loading.spec.ts tests/e2e/game-poster-art.spec.ts tests/e2e/event-rehearsal.spec.ts tests/e2e/fide-dutch.spec.ts tests/e2e/import-security.spec.ts tests/e2e/i18n-accessibility.spec.ts tests/e2e/exports.spec.ts
+npx playwright test tests/e2e/tournament.spec.ts tests/e2e/mixed-script-fields.spec.ts tests/e2e/performance.spec.ts --project=chromium
+npx playwright test --config playwright.performance.config.ts
 ```
 
-The linked GitHub release records the published commit and post-publication
-asset and browser verification. GitHub Actions remains disabled.
+The linked GitHub release records the exact published commit and the results
+of post-publication asset and browser verification.
 
-## Review boundary
+## Review boundaries
 
-The code fixes identified by the finishing audit are complete. Physical-phone
-testing and human review of spoken Persian with assistive technology still need
-those devices and reviewers. Browser emulation, keyboard tests, accessibility
-trees and axe checks do not replace that work. [ACCESSIBILITY.md](ACCESSIBILITY.md)
-records the exact scope; no independent accessibility certification is claimed.
+Physical Android/iPhone keyboard behavior and spoken Persian with assistive
+technology still require those devices and human reviewers. Browser emulation,
+keyboard tests, accessibility trees and axe do not replace that work. No
+independent security or accessibility certification is claimed.
+
+The dependency review updated `serialize-javascript` to its patched release.
+The remaining low-severity `deepmerge` advisory has no patched release at the
+time of review and is confined to the local build dependency chain. See
+[MAINTENANCE_AUDIT.md](MAINTENANCE_AUDIT.md) and [ACCESSIBILITY.md](ACCESSIBILITY.md).
 
 ## Returning to development
 
-Use the existing `main` checkout and inspect its state before changing anything:
+Use the existing `main` checkout and inspect it before changing anything:
 
 ```sh
 git status
@@ -112,26 +104,13 @@ npm ci
 npm run dev
 ```
 
-Stop the development server with Ctrl+C when finished. Run the local checks in
-[README.md](README.md#run-it-locally) before publishing another application change.
-Prepare the static bundle with `npm run pages:prepare`, commit the source and
-generated files together, push `main`, then verify GitHub Pages and its asset
-paths. Do not enable CI as part of that workflow.
+Stop the development server with Ctrl+C when finished. Run the local checks,
+prepare the static bundle with `npm run pages:prepare`, commit source and
+prepared files together, push `main`, then verify the actual Pages deployment
+and its assets. Do not enable CI. Documentation-only updates need no new build.
 
-Documentation-only updates do not need a new application build. Keep the prepared
-bundle unchanged unless application source or production assets change.
-
-## Data and operating boundaries
-
-Tournament data belongs to the browser profile where it was entered. It is not
-stored in this repository, and a GitHub commit is not a tournament backup. Export
-`.tourney` files for recovery and keep encrypted-backup secrets separately.
-Localhost and the public site use separate browser storage.
-
-Shared snapshots are independent copies. Live updates work between tabs in the
-same browser profile; there is no cross-device cloud synchronization. Browser
-storage can be cleared or evicted. See [PRIVACY_AND_SECURITY.md](PRIVACY_AND_SECURITY.md)
-for the vault and sharing boundaries, and [ACCESSIBILITY.md](ACCESSIBILITY.md)
-for the scope of accessibility testing.
-
-Future maintenance can resume from `main` when I return to the project.
+Tournament data belongs to its browser profile. A GitHub commit is not a
+backup of that data. Export `.tourney` files and keep encrypted-backup secrets
+separately. Shared snapshots are independent copies; live updates work only
+between tabs in the same browser profile. Browser storage can be cleared or
+evicted. See [PRIVACY_AND_SECURITY.md](PRIVACY_AND_SECURITY.md).

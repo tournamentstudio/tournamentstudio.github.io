@@ -3,7 +3,6 @@ import { HardDrive, ShieldCheck, Download } from "lucide-react";
 import { repository, type LibraryEntry } from "../persistence";
 import { Field, Notice, ErrorText } from "../components/ui";
 import { useI18n } from "../i18n";
-import type { Tournament } from "../domain/types";
 import { StatusControl } from "./Rules";
 import type { EditorProps } from "./Participants";
 import { BackupReminderSettings } from "./BackupReminders";
@@ -260,15 +259,4 @@ export function Settings({
       </div>
     </div>
   );
-}
-export function resetIdentity(doc: Tournament): Tournament {
-  return {
-    ...structuredClone(doc),
-    id: crypto.randomUUID(),
-    revision: 0,
-    revisionHash: "",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    history: [],
-  };
 }

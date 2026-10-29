@@ -30,7 +30,8 @@ function fixture() {
 describe("reusable sport presets", () => {
   it("stores rules and design while removing entrant, result and image data", async () => {
     const t = fixture();
-    t.theme.logo = "data:image/png;base64,iVBORw0KGgo=";
+    t.theme.logo =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAADCAYAAAC56t6BAAAAFElEQVR4AWKS9E3+D8JMDFAAZwAAAAD//6EAap8AAAAGSURBVAMATecDlzb3eI8AAAAASUVORK5CYII=";
     t.rules.targetScore = 9;
     const preset = await saveSportPreset("Nine-point club", t);
     expect(preset.rules.targetScore).toBe(9);

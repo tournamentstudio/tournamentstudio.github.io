@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { readInvitations } from "../domain/ladder";
 import { DEFAULT_SWISS_POLICY } from "../domain/swiss";
 import {
@@ -20,6 +20,9 @@ import { playerMetricTemplates } from "../players/templates";
 import { sealDocument } from "../sharing";
 import { createCollection, linkCompetition, sealCollection } from "./model";
 import { forkBundle } from "./transport";
+import { prepareDutchEngine } from "../engine/fide-runtime";
+
+beforeAll(prepareDutchEngine);
 
 function fixture(format: Tournament["stages"][number]["format"] = "swiss") {
   const doc = createTournament(

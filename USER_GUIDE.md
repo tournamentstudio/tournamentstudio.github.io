@@ -1129,6 +1129,17 @@ Open **Participants** and choose **Edit**. Add a local logo, set availability, o
 
 **Export Studio** creates scoreboards, group tables, champion posters and presentation slide archives. Choose the match, stage or scenes, then inspect the preview. SVG keeps text and lines scalable; PNG has bounded dimensions. Standalone HTML can be opened and printed offline. Extract a slide ZIP and open its HTML viewer to move through the selected pages. The files are snapshots and do not receive new results.
 
+Scoreboards use participant logos when supplied, or an emblem for the selected
+activity. Champion posters have a related scene for each of the fourteen
+activities. Gol Ya Pooch artwork uses closed hands and a bead with bell, cards
+and an arch. These are decorative shapes; they never reveal concealed gameplay
+information. Long Persian and English names wrap on separate isolated lines.
+
+Uploaded PNG, JPEG and WebP images must fit within 16 million pixels and 16,384
+pixels per axis before the picker decodes them. Animated images also share a
+16-million-pixel frame budget. Resize oversized source artwork in an image
+editor before uploading it. Existing upload byte limits still apply.
+
 ## Transfer history and review updates
 
 In **Share Center**, leave **Include saved revisions (up to 50)** enabled to carry recovery points inside a `.tourney` backup. Large images repeated through history may exceed the archive limit; export fewer separate recovery files or uncheck history for a current-only backup. A protected backup uses one secret for all included revisions.

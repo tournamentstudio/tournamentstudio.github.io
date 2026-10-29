@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import {
   createParticipant,
@@ -14,9 +14,11 @@ import {
   setSwissPolicy,
 } from "./swiss-controls";
 import { fideTrf } from "./fide-dutch";
-import { pairFideTrf } from "./fide-runtime";
+import { pairFideTrf, prepareDutchEngine } from "./fide-runtime";
 import { decodeCode, encodeCode } from "../sharing";
 import { decodeStageRecipe, encodeStageRecipe } from "../sharing/recipes";
+
+beforeAll(prepareDutchEngine);
 
 const input = (name: string) =>
   readFileSync(

@@ -599,6 +599,11 @@ Version-2 multi-format predictions are described below; legacy packets remain re
 
 ## Theme identities
 
+Activity-specific exported scenes live in `src/export/game-art.ts`. Scoreboards
+use a validated participant logo or a neutral sport emblem, and champion posters
+use a separate scene composition for each activity. Geometry is static and never
+receives private match state. Long text still passes through measured wrapping.
+
 The 50 presets combine color, typography and geometry tokens with 17 original
 vector motifs and 12 material treatments. `identities.ts` maps presets to the
 14 activity collections; `getThemesForSport` supplies creation and gallery
@@ -783,8 +788,14 @@ bounded input, a 2 MiB stack and a 256 MiB memory ceiling. It needs no network,
 filesystem or WebAssembly CSP exception. Browser generation, advancement,
 simulation and recipe reconstruction run in a cancelable competition worker.
 Canceled, failed or stale jobs cannot save a result. The synchronous engine
-contract remains available for tests and non-UI callers. Large pairing calls
-can take seconds; format capacity is not a speed guarantee.
+contract remains available for tests and non-UI callers after awaiting
+`prepareDutchEngine()`. The runtime module itself has no solver side effect;
+preparation loads the solver once, and a failed instance is discarded before
+the next call. The competition worker prepares it before importing and running
+the engine. Creation, imports, storage settings and the format advisor also
+load on demand. See [PERFORMANCE.md](PERFORMANCE.md) for measured startup and
+large-field behavior. Large pairing calls can take seconds; format capacity is
+not a speed guarantee.
 
 ## Collections, display options and bounded work
 

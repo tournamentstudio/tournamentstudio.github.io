@@ -1,8 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { createParticipant, createTournament } from "../domain/types";
 import { DEFAULT_SWISS_POLICY } from "../domain/swiss";
 import { generateStage } from "../engine";
 import { decodeRecipe, encodeRecipe } from "./index";
+import { prepareDutchEngine } from "../engine/fide-runtime";
+
+beforeAll(prepareDutchEngine);
 
 const fixture = () =>
   createTournament(

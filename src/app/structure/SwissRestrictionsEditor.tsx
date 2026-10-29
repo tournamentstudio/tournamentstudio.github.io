@@ -24,6 +24,7 @@ export function SwissRestrictionsEditor({
   const [error, setError] = useState<unknown>();
   const basis = JSON.stringify([stage, tournament.revision]);
   const stale = !!draft && draftBasis !== basis;
+  const federation = !!stage.config.swiss?.federation;
   function change(pairs: string[][]) {
     setDraftBasis(draftBasis ?? basis);
     setDraft(pairs);
@@ -49,12 +50,21 @@ export function SwissRestrictionsEditor({
       <summary>
         {t("Swiss forbidden pairings", "رویارویی‌های ممنوع سوئیسی")}
       </summary>
-      <p>
-        {t(
-          "Set restrictions before generating the stage. First-round feasibility is checked when saving; later rounds may still need fewer restrictions. Existing results are preserved.",
-          "محدودیت‌ها را پیش از ساخت مرحله تنظیم کنید. امکان جفت‌سازی دور اول هنگام ذخیره بررسی می‌شود؛ ممکن است دورهای بعد به محدودیت کمتری نیاز داشته باشند. نتایج موجود حفظ می‌شوند.",
-        )}
-      </p>
+      {federation ? (
+        <Notice>
+          {t(
+            "Forbidden-pair rules are unavailable for FIDE Dutch. Switch to General Swiss in Pairing rules to edit these restrictions.",
+            "قوانین رویارویی ممنوع در هلندی فیده در دسترس نیست. برای ویرایش این محدودیت‌ها، در مقررات زوج‌بندی سوئیسی عمومی را انتخاب کنید.",
+          )}
+        </Notice>
+      ) : (
+        <p>
+          {t(
+            "Set restrictions before generating the stage. First-round feasibility is checked when saving; later rounds may still need fewer restrictions. Existing results are preserved.",
+            "محدودیت‌ها را پیش از ساخت مرحله تنظیم کنید. امکان جفت‌سازی دور اول هنگام ذخیره بررسی می‌شود؛ ممکن است دورهای بعد به محدودیت کمتری نیاز داشته باشند. نتایج موجود حفظ می‌شوند.",
+          )}
+        </p>
+      )}
       <ErrorText error={error} />
       {stale && (
         <Notice danger>
@@ -65,7 +75,7 @@ export function SwissRestrictionsEditor({
         </Notice>
       )}
       <fieldset
-        disabled={locked || !preview.ready || stale}
+        disabled={locked || !preview.ready || stale || federation}
         className="draw-fields"
       >
         <div className="two-columns">

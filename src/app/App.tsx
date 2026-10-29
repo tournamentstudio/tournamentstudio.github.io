@@ -40,15 +40,22 @@ import type { MergeSelection } from "./PatchMergeReview";
 import { LocaleContext, useI18n } from "../i18n";
 import { Modal, Field, ErrorText, Confirm, Notice } from "../components/ui";
 import { Home } from "./Home";
-import { CreateFlow } from "./CreateFlow";
-import { FormatAdvisor } from "./FormatAdvisor";
+import { ImportLoader } from "./ImportLoader";
 import type { AdvisorPlan } from "./advisor-plans";
-import { StorageHealth, resetIdentity } from "./StorageHealth";
-import { ImportCenter } from "./ImportCenter";
+import { resetIdentity } from "../domain/identity";
 import { BackupReminderNotice } from "./BackupReminders";
 import { useUndoSession } from "./undo-session";
 import { useVaultInactivity } from "./VaultInactivity";
 import { useNavigationDrawer } from "./useNavigationDrawer";
+const CreateFlow = lazy(() =>
+  import("./CreateFlow").then((m) => ({ default: m.CreateFlow })),
+);
+const FormatAdvisor = lazy(() =>
+  import("./FormatAdvisor").then((m) => ({ default: m.FormatAdvisor })),
+);
+const StorageHealth = lazy(() =>
+  import("./StorageHealth").then((m) => ({ default: m.StorageHealth })),
+);
 const Collections = lazy(() =>
   import("../collections/Collections").then((m) => ({
     default: m.Collections,
@@ -1079,7 +1086,7 @@ function Studio({
         </Modal>
       )}
       {importOpen && (
-        <ImportCenter
+        <ImportLoader
           key={importCode}
           initialCode={importCode}
           current={doc}

@@ -6,11 +6,13 @@ I built TournaStudio so a tournament can belong to the people running it. Open t
 
 **[Open TournaStudio](https://tournamentstudio.github.io/)** · [User guide](USER_GUIDE.md) · [Feature status](FEATURES.md)
 
-The October 29, 2026 updates fix English/Persian language changes, bracket text
-alignment, embedded print fonts, conflicting local saves and canceled QR reads.
-Long introduction text continues across exported slides. I am leaving the published app
-available between updates. The [release handoff](RELEASE_STATUS.md) records the
-checks, hosting settings and steps for returning to the project.
+The October 29, 2026 updates improve English/Persian layout and add original
+game artwork to exported scoreboards and champion posters. The home page loads
+about 46% less JavaScript. Imported images receive dimension checks before
+decoding. I tested a complete Gol Ya Pooch event, offline recovery and a
+512-participant bracket with simulated CPU slowdown. The
+[release handoff](RELEASE_STATUS.md), [performance measurements](PERFORMANCE.md)
+and [maintenance review](MAINTENANCE_AUDIT.md) record the checks and their limits.
 
 ![TournaStudio home with its local tournament library](docs/screenshots/home.png)
 
@@ -49,6 +51,12 @@ Named personal designs complement 50 theme presets with game collections for all
 Fourteen separate activity icons keep each game recognizable across theme changes, library covers and presentation screens. Gol Ya Pooch uses closed fists and a bead, with bell and card symbols in its referee controls. [Design references](DESIGN_REFERENCES.md) explain the Persian sources and original artwork.
 
 ![TournaStudio's fourteen activity icons](docs/screenshots/activity-icons.png)
+
+Exported scoreboards and champion posters use original scenes for all fourteen
+activities. Gol Ya Pooch has closed hands, a bead, a tabletop bell, cards and a
+Persian arch. Mixed Persian and English names wrap within the exported image.
+
+![Activity artwork for exported posters](docs/screenshots/game-poster-art.png)
 
 Presentation Studio has 21 scene types, playlists, keyboard controls, fullscreen, three aspect ratios and configurable broadcast overlays. Sponsor cards support grid, strip and spotlight layouts; overlay images can retain transparency. A second tab in the same browser profile reloads confirmed revisions. That is local communication, not synchronization across devices.
 

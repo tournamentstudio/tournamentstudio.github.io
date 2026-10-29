@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:release": "node --test scripts/prepare-pages.test.mjs",
+    "measure:startup": "node scripts/measure-startup.mjs",
     "pages:prepare": "node scripts/build-pages.mjs",
     "check": "npm run typecheck && npm run lint && npm test && npm run build"
   },

@@ -25,7 +25,13 @@ import {
   diagnosticTemplates,
 } from "./diagnostic-templates";
 
-const messages = {
+const messages: Record<string, string> = {
+  "FIDE Dutch does not support forbidden-pair rules.":
+    "روش داچ فیده از قوانین رویارویی ممنوع پشتیبانی نمی‌کند.",
+  "Load the Dutch pairing engine before generating pairings.":
+    "پیش از ساخت جفت‌ها، موتور جفت‌سازی داچ را بارگذاری کنید.",
+  "Use a valid PNG, JPEG or WebP image with supported dimensions.":
+    "از تصویر معتبر PNG، JPEG یا WebP با ابعاد پشتیبانی‌شده استفاده کنید.",
   ...customFieldTranslations,
   ...diagnosticTranslations,
   ...advancementTranslations,

@@ -37,3 +37,11 @@ The generic competition uses a trophy.
 Icons next to text are decorative for screen readers. An explicit label makes
 a standalone icon an image with an accessible name. Unknown sport identifiers
 fall back to the generic icon without rendering imported markup.
+
+## Exported scenes
+
+Scoreboard emblems and champion-poster scenes extend those original shapes.
+Each activity has related geometry: a court, table, circuit, board or book.
+Gol Ya Pooch places the closed hands above a table with a bell and cards inside
+an arch. The export renderer receives public tournament data only. Scene
+geometry is static and cannot respond to a concealed position or private log.

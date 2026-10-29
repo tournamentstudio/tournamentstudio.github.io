@@ -1,6 +1,23 @@
-import createDutchModule, { type DutchModule } from "../vendor/bbp/dutch.js";
+import type { DutchModule } from "../vendor/bbp/dutch.js";
 
 let engine: DutchModule | undefined;
+let createDutchModule:
+  typeof import("../vendor/bbp/dutch.js").default | undefined;
+let loading: Promise<void> | undefined;
+
+/** Load the local solver in a worker before calling the synchronous engine. */
+export async function prepareDutchEngine(): Promise<void> {
+  if (createDutchModule) return;
+  loading ??= import("../vendor/bbp/dutch.js")
+    .then((module) => {
+      createDutchModule = module.default;
+    })
+    .catch((error) => {
+      loading = undefined;
+      throw error;
+    });
+  await loading;
+}
 
 /** Runs the pinned, locally bundled Dutch engine without file or network access. */
 export function pairFideTrf(input: string): [number, number][] {
@@ -14,9 +31,13 @@ export function pairFideTrf(input: string): [number, number][] {
     })
   )
     throw new Error("The FIDE pairing input exceeds its safe format limits.");
-  engine ??= createDutchModule({ print() {}, printErr() {} });
+  if (!createDutchModule)
+    throw new Error(
+      "Load the Dutch pairing engine before generating pairings.",
+    );
   let output: string;
   try {
+    engine ??= createDutchModule({ print() {}, printErr() {} });
     output = engine.ccall("pair_dutch", "string", ["string"], [input]);
   } catch {
     engine = undefined;

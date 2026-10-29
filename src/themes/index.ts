@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import { designStyle } from "./design";
 import type { ThemeSettings } from "../domain/types";
 import { validateRasterAsset } from "../security/codec";
+import { validateRasterBytes } from "../security/raster";
 import { identityFor, type ThemeIdentity } from "./identities";
 import { materialBackgrounds, materialSize, motifSVG } from "./motifs";
 import { readableInk } from "./contrast";
@@ -875,6 +876,10 @@ export async function readImageAsset(file: File): Promise<string> {
     throw new Error("Use PNG, JPEG or WebP.");
   if (file.size > 2 * 1024 * 1024)
     throw new Error("Images must be smaller than 2 MB.");
+  if (!validateRasterBytes(new Uint8Array(await file.arrayBuffer()), file.type))
+    throw new Error(
+      "Use a valid PNG, JPEG or WebP image with supported dimensions.",
+    );
   const url = URL.createObjectURL(file);
   try {
     const img = new Image();

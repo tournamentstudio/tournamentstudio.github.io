@@ -5,6 +5,7 @@ import {
   DEFAULT_CONFIG,
 } from "../../domain/types";
 import { generateStage, recordResult } from "../../engine";
+import { DEFAULT_SWISS_POLICY } from "../../domain/swiss";
 import {
   manualGroupConfig,
   manualQualifierConfig,
@@ -72,6 +73,42 @@ describe("manual stage assignments", () => {
         Array.from({ length: 7 }, (_, index) => ["p1", `p${index + 2}`]),
       ),
     ).toThrow("No pairing avoids all rematches");
+  });
+  it("clears a draft FIDE restriction list without running the pairing solver", () => {
+    const input = document("swiss"),
+      stage = input.stages[0];
+    input.rules.pointsWin = 1;
+    input.rules.pointsDraw = 0.5;
+    input.rules.pointsLoss = 0;
+    input.rules.allowDraws = true;
+    stage.config.swiss = {
+      ...structuredClone(DEFAULT_SWISS_POLICY),
+      federation: {
+        system: "fide-dutch-2026",
+        engine: "bbp-6.0.0-ts1",
+        initialColor: "white",
+        pairingOrder: [...stage.participantIds],
+      },
+    };
+    const before = JSON.stringify(input);
+    const unchanged = swissRestrictionConfig(input, stage.id, []);
+    expect(unchanged.forbiddenPairs).toEqual([]);
+    expect(unchanged.swiss).toEqual(stage.config.swiss);
+    expect(JSON.stringify(input)).toBe(before);
+
+    stage.config.forbiddenPairs = [["p1", "p2"]];
+    const cleared = swissRestrictionConfig(input, stage.id, []);
+    expect(cleared.forbiddenPairs).toEqual([]);
+    expect(stage.config.forbiddenPairs).toEqual([["p1", "p2"]]);
+    expect(input.matches).toEqual([]);
+    expect(() =>
+      swissRestrictionConfig(input, stage.id, [["p1", "p3"]]),
+    ).toThrow("FIDE Dutch does not support forbidden-pair rules");
+
+    input.rules.pointsWin = 3;
+    expect(() => swissRestrictionConfig(input, stage.id, [])).toThrow(
+      "FIDE Dutch requires single-game scoring",
+    );
   });
   it("manual qualification resolves a tied cutoff without selecting an ineligible entrant", () => {
     let input = document("round-robin");

@@ -1,4 +1,5 @@
 import { Gunzip, gzipSync, strToU8 } from "fflate";
+import { validateRasterBytes } from "./raster";
 
 export const LIMITS = {
   documentBytes: 16 * 1024 * 1024,
@@ -160,10 +161,11 @@ export function validateRasterAsset(value: string): boolean {
   );
   if (!match) return false;
   try {
-    const header = atob(match[2].slice(0, 32));
-    if (match[1] === "png") return header.startsWith("\x89PNG\r\n\x1a\n");
-    if (match[1] === "jpeg") return header.startsWith("\xff\xd8\xff");
-    return header.startsWith("RIFF") && header.slice(8, 12) === "WEBP";
+    const decoded = atob(match[2]);
+    const bytes = new Uint8Array(decoded.length);
+    for (let index = 0; index < decoded.length; index++)
+      bytes[index] = decoded.charCodeAt(index);
+    return validateRasterBytes(bytes, `image/${match[1]}`);
   } catch {
     return false;
   }
