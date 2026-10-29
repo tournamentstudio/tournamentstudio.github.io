@@ -1,6 +1,8 @@
 import type { Locale } from "../domain/types";
 import { gameCollections, getTheme, getThemesForSport } from "./index";
 import { motifGeometry } from "./motifs";
+import { GameIcon } from "./GameIcon";
+import { getGameIconId } from "./game-icons";
 import "./themes.css";
 
 export function ThemeMotif({
@@ -39,6 +41,7 @@ export function ThemeMotif({
             <path
               key={i}
               d={shape.d}
+              transform={shape.transform}
               fill={shape.fill ? "currentColor" : "none"}
             />
           );
@@ -49,6 +52,7 @@ export function ThemeMotif({
               cx={shape.cx}
               cy={shape.cy}
               r={shape.r}
+              transform={shape.transform}
               fill={shape.fill ? "currentColor" : "none"}
             />
           );
@@ -60,6 +64,7 @@ export function ThemeMotif({
             width={shape.width}
             height={shape.height}
             rx={shape.rx}
+            transform={shape.transform}
             fill={shape.fill ? "currentColor" : "none"}
           />
         );
@@ -81,7 +86,7 @@ export function GameIdentity({
   className?: string;
 }) {
   const theme = getTheme(preset ?? getThemesForSport(sport)[0].id);
-  const game = gameCollections[sport] ?? gameCollections.generic;
+  const game = gameCollections[getGameIconId(sport)];
   return (
     <div
       className={`game-identity ${compact ? "game-identity-compact" : ""} ${className}`}
@@ -89,7 +94,7 @@ export function GameIdentity({
       data-theme={theme.id}
     >
       <span className="game-identity-mark">
-        <ThemeMotif preset={theme.id} />
+        <GameIcon sport={sport} size={64} />
       </span>
       <div className="game-identity-copy">
         <strong>{locale === "fa" ? game.fa : game.name}</strong>

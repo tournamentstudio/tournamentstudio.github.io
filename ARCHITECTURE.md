@@ -610,6 +610,13 @@ only sport, preset and locale. Theme artwork therefore cannot reveal a referee
 secret through a different emblem, position or color. Material textures and
 vector paths are local static definitions, without remote assets.
 
+`GameIcon` uses a separate fourteen-sport geometry registry. `GameIdentity`
+selects this icon from the sport while retaining the chosen theme's styling.
+`GolActionIcon` supplies hands, bead, bell and cards. Shared static geometry keeps
+the closed fists consistent in interface icons and exported theme motifs.
+Unknown identifiers fall back to the generic icon; decorative SVGs have no
+accessible name unless the caller supplies one. See [DESIGN_REFERENCES.md](DESIGN_REFERENCES.md).
+
 Theme settings remain the existing version 1 data contract. The richer identity
 is derived from the preset ID, so exports do not duplicate artwork or create new
 executable fields. Predefined text, accent and muted tokens are checked for 4.5:1

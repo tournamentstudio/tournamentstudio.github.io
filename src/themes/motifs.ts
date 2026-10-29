@@ -1,5 +1,6 @@
 import type { ThemeMaterial, ThemeMotifId } from "./identities";
-export type MotifShape =
+import { golActionGeometry } from "./game-icons";
+export type MotifShape = (
   | { kind: "path"; d: string; fill?: boolean }
   | { kind: "circle"; cx: number; cy: number; r: number; fill?: boolean }
   | {
@@ -10,7 +11,8 @@ export type MotifShape =
       height: number;
       rx?: number;
       fill?: boolean;
-    };
+    }
+) & { transform?: string };
 const path = (d: string, fill = false): MotifShape => ({
   kind: "path",
   d,
@@ -139,43 +141,43 @@ export const motifGeometry: Record<ThemeMotifId, readonly MotifShape[]> = {
     ),
   ],
   "gol-palms": [
-    path(
-      "M47 125L40 95C37 84 42 77 50 80L58 91V63C58 53 71 53 71 63V55C71 44 84 44 84 55V58C84 47 97 47 97 58V68C97 57 110 57 110 68V100C110 121 94 137 72 137Z",
-    ),
-    path(
-      "M193 125L200 95C203 84 198 77 190 80L182 91V63C182 53 169 53 169 63V55C169 44 156 44 156 55V58C156 47 143 47 143 58V68C143 57 130 57 130 68V100C130 121 146 137 168 137Z",
-    ),
-    path(
-      "M71 63V79M84 58V79M97 68V84M58 91L78 99C89 102 85 116 75 112L62 108M169 63V79M156 58V79M143 68V84M182 91L162 99C151 102 155 116 165 112L178 108M40 151H200M60 157H180",
-    ),
+    ...golActionGeometry.hands.map((shape) => ({
+      ...shape,
+      transform: `translate(30 0) scale(2.8) ${shape.transform ?? ""}`.trim(),
+    })),
+    path("M43 165H197"),
   ],
   "gol-rosette": [
-    circle(120, 90, 55),
+    ...golActionGeometry.hands.map((shape) => ({
+      ...shape,
+      transform: `translate(56 20) scale(2) ${shape.transform ?? ""}`.trim(),
+    })),
     path(
-      "M120 23L138 57L172 38L153 72L187 90L153 108L172 142L138 123L120 157L102 123L68 142L87 108L53 90L87 72L68 38L102 57Z",
+      "M25 55V25H55M185 25H215V55M25 125V155H55M185 155H215V125M35 45V35H45M195 35H205V45M35 135V145H45M195 145H205V135M98 149L120 165L142 149M98 31L120 15L142 31",
     ),
-    path("M120 53L146 64L157 90L146 116L120 127L94 116L83 90L94 64Z"),
-    circle(120, 90, 17),
-    path("M35 32H56V53M184 32H205V53M35 127V148H56M184 148H205V127"),
   ],
   "gol-arch": [
     path(
       "M55 150V81C55 51 93 34 120 21C147 34 185 51 185 81V150ZM69 150V84C69 60 98 47 120 36C142 47 171 60 171 84V150Z",
     ),
-    path(
-      "M38 150H202M90 150V112C90 99 108 90 120 82C132 90 150 99 150 112V150M55 101H69M171 101H185",
-    ),
-    path("M120 51L132 64L120 77L108 64Z"),
+    path("M38 158H202M55 101H69M171 101H185"),
+    ...golActionGeometry.hands.map((shape) => ({
+      ...shape,
+      transform:
+        `translate(62.4 54) scale(1.8) ${shape.transform ?? ""}`.trim(),
+    })),
   ],
   "gol-knot": [
-    path(
-      "M120 24L156 60L192 90L156 120L120 156L84 120L48 90L84 60ZM120 49L145 74L169 90L145 106L120 131L95 106L71 90L95 74Z",
-    ),
-    path(
-      "M84 60L156 120M156 60L84 120M120 24V49M48 90H71M169 90H192M120 131V156",
-    ),
-    circle(38, 90, 3, true),
-    circle(202, 90, 3, true),
+    ...golActionGeometry.cards.map((shape) => ({
+      ...shape,
+      transform: `translate(20 25) scale(1.7) ${shape.transform ?? ""}`.trim(),
+    })),
+    ...golActionGeometry.bell.map((shape) => ({
+      ...shape,
+      transform: `translate(116 42) scale(1.6) ${shape.transform ?? ""}`.trim(),
+    })),
+    circle(130, 132, 8),
+    path("M26 153H214M49 163H191"),
   ],
 };
 export function motifSVG(
@@ -187,10 +189,14 @@ export function motifSVG(
   const shapes = motifGeometry[motif]
     .map((shape) => {
       const fill = shape.fill ? safeColor : "none";
-      if (shape.kind === "path") return `<path d="${shape.d}" fill="${fill}"/>`;
+      const transform = shape.transform
+        ? ` transform="${shape.transform}"`
+        : "";
+      if (shape.kind === "path")
+        return `<path d="${shape.d}" fill="${fill}"${transform}/>`;
       if (shape.kind === "circle")
-        return `<circle cx="${shape.cx}" cy="${shape.cy}" r="${shape.r}" fill="${fill}"/>`;
-      return `<rect x="${shape.x}" y="${shape.y}" width="${shape.width}" height="${shape.height}" rx="${shape.rx ?? 0}" fill="${fill}"/>`;
+        return `<circle cx="${shape.cx}" cy="${shape.cy}" r="${shape.r}" fill="${fill}"${transform}/>`;
+      return `<rect x="${shape.x}" y="${shape.y}" width="${shape.width}" height="${shape.height}" rx="${shape.rx ?? 0}" fill="${fill}"${transform}/>`;
     })
     .join("");
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180"><g stroke="${safeColor}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="${Math.max(0, Math.min(1, opacity))}">${shapes}</g></svg>`;

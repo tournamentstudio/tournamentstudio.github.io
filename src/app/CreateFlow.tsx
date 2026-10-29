@@ -5,7 +5,6 @@ import {
   Check,
   Users,
   WandSparkles,
-  Trophy,
   ShieldCheck,
   ListChecks,
 } from "lucide-react";
@@ -26,6 +25,7 @@ import {
 } from "../sports/library";
 import { themes, getThemesForSport, getTheme, themeStyle } from "../themes";
 import { GameIdentity, ThemeMotif } from "../themes/ThemeMotif";
+import { GameIcon } from "../themes/GameIcon";
 import "./game-experience.css";
 import { Field, ErrorText, Notice } from "../components/ui";
 import { useI18n, formatName } from "../i18n";
@@ -364,7 +364,7 @@ export function CreateFlow({
                 </Field>
               )}
               <div className="creation-note">
-                <Trophy size={25} />
+                <GameIcon sport={sport} size={36} />
                 <p>
                   {t(
                     "Every preset is a starting point. Scoring, teams, and rules can all be changed in your workspace.",

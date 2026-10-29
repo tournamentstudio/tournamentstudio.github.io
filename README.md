@@ -46,6 +46,10 @@ English and Persian labels, local Inter and Vazirmatn fonts, and RTL layouts are
 
 Named personal designs complement 50 theme presets with game collections for all 14 activities. Original court diagrams, paddles, chess pieces, Persian geometry and other vector artwork sit on paper, wood, felt, tile and other material treatments. Theme Studio recommends related choices and lets you search the full catalog. The selected identity appears in creation, the workspace, match cards and scorekeeping.
 
+Fourteen separate activity icons keep each game recognizable across theme changes, library covers and presentation screens. Gol Ya Pooch uses closed fists and a bead, with bell and card symbols in its referee controls. [Design references](DESIGN_REFERENCES.md) explain the Persian sources and original artwork.
+
+![TournaStudio's fourteen activity icons](docs/screenshots/activity-icons.png)
+
 Presentation Studio has 21 scene types, playlists, keyboard controls, fullscreen, three aspect ratios and configurable broadcast overlays. Sponsor cards support grid, strip and spotlight layouts; overlay images can retain transparency. A second tab in the same browser profile reloads confirmed revisions. That is local communication, not synchronization across devices.
 
 Gol Ya Pooch has a three-player default roster, quick scoring and a detailed referee desk. Configure target/margin or timed-period policies, persisted clocks, overtime and structured card effects before play. Public projections contain live totals but exclude hand logs, clock/possession state and concealed positions. Traditional, Modern, Night, Saffron, Courtyard, Velvet and Ink House themes also work in presentation mode. Both sides receive identical decorative emblems, independent of concealed gameplay information.

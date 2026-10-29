@@ -1,4 +1,4 @@
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import type { Locale } from "../../domain/types";
 import { uid } from "../../domain/types";
 import {
@@ -9,6 +9,7 @@ import {
 } from "../../domain/gol";
 import type { GolRules } from "../../engine/gol";
 import { Field, Notice } from "../../components/ui";
+import { GolActionIcon } from "../../themes/GameIcon";
 
 export function GolRulesEditor({
   value,
@@ -185,7 +186,10 @@ export function GolRulesEditor({
           edit({ ability: { ...ability, ...changes } });
         return (
           <fieldset className="panel inset-panel" key={card.id}>
-            <legend>{card.name || t("Special card", "کارت ویژه")}</legend>
+            <legend>
+              <GolActionIcon action="cards" size={18} />{" "}
+              {card.name || t("Special card", "کارت ویژه")}
+            </legend>
             <div className="two-columns">
               <Field label={t("Card name", "نام کارت")}>
                 <input
@@ -324,7 +328,7 @@ export function GolRulesEditor({
           })
         }
       >
-        <Plus size={16} />
+        <GolActionIcon action="cards" size={18} />
         {t("Add custom card", "افزودن کارت سفارشی")}
       </button>
     </section>

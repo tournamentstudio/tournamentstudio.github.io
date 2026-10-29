@@ -19,6 +19,7 @@ import "./presentation.css";
 import { AdvancedSceneContent, type AdvancedScene } from "./advanced-scenes";
 import { BroadcastOverlay } from "./BroadcastOverlay";
 import { generatedMatchLabel } from "../i18n/match-labels";
+import { GameIcon } from "../themes/GameIcon";
 
 export const sceneTypes: { id: SceneType; en: string; fa: string }[] = [
   {
@@ -153,7 +154,7 @@ function Scoreboard({
                 />
               ) : (
                 <span className="scoreboard-monogram">
-                  {names[i].slice(0, 2)}
+                  <GameIcon sport={tournament.sport} size={60} />
                 </span>
               )}
               <h2>
@@ -264,11 +265,11 @@ function SceneContent({
               alt=""
             />
           ) : (
-            <div className="presentation-ornament" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-            </div>
+            <GameIcon
+              sport={tournament.sport}
+              size={128}
+              className="presentation-game-icon"
+            />
           )}
           <p className="presentation-kicker">
             {scene.title || t("THE COMPETITION BEGINS", "آغاز رقابت")}

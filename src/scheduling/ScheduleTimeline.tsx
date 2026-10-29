@@ -11,6 +11,7 @@ import {
 import "./timeline.css";
 import { scheduleOccurrences } from "./legs";
 import { optimizeSchedule } from "./optimize";
+import { timelineDay } from "./timeline-day";
 
 const localInput = (value: string) => {
   const d = new Date(value);
@@ -58,11 +59,13 @@ export function ScheduleTimeline({ tournament, onChange }: EditorProps) {
     };
   }>();
   const [error, setError] = useState<unknown>();
-  const start = Date.parse(`${day}T00:00`);
+  const timeline = useMemo(() => timelineDay(day, locale), [day, locale]);
+  const start = timeline?.start ?? NaN;
+  const slots = timeline?.slots ?? [];
   const shown = matches.filter(
     (m) =>
       Date.parse(m.scheduledAt!) >= start &&
-      Date.parse(m.scheduledAt!) < start + 24 * 60 * 60000,
+      Date.parse(m.scheduledAt!) < (timeline?.end ?? NaN),
   );
   const scroll = useRef<HTMLDivElement>(null);
   const firstStart = shown[0]?.scheduledAt;
@@ -86,6 +89,13 @@ export function ScheduleTimeline({ tournament, onChange }: EditorProps) {
   };
   function move(id: string, at: string, resource: string) {
     try {
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(at) && localInput(at) !== at)
+        throw new Error(
+          t(
+            "This clock time does not exist in the device timezone. Choose a valid time on the timeline.",
+            "این ساعت در منطقه زمانی دستگاه وجود ندارد. زمان معتبری در خط زمان انتخاب کنید.",
+          ),
+        );
       setPreview({
         result: moveScheduledMatch(tournament, id, at, resource),
         revision: tournament.revision,
@@ -166,12 +176,27 @@ export function ScheduleTimeline({ tournament, onChange }: EditorProps) {
             tabIndex={0}
             aria-label={t("Daily venue timeline", "خط زمان روزانه محل‌ها")}
           >
-            <div className="timeline-grid" style={{ width: 48 * 80 + 120 }}>
-              <div className="timeline-hour-row">
+            <div
+              className="timeline-grid"
+              style={{ width: slots.length * 80 + 120 }}
+            >
+              <div
+                className="timeline-hour-row"
+                style={{
+                  gridTemplateColumns: slots.length
+                    ? `120px repeat(${slots.length}, 80px)`
+                    : "120px",
+                }}
+              >
                 <span />
-                {Array.from({ length: 48 }, (_, i) => (
-                  <span key={i}>
-                    {number(Math.floor(i / 2))}:{i % 2 ? "30" : "00"}
+                {slots.map((slot) => (
+                  <span key={slot.at}>
+                    <bdi>{slot.clock}</bdi>
+                    {slot.offset && (
+                      <small>
+                        <bdi dir="ltr">{slot.offset}</bdi>
+                      </small>
+                    )}
                   </span>
                 ))}
               </div>
@@ -181,19 +206,14 @@ export function ScheduleTimeline({ tournament, onChange }: EditorProps) {
                     <bdi>{resource.name}</bdi>
                   </strong>
                   <div className="timeline-lane">
-                    {Array.from({ length: 48 }, (_, i) => (
+                    {slots.map((slot, i) => (
                       <button
                         className="timeline-slot"
-                        key={i}
+                        key={slot.at}
                         style={{ left: i * 80 }}
-                        aria-label={`${resource.name} ${number(Math.floor(i / 2))}:${i % 2 ? "30" : "00"}`}
+                        aria-label={`${resource.name} ${slot.clock}${slot.offset ? ` ${slot.offset}` : ""}`}
                         onClick={() => {
-                          if (selected)
-                            move(
-                              selected,
-                              new Date(start + i * 30 * 60000).toISOString(),
-                              resource.id,
-                            );
+                          if (selected) move(selected, slot.at, resource.id);
                         }}
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => {
@@ -201,12 +221,7 @@ export function ScheduleTimeline({ tournament, onChange }: EditorProps) {
                           const id = e.dataTransfer.getData(
                             "application/x-tournastudio-match",
                           );
-                          if (id)
-                            move(
-                              id,
-                              new Date(start + i * 30 * 60000).toISOString(),
-                              resource.id,
-                            );
+                          if (id) move(id, slot.at, resource.id);
                         }}
                       />
                     ))}
@@ -272,7 +287,13 @@ export function ScheduleTimeline({ tournament, onChange }: EditorProps) {
                 ))}
               </select>
             </Field>
-            <Field label={t("Proposed start", "شروع پیشنهادی")}>
+            <Field
+              label={t("Proposed start", "شروع پیشنهادی")}
+              hint={t(
+                "If the clock repeats during a timezone change, select the timeline slot with the required UTC offset.",
+                "اگر ساعت هنگام تغییر منطقه زمانی تکرار می‌شود، بازه خط زمان با اختلاف UTC مورد نظر را انتخاب کنید.",
+              )}
+            >
               <input
                 type="datetime-local"
                 value={time}
@@ -292,7 +313,16 @@ export function ScheduleTimeline({ tournament, onChange }: EditorProps) {
           <button
             className="button secondary"
             disabled={!selected || !time || !venue}
-            onClick={() => move(selected, time, venue)}
+            onClick={() => {
+              const original = matches.find(
+                (match) => match.id === selected,
+              )?.scheduledAt;
+              move(
+                selected,
+                original && localInput(original) === time ? original : time,
+                venue,
+              );
+            }}
           >
             {t("Preview timeline move", "پیش‌نمایش جابه‌جایی خط زمان")}
           </button>

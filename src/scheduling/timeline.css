@@ -16,9 +16,12 @@
 }
 .timeline-hour-row {
   display: grid;
-  grid-template-columns: 120px repeat(48, 80px);
   font-size: 0.8rem;
   padding-block: 0.5rem;
+}
+.timeline-hour-row small {
+  display: block;
+  white-space: nowrap;
 }
 .timeline-resource-row {
   display: grid;

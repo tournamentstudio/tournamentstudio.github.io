@@ -47,7 +47,8 @@ import { ladderPolicy } from "../domain/ladder";
 import { History } from "./History";
 import { Settings } from "./StorageHealth";
 import { getTheme, themeStyle } from "../themes";
-import { GameIdentity, ThemeMotif } from "../themes/ThemeMotif";
+import { GameIdentity } from "../themes/ThemeMotif";
+import { GameIcon } from "../themes/GameIcon";
 import "./game-experience.css";
 import { requiresCompetitionWorker } from "../workers/competition-task";
 import {
@@ -386,7 +387,7 @@ export function Workspace({
                   </button>
                 </div>
                 <div className="overview-emblem">
-                  <ThemeMotif preset={doc.theme.preset} variant="emblem" />
+                  <GameIcon sport={doc.sport} size={160} />
                 </div>
               </div>
               <div className="stat-grid">

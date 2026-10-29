@@ -8,7 +8,6 @@ import {
   Users,
   ArrowUpRight,
   ShieldCheck,
-  Workflow,
   LockKeyhole,
   Search,
   Trash2,
@@ -22,6 +21,7 @@ import { useI18n, statusName, formatName } from "../i18n";
 import { sports } from "../sports";
 import type { LibraryEntry } from "../persistence";
 import { Empty } from "../components/ui";
+import { GameIcon } from "../themes/GameIcon";
 
 interface Props {
   entries: LibraryEntry[];
@@ -41,7 +41,6 @@ const templates = [
     caption: ["Groups, then the glory", "از گروه‌ها تا قهرمانی"],
     color: "green",
     letter: "01",
-    icon: Trophy,
   },
   {
     id: "esports",
@@ -49,7 +48,6 @@ const templates = [
     caption: ["Two chances. One champion.", "دو فرصت. یک قهرمان."],
     color: "purple",
     letter: "02",
-    icon: Workflow,
   },
   {
     id: "gol-ya-pooch",
@@ -57,7 +55,6 @@ const templates = [
     caption: ["A little mystery. A lot of rivalry.", "راز کوچک، رقابت بزرگ"],
     color: "terra",
     letter: "03",
-    icon: Layers3,
   },
 ];
 export function Home({
@@ -354,6 +351,10 @@ export function Home({
                 <button
                   className={`tournament-cover cover-${i % 4}`}
                   onClick={() => onOpen(entry.id)}
+                  aria-label={t(
+                    `Open ${entry.title}`,
+                    `باز کردن ${entry.title}`,
+                  )}
                 >
                   <div className="cover-lines" />
                   <span className={`badge status-${entry.status}`}>
@@ -369,13 +370,17 @@ export function Home({
                     {entry.protected ? (
                       <LockKeyhole size={36} />
                     ) : (
-                      entry.title.trim().slice(0, 2).toUpperCase()
+                      <GameIcon sport={entry.sport} size={48} />
                     )}
                   </span>
                   <span className="cover-sport">
                     {entry.protected
                       ? t("LOCAL VAULT", "گاوصندوق محلی")
-                      : entry.sport.replaceAll("-", " ")}
+                      : locale === "fa"
+                        ? (sports.find((sport) => sport.id === entry.sport)
+                            ?.fa ?? entry.sport)
+                        : (sports.find((sport) => sport.id === entry.sport)
+                            ?.name ?? entry.sport)}
                   </span>
                 </button>
                 <div className="tournament-card-body">
@@ -519,7 +524,7 @@ export function Home({
                 onClick={() => onCreate(template.id)}
               >
                 <div className="template-top">
-                  <template.icon size={27} strokeWidth={1.4} />
+                  <GameIcon sport={template.id} size={40} />
                   <span>{template.letter}</span>
                 </div>
                 <h3>{template.title[locale === "fa" ? 1 : 0]}</h3>

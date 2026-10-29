@@ -2722,6 +2722,7 @@ kbd {
   line-height: 1.8;
 }
 [dir="rtl"] .eyebrow,
+[dir="rtl"] .cover-sport,
 [dir="rtl"] .stage-node-order,
 [dir="rtl"] .studio-label,
 [dir="rtl"] .sidebar-section-label {

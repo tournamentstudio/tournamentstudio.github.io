@@ -439,7 +439,8 @@
   background: var(--theme-card, transparent);
 }
 .game-identity-mark svg {
-  width: 80px;
+  width: 52px;
+  height: 52px;
 }
 .game-identity-copy {
   display: grid;
@@ -473,7 +474,8 @@
   height: 46px;
 }
 .game-identity-compact .game-identity-mark svg {
-  width: 46px;
+  width: 34px;
+  height: 34px;
 }
 .game-identity-compact .game-identity-copy > span {
   font-size: 14px;
@@ -641,7 +643,8 @@
     height: 60px;
   }
   .game-identity-mark svg {
-    width: 60px;
+    width: 42px;
+    height: 42px;
   }
 }
 @media (max-width: 360px) {

@@ -1,12 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  ArrowLeftRight,
-  Pause,
-  Play,
-  Plus,
-  ShieldCheck,
-  Timer,
-} from "lucide-react";
+import { ArrowLeftRight, Pause, Play, ShieldCheck } from "lucide-react";
 import type { Match, Tournament } from "../../domain/types";
 import {
   finishGolClock,
@@ -23,6 +16,7 @@ import {
 } from "../../engine/gol";
 import { ErrorText, Field, Notice } from "../../components/ui";
 import { useI18n } from "../../i18n";
+import { GolActionIcon } from "../../themes/GameIcon";
 
 export function RefereeMode({
   tournament: doc,
@@ -61,7 +55,11 @@ export function RefereeMode({
   }, [running]);
   const name = (id: string) =>
     doc.participants.find((p) => p.id === id)?.name ?? "?";
-  function change(action: () => Tournament, label: string) {
+  function change(
+    action: () => Tournament,
+    label: string,
+    clearSecret = false,
+  ) {
     try {
       const next = action(),
         updated = next.matches.find((m) => m.id === match.id)!;
@@ -71,7 +69,10 @@ export function RefereeMode({
       onChange(next, label);
       setNow(Date.now());
       setError(undefined);
-      if ((updated as GolMatch).golState?.concealingTeamId !== concealing)
+      if (
+        clearSecret ||
+        (updated as GolMatch).golState?.concealingTeamId !== concealing
+      )
         setSecret("");
     } catch (error) {
       setError(error);
@@ -85,7 +86,7 @@ export function RefereeMode({
           {t("REFEREE ONLY", "فقط داور")}
         </span>
         <div className="referee-timer">
-          <Timer size={16} />
+          <GolActionIcon action="bell" size={18} />
           <b
             role="timer"
             aria-label={t("Persisted match clock", "زمان‌سنج ذخیره‌شده دیدار")}
@@ -339,7 +340,7 @@ export function RefereeMode({
             )
           }
         >
-          <Plus size={15} />
+          <GolActionIcon action="hands" size={20} />
           {t("Record hand", "ثبت دست")}
         </button>
       </div>
@@ -363,6 +364,7 @@ export function RefereeMode({
                   change(
                     () => undoGolHand(doc, match.id, h.id),
                     t("Correct referee hand", "اصلاح دست توسط داور"),
+                    true,
                   )
                 }
               >

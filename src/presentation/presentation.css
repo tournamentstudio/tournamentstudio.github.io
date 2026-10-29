@@ -302,6 +302,12 @@
   height: 80px;
   object-fit: contain;
 }
+.presentation-game-icon {
+  display: block;
+  margin: 0 auto 24px;
+  color: var(--theme-accent);
+  max-height: 18vh;
+}
 .scoreboard-footnote {
   text-align: center;
   color: var(--theme-muted);

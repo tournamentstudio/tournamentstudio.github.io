@@ -122,7 +122,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for algorithms and measured engine tests.
 | Conflict detection | Implemented | Conflicting entrants, resources, referees, dependency timing, availability and rest are reported. |
 | Participant availability | Implemented | Edit start/end availability in the device timezone. Invalid ranges are blocked; the scheduler checks possible entrants against the saved bounds. |
 | Duration estimator | Implemented | Match/resource lower bound and saved schedule span, with assumptions displayed. It cannot forecast ungenerated dynamic rounds. |
-| Drag-and-drop timeline | Implemented | Schedule timeline with draggable match blocks and equivalent form/keyboard controls. Changes are previewed, conflict checked and confirmed before saving. |
+| Drag-and-drop timeline | Implemented | Schedule timeline with draggable match blocks and equivalent form/keyboard controls. Changes are previewed, conflict checked and confirmed before saving. Device-timezone day boundaries account for clock changes; repeated times show UTC offsets and skipped times are rejected. |
 | Calendar and schedule exports | Implemented | CSV, ICS and print-friendly schedule. |
 | Delay propagation and optimal scheduling | Implemented | Preview delays and propagated later start times while retaining started results. A bounded branch-and-bound solver handles up to 10 jobs and four venues and distinguishes a proved optimum from the best candidate before its search limit. Larger schedules use the greedy scheduler. |
 
@@ -136,6 +136,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for algorithms and measured engine tests.
 | Advanced bracket layouts | Implemented | Horizontal, vertical, centered-final and compact layouts, RTL connectors and matching SVG export. Collapse/reopen individual rounds; optional pointer panning and keyboard scrolling. Centered finals require a single championship tree. |
 | Theme presets | Implemented | 50 presets across 14 game collections, with 17 original vector motifs and 12 material treatments as well as typography, geometry and color tokens. Original preset IDs remain compatible. |
 | Related game themes | Implemented | At least two related choices for each activity. Game-specific creation previews, workspace identity, match cards, scorekeeper artwork and presentation backgrounds. |
+| Activity icons | Implemented | Fourteen original SVG icons stay tied to the activity across theme changes, with localized library labels. Gol Ya Pooch has closed-fist and bead emblems plus bell/card referee symbols. Static artwork receives no secret match state. |
 | Theme Studio | Implemented | Game recommendations, bilingual search, full-catalog browsing, live preview, colors with contrast warning, fonts, size, spacing, borders, corners, connectors, raster background/logo and reduced motion. |
 | Custom theme portability | Implemented | Versioned theme JSON import/export, applied to the current tournament without changing results. |
 | Saved personal theme library | Implemented | Up to 50 named theme-only copies, with apply, duplicate, rename, delete, export and reload. Images require an explicit opt-in; the personal library is separate from vaults. |

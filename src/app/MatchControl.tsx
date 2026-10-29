@@ -14,7 +14,8 @@ import { tournamentMatchEvidence } from "../engine/match-evidence";
 import { Field, Notice, ErrorText, Modal } from "../components/ui";
 import { useI18n, generatedMatchLabel, groupLabel } from "../i18n";
 import { getTheme, themeStyle } from "../themes";
-import { GameIdentity, ThemeMotif } from "../themes/ThemeMotif";
+import { GameIdentity } from "../themes/ThemeMotif";
+import { GameIcon } from "../themes/GameIcon";
 import "./game-experience.css";
 import {
   AggregateMatchControl,
@@ -61,7 +62,7 @@ function StandardMatchControl({
   busy = false,
   stale = false,
 }: MatchControlProps) {
-  const { t, locale } = useI18n();
+  const { t, locale, number } = useI18n();
   const entrants = match.slots.map((s) =>
     doc.participants.find((p) => p.id === s.participantId),
   );
@@ -226,6 +227,7 @@ function StandardMatchControl({
         className="match-control-fieldset game-match-control"
         disabled={busy || stale}
         aria-busy={busy}
+        onChange={() => setPending(undefined)}
         data-sport={doc.sport}
         style={themeStyle(doc.theme)}
       >
@@ -295,7 +297,7 @@ function StandardMatchControl({
             <div className="score-side" key={i}>
               <span className="avatar large">
                 {doc.sport === "gol-ya-pooch" ? (
-                  <ThemeMotif preset={doc.theme.preset} variant="emblem" />
+                  <GameIcon sport={doc.sport} size={44} />
                 ) : (
                   (p?.name.slice(0, 2) ?? "?")
                 )}
@@ -327,8 +329,8 @@ function StandardMatchControl({
                       Math.max(1, doc.rules.targetScore),
                     )}
                   />
-                  <span>
-                    {scores[i] ?? 0} / {doc.rules.targetScore}
+                  <span dir="ltr">
+                    {number(scores[i] ?? 0)} / {number(doc.rules.targetScore)}
                   </span>
                 </div>
               )}
@@ -514,14 +516,27 @@ function StandardMatchControl({
             <button
               className="button secondary"
               onClick={() => {
-                setScores(match.result?.scores ?? match.slots.map(() => 0));
+                setScores(
+                  match.result?.scores ??
+                    match.liveScores ??
+                    match.slots.map(() => 0),
+                );
+                setOutcome(match.result?.outcome ?? "played");
                 setWinner(match.result?.winnerIds[0] ?? "");
+                setSets(
+                  (match.result?.sets ?? [])
+                    .map((set) => set.join(":"))
+                    .join("\n"),
+                );
+                setNotes(match.notes ?? "");
+                setReferee(match.referee ?? "");
                 setMetrics(match.result?.metrics ?? {});
                 setFairPlay(match.result?.fairPlay ?? match.slots.map(() => 0));
                 setRecordFairPlay(
                   Boolean(match.result?.fairPlay) ||
                     doc.rules.tieBreakers.includes("fair-play"),
                 );
+                setError(undefined);
               }}
             >
               <RotateCcw size={16} />

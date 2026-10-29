@@ -1,0 +1,7 @@
+.game-icon {
+  display: inline-block;
+  flex-shrink: 0;
+  vertical-align: middle;
+  overflow: visible;
+  pointer-events: none;
+}

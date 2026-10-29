@@ -543,7 +543,12 @@ current result or explicitly confirm the correction and reset those dependents.
 The previous saved revision remains in **History**. Corrections can also return
 derived stages to draft or remove later dynamically paired rounds.
 
-**Reset form** discards score-form changes. Workspace **Undo** and **Redo** review
+**Reset form** restores saved scores, outcome, winner, sets, referee and private
+notes. A live Gol Ya Pooch match keeps its recorded hand totals. Changing any
+score-form field after a correction preview closes that preview; confirm again
+to review the revised change before applying it.
+
+Workspace **Undo** and **Redo** review
 up to 20 confirmed edits from the current session. Read the changed areas and
 acknowledge any affected played match before applying. Ctrl/Command+Z opens
 Undo outside text controls; Shift+Z or Ctrl+Y opens Redo. Normal text editing keeps
@@ -681,6 +686,11 @@ rescheduled. For a small schedule, optimization can search up to 10 jobs and fou
 venues; the result says whether optimality was proved or the search stopped with
 its best valid candidate.
 
+The timeline uses the device timezone. On a clock-change day it shows the actual
+day length; repeated times include their UTC offset. Choose the required offset
+on the timeline when a clock time occurs twice. Changing only a venue preserves
+the existing instant. Times skipped by a daylight-saving change are rejected.
+
 Aggregate matches have separate bookings for each regulation leg, plus an optional
 provisional extra-leg booking. Set each leg's time, venue and duration in the leg
 editor. Next matches wait for the final reserved leg and required rest. A scored
@@ -725,6 +735,10 @@ Quick Create also offers game-specific suggestions with a live preview. Theme
 changes affect the workspace header, match cards, scorekeeper, brackets and
 presentation screens. Preview scores are explicitly illustrative; changing a
 theme does not change the competition's actual results.
+
+The game icon follows the activity even when you choose an unrelated theme.
+Gol Ya Pooch uses identical closed-fist emblems for both sides. The small bead
+in the artwork never indicates where the object is hidden.
 
 Adjust colors, font, size, spacing, corners, borders and bracket connectors.
 The editor warns when custom text and background colors have low contrast.

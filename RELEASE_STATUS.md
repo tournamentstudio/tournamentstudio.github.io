@@ -1,32 +1,38 @@
 # TournaStudio release handoff
 
-The October 29, 2026 follow-up fixes conflicting saves, QR cancellation and
-long text in exported graphics.
+The October 29, 2026 activity-artwork release adds game icons and fixes score
+drafts, clock-change scheduling and Persian progress labels.
 The application remains available at [tournamentstudio.github.io](https://tournamentstudio.github.io/).
 I can leave it published without running a local development server.
 
 ## Published application
 
 - Repository: [tournamentstudio/tournamentstudio.github.io](https://github.com/tournamentstudio/tournamentstudio.github.io).
-- Release: [Save and transfer corrections](https://github.com/tournamentstudio/tournamentstudio.github.io/releases/tag/release-2026-10-29.1).
+- Release: [Game icons and match corrections](https://github.com/tournamentstudio/tournamentstudio.github.io/releases/tag/release-2026-10-29.2).
 - Publication: GitHub Pages serves the prepared static files from `main/docs`.
 - GitHub Actions is disabled. There are no repository CI workflows.
 - The hosted application does not need a development server running on my computer.
 - The source, tests, deployment files and documentation are committed to `main`.
 
-Transactions now check the captured revision, payload hash and protection mode.
-A same-revision reimport or vault secret change cannot be overwritten by an
-older pending operation. Open match drafts remain visible but become read-only
-after another tab refreshes the document. Local referee saves retain their form.
+Fourteen original activity icons now appear in creation, the local library,
+workspace identity and presentation. Selecting another theme keeps the chosen
+game's icon. Gol Ya Pooch uses closed fists and a bead, with bell and card
+controls inspired by Persian references. Both teams have identical public
+artwork; no private match state reaches the icon components.
 
-Canceled QR image reads and camera requests cannot replace a newer import input.
-Late camera streams are released. Confirmed numbered parts remain available for
-the next scan until explicitly cleared.
+Reset form restores all saved match fields and live Gol hand totals. Editing
+after a correction preview invalidates that preview, including aggregate-leg
+changes. Undoing a Gol hand clears its concealed-position draft even when
+possession remains unchanged.
 
-Introduction slides reserve the actual wrapped height of each text block and
-continue long descriptions on extra pages. Champion subtitles stay clear of the
-winner and footer. Width-aware wrapping preserves graphemes; scoreboard and
-overlay totals keep every digit on one line.
+The venue timeline covers actual device-local day boundaries, including
+23-hour, 25-hour and half-hour clock changes. Repeated times show UTC offsets;
+nonexistent clock times are rejected. Venue-only edits preserve the booked
+instant. Persian library labels use normal spacing, and Gol progress fractions
+keep score/target order with localized digits.
+
+The previous release's transactional save checks, stale-editor protection,
+cancelable QR imports and wrapped graphic exports remain in place.
 
 The preceding release fixed live English/Persian switching in mounted brackets. Default
 orientation follows the interface language; a manual choice remains until
@@ -54,18 +60,20 @@ These checks were run locally against the correction build:
 | Check | Result |
 | --- | --- |
 | TypeScript and ESLint | Passed |
-| Unit and integration suite | 1,110 tests passed across 93 files |
+| Unit and integration suite | 1,129 tests passed across 95 files |
 | Release packaging checks | 4 tests passed |
 | Production build | Passed |
-| Browser regression selection | 73 tests passed across Chromium, Firefox and WebKit; 4 camera-fixture cases skipped outside Chromium |
+| Browser regression selection | 60 tests passed across Chromium, Firefox and WebKit; the 6 icon checks were repeated after the final Persian-label adjustment |
 | Prepared publication | 71 application files with SHA-256 entries |
 
-The browser selection covers conflicting saves and editors, QR cancellation and
-retry, camera release, actual downloaded graphics, history, language switching
-and 15 core workflows. Camera stream fixtures use Chromium's canvas capture API;
-image-based QR transfer runs in all three engines. A Chromium screenshot stall
-on a standalone SVG was isolated to the test capture step. Geometry checks still
-load the actual downloaded file; screenshots use the same SVG inside an HTML page.
+The browser selection covers game identity, theme changes, public icon privacy,
+complete form resets, correction preview invalidation, Gol hand undo, daylight-
+saving transitions, conflicting saves, language switching and 15 core workflows.
+The new schedule tests also inspect saved UTC instants after timeline moves and
+venue-only edits. The new regression cases ran in all three browser engines.
+One final Firefox repeat exceeded the import-status assertion timeout; the
+captured screen had reached the saved workspace. Both Firefox icon checks
+passed on an unchanged rerun.
 
 Core workflows include knockout completion, groups and playoffs, Swiss,
 independent snapshot copies, versioned patches, encrypted backup recovery,
@@ -78,8 +86,8 @@ Repeat the final local checks with:
 ```sh
 npm run check
 npm run test:release
-npx playwright test tests/e2e/same-revision-conflicts.spec.ts tests/e2e/qr-transfer.spec.ts tests/e2e/exports.spec.ts
-npx playwright test tests/e2e/tournament.spec.ts tests/e2e/history-commands.spec.ts tests/e2e/language-switch-layout.spec.ts --project=chromium
+npx playwright test tests/e2e/themes.spec.ts tests/e2e/game-icons.spec.ts tests/e2e/match-control-drafts.spec.ts tests/e2e/timeline-clock-changes.spec.ts
+npx playwright test tests/e2e/tournament.spec.ts tests/e2e/same-revision-conflicts.spec.ts tests/e2e/language-switch-layout.spec.ts --project=chromium
 ```
 
 The linked GitHub release records the published commit and post-publication

@@ -358,15 +358,15 @@ const identities: Record<string, IdentitySpec> = {
   "gol-traditional": [
     "gol-ya-pooch",
     "felt",
-    "An embroidered table with two equal closed hands.",
-    "میز نقش‌دوزی‌شده با دو دست بسته برابر.",
+    "An embroidered table with closed fists and a small bead.",
+    "میز نقش‌دوزی‌شده با مشت‌های بسته و یک گوی کوچک.",
     "gol-palms",
   ],
   "gol-modern": [
     "gol-ya-pooch",
     "plain",
-    "Sculpted ivory cards and a balanced hand emblem.",
-    "کارت‌های عاجی و نشان متعادل دست‌ها.",
+    "Sculpted ivory cards and two closed fists around a bead.",
+    "کارت‌های عاجی و دو مشت بسته پیرامون یک گوی.",
     "gol-palms",
   ],
   "gol-night": [
@@ -379,8 +379,8 @@ const identities: Record<string, IdentitySpec> = {
   "gol-saffron": [
     "gol-ya-pooch",
     "paper",
-    "Saffron paper, woven borders and a flower seal.",
-    "کاغذ زعفرانی، حاشیه بافته و نشان گل.",
+    "Saffron paper and closed hands within a woven frame.",
+    "کاغذ زعفرانی و دست‌های بسته در قاب بافته.",
     "gol-rosette",
   ],
   "gol-turquoise": [
@@ -393,8 +393,8 @@ const identities: Record<string, IdentitySpec> = {
   "gol-velvet": [
     "gol-ya-pooch",
     "velvet",
-    "Burgundy velvet with a restrained copper knot.",
-    "مخمل زرشکی با گره مسی ساده.",
+    "Burgundy velvet, a tabletop bell and optional game cards.",
+    "مخمل زرشکی، زنگ رومیزی و کارت‌های اختیاری بازی.",
     "gol-knot",
   ],
   "gol-ink": [

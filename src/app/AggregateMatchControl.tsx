@@ -158,6 +158,7 @@ export function AggregateMatchControl({
         className="match-control-fieldset"
         disabled={busy || stale}
         aria-busy={busy}
+        onChange={() => setPending(undefined)}
       >
         <h3>{generatedMatchLabel(match, locale)}</h3>
         <Notice>
@@ -274,7 +275,10 @@ export function AggregateMatchControl({
                 type="button"
                 className="button secondary"
                 disabled={legs.length >= maximum}
-                onClick={() => setLegs([...legs, [0, 0]])}
+                onClick={() => {
+                  setLegs([...legs, [0, 0]]);
+                  setPending(undefined);
+                }}
               >
                 {t("Add next leg", "افزودن بازی بعدی")}
               </button>
@@ -282,7 +286,10 @@ export function AggregateMatchControl({
                 type="button"
                 className="button secondary"
                 disabled={legs.length <= 1}
-                onClick={() => setLegs(legs.slice(0, -1))}
+                onClick={() => {
+                  setLegs(legs.slice(0, -1));
+                  setPending(undefined);
+                }}
               >
                 {t("Remove last leg", "حذف بازی آخر")}
               </button>

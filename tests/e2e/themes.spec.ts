@@ -88,16 +88,17 @@ test("uses equal public emblems and target progress in Gol scorekeeping", async 
   await section(page, "Matches");
   await page.locator("button.match-tile.ready").first().click();
   const dialog = page.getByRole("dialog", { name: "Match control" });
-  await expect(
-    dialog.locator(".game-match-banner .theme-motif"),
-  ).toHaveAttribute("data-motif", "gol-arch");
-  await expect(dialog.locator(".score-side .theme-motif")).toHaveCount(2);
+  await expect(dialog.locator(".game-match-banner .game-icon")).toHaveAttribute(
+    "data-game-icon",
+    "gol-ya-pooch",
+  );
+  await expect(dialog.locator(".score-side .game-icon")).toHaveCount(2);
   const leftArt = await dialog
-    .locator(".score-side .theme-motif")
+    .locator(".score-side .game-icon")
     .nth(0)
     .innerHTML();
   const rightArt = await dialog
-    .locator(".score-side .theme-motif")
+    .locator(".score-side .game-icon")
     .nth(1)
     .innerHTML();
   expect(leftArt).toBe(rightArt);
@@ -115,7 +116,7 @@ test("uses equal public emblems and target progress in Gol scorekeeping", async 
     .getByLabel("Concealed position (private)", { exact: true })
     .fill("PRIVATE-TABLE-POSITION");
   expect(
-    await dialog.locator(".score-side .theme-motif").nth(0).innerHTML(),
+    await dialog.locator(".score-side .game-icon").nth(0).innerHTML(),
   ).toBe(leftArt);
   await expect(dialog.locator(".game-match-banner")).not.toContainText(
     "PRIVATE-TABLE-POSITION",
