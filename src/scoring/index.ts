@@ -1,6 +1,7 @@
 import type { Match, MatchResult, Rules, Stage } from "../domain/types";
 import { validateMetrics, weightedScores } from "./metrics";
 import { validateAggregateResult } from "../domain/aggregate";
+import { validatePlacements } from "./placements";
 
 const elimination = new Set([
   "single-elimination",
@@ -23,6 +24,7 @@ export function validateResult(
   const ids = entrants as string[];
   if (new Set(ids).size !== ids.length)
     throw new Error("A participant cannot occupy two slots in one match.");
+  validatePlacements(input.placements, ids.length);
   if (
     input.scores.length !== ids.length ||
     input.scores.some(
@@ -135,25 +137,6 @@ export function validateResult(
     result.scores = totals;
     winners = [ids[totals[0] > totals[1] ? 0 : 1]];
   } else if (input.placements) {
-    if (
-      input.placements.length !== ids.length ||
-      input.placements.some(
-        (rank) => !Number.isInteger(rank) || rank < 1 || rank > ids.length,
-      )
-    ) {
-      throw new Error("Enter a valid placement for every entrant.");
-    }
-    const ranks = [...input.placements].sort((a, b) => a - b);
-    for (let i = 0; i < ranks.length; i++) {
-      if (
-        (i === 0 && ranks[i] !== 1) ||
-        (i > 0 && ranks[i] !== ranks[i - 1] && ranks[i] !== i + 1)
-      ) {
-        throw new Error(
-          "Use competition placements such as 1, 1, 3 when entrants tie.",
-        );
-      }
-    }
     winners = ids.filter((_, index) => input.placements![index] === 1);
   } else {
     const lowest =

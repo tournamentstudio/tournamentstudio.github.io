@@ -544,6 +544,18 @@ pending timezone preparation and inspection when closed or unmounted. A write
 that already started can finish transactionally, but its completion cannot reopen
 a closed importer or replace a later import draft.
 
+Workspace mutation callbacks capture the rendered session epoch. Leaving, locking
+or explicitly reloading the saved document invalidates old asynchronous edits,
+even when the same tournament ID is reopened. Ordinary successful edits keep the
+epoch and session undo history.
+
+Share Center binds output to a document/settings object and an operation token.
+Changes hide stale output immediately; async generation checks that both are
+still current. Revision and multipart QR exports also check their mounted
+generation before delivering downloads. Unmount cancellation runs in layout
+cleanup so it takes effect with DOM removal. These checks do not revoke completed
+downloads or cancel clipboard operations already passed to the browser.
+
 The revision hash is SHA-256 over canonical JSON, excluding its own field.
 It detects inconsistent content and anchors update packets. It does not identify
 an author or prove that the content came from a trusted organizer.

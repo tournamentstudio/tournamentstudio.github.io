@@ -837,6 +837,12 @@ your browser. Each saved copy is independent: edits in one browser do not update
 another. Read-only preview does not prevent a recipient from keeping a copy.
 Shared copies cannot be remotely revoked.
 
+Changing privacy, encryption or transfer settings clears the generated output.
+Generate it again and check the privacy/protection label before copying. This
+also applies when the tournament changes in another tab. A pending Share Center,
+History or multipart QR download stops if you leave its screen or lock the vault.
+Downloads already handed to the browser remain outside the app's control.
+
 A saved copy keeps the tournament identity, which is needed for later update
 packets. A fork gets a new identity and cannot accept the organizer's updates.
 Do not fork a spectator copy if you intend to apply those updates.
@@ -1078,6 +1084,9 @@ the recovery copy. Resolve the recovery copy before importing another change.
 If an image upload finishes while another edit is still saving, its rejected
 candidate remains available through **Export unsaved copy**. The app does not
 silently merge it into the confirmed edit; review the exported copy before import.
+Leaving and reopening a tournament, locking its vault or reloading the saved
+version cancels pending edits from the old workspace. Start an unfinished upload
+again if you still need it.
 Do not assume an edit reached another display until its save succeeds.
 
 ## Persian and keyboard use

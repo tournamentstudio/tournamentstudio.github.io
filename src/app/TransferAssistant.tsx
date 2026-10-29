@@ -14,10 +14,12 @@ export type { TransferRequest } from "../sharing/transfer-plan";
 export function TransferAssistant({
   tournament,
   busy,
+  onSettingsChange,
   onTransfer,
 }: {
   tournament: Tournament;
   busy: boolean;
+  onSettingsChange: () => void;
   onTransfer: (request: TransferRequest) => Promise<void>;
 }) {
   const { t } = useI18n();
@@ -85,9 +87,10 @@ export function TransferAssistant({
         >
           <select
             value={purpose}
-            onChange={(event) =>
-              setPurpose(event.target.value as TransferPurpose)
-            }
+            onChange={(event) => {
+              onSettingsChange();
+              setPurpose(event.target.value as TransferPurpose);
+            }}
           >
             <option value="snapshot">
               {t("Current tournament", "مسابقات فعلی")}
@@ -107,9 +110,10 @@ export function TransferAssistant({
           <Field label={t("Transfer privacy", "حریم خصوصی انتقال")}>
             <select
               value={privateData ? "private" : "public"}
-              onChange={(event) =>
-                setPrivateData(event.target.value === "private")
-              }
+              onChange={(event) => {
+                onSettingsChange();
+                setPrivateData(event.target.value === "private");
+              }}
             >
               <option value="public">
                 {t("Public spectator data", "داده عمومی تماشاگر")}
@@ -127,7 +131,10 @@ export function TransferAssistant({
               min={1}
               max={tournament.revision - 1}
               value={baseRevision}
-              onChange={(event) => setBaseRevision(Number(event.target.value))}
+              onChange={(event) => {
+                onSettingsChange();
+                setBaseRevision(Number(event.target.value));
+              }}
             />
           </Field>
         )}
@@ -162,7 +169,10 @@ export function TransferAssistant({
                 type="password"
                 autoComplete="new-password"
                 value={secret}
-                onChange={(event) => setSecret(event.target.value)}
+                onChange={(event) => {
+                  onSettingsChange();
+                  setSecret(event.target.value);
+                }}
               />
             </Field>
           )}

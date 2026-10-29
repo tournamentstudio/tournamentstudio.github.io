@@ -687,6 +687,7 @@ function Studio({
         session.current.doc?.revision !== current.doc.revision
       )
         return;
+      sessionEpoch.current++;
       openDocument(value, current.secret);
       setWorkspaceReset((value) => value + 1);
       setUnsaved(undefined);
@@ -1014,7 +1015,10 @@ function Studio({
                 key={`${doc.id}:${workspaceReset}`}
                 tournament={doc}
                 externalRevision={externalRevision}
-                onChange={(next, action) => void save(next, action)}
+                onChange={(next, action) => {
+                  if (renderedEpoch === sessionEpoch.current)
+                    void save(next, action);
+                }}
                 onImported={(value) => {
                   if (
                     renderedEpoch === sessionEpoch.current &&
@@ -1026,7 +1030,8 @@ function Studio({
                   }
                 }}
                 onImport={(code = "") => {
-                  changeImport(code);
+                  if (renderedEpoch === sessionEpoch.current)
+                    changeImport(code);
                 }}
                 secret={secret}
                 isProtected={isProtected}

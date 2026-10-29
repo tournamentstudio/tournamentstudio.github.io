@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 import {
   Link2,
@@ -52,11 +52,10 @@ export function ShareCenter({
   const [scope, setScope] = useState<"public" | "private">("public");
   const [encrypt, setEncrypt] = useState(false);
   const [password, setPassword] = useState("");
-  const [code, setCode] = useState("");
+  const [storedCode, setCode] = useState("");
   const [link, setLink] = useState("");
   const [qr, setQr] = useState("");
   const [copied, setCopied] = useState(false);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>();
   const [baseRevision, setBaseRevision] = useState(
     Math.max(1, doc.revision - 1),
@@ -66,37 +65,109 @@ export function ShareCenter({
   const [encryptPatch, setEncryptPatch] = useState(false);
   const [patchPassword, setPatchPassword] = useState("");
   const [outputLabel, setOutputLabel] = useState("");
-  async function work(fn: () => Promise<void> | void) {
-    setBusy(true);
+  const [outputPrivate, setOutputPrivate] = useState(false);
+  const [outputProtection, setOutputProtection] = useState<
+    "none" | "separate" | "embedded"
+  >("none");
+  const basis = useMemo(
+    () => ({
+      doc,
+      secret,
+      locale,
+      scope,
+      encrypt,
+      password,
+      baseRevision,
+      patchScope,
+      includeHistory,
+      encryptPatch,
+      patchPassword,
+    }),
+    [
+      doc,
+      secret,
+      locale,
+      scope,
+      encrypt,
+      password,
+      baseRevision,
+      patchScope,
+      includeHistory,
+      encryptPatch,
+      patchPassword,
+    ],
+  );
+  const latestBasis = useRef(basis);
+  latestBasis.current = basis;
+  const activeScreen = useRef(true);
+  const operation = useRef(0);
+  const [pending, setPending] = useState<typeof basis>();
+  const [outputBasis, setOutputBasis] = useState<typeof basis>();
+  const busy = pending === basis;
+  const code = outputBasis === basis ? storedCode : "";
+  useLayoutEffect(() => {
+    activeScreen.current = true;
+    return () => {
+      activeScreen.current = false;
+      operation.current++;
+    };
+  }, []);
+  function invalidateOutput() {
+    operation.current++;
+    setPending(undefined);
+    setOutputBasis(undefined);
+    setCode("");
+    setLink("");
+    setQr("");
+    setCopied(false);
+  }
+  async function work(fn: (active: () => boolean) => Promise<void> | void) {
+    const id = ++operation.current;
+    const active = () =>
+      activeScreen.current &&
+      operation.current === id &&
+      latestBasis.current === basis;
+    setPending(basis);
     setError(undefined);
     try {
-      await fn();
+      await fn(active);
     } catch (e) {
-      setError(e);
+      if (active()) setError(e);
     } finally {
-      setBusy(false);
+      if (active()) setPending(undefined);
     }
   }
-  async function showCode(value: string, label: string, withLink: boolean) {
+  async function showCode(
+    value: string,
+    label: string,
+    withLink: boolean,
+    active: () => boolean,
+    privateData = false,
+    protection: "none" | "separate" | "embedded" = "none",
+  ) {
+    if (!active()) return;
     const url = withLink
       ? `${location.origin}${location.pathname}#/open/${encodeURIComponent(value)}`
       : "";
     setCode(value);
+    setOutputBasis(basis);
     setLink(url);
     setQr("");
     setOutputLabel(label);
+    setOutputPrivate(privateData);
+    setOutputProtection(protection);
     setCopied(false);
-    if (url && new TextEncoder().encode(url).length <= 1800)
-      setQr(
-        await QRCode.toDataURL(url, {
-          errorCorrectionLevel: "M",
-          margin: 3,
-          width: 400,
-          color: { dark: "#173b32", light: "#ffffff" },
-        }),
-      );
+    if (url && new TextEncoder().encode(url).length <= 1800) {
+      const image = await QRCode.toDataURL(url, {
+        errorCorrectionLevel: "M",
+        margin: 3,
+        width: 400,
+        color: { dark: "#173b32", light: "#ffffff" },
+      });
+      if (active()) setQr(image);
+    }
   }
-  async function snapshot(embedded = false) {
+  async function snapshot(active: () => boolean, embedded = false) {
     const value = embedded
       ? await encodeEmbeddedCode(doc, scope === "private")
       : await encodeCode(
@@ -113,10 +184,14 @@ export function ShareCenter({
           )
         : t("Snapshot", "تصویر داده"),
       true,
+      active,
+      scope === "private",
+      embedded ? "embedded" : encrypt ? "separate" : "none",
     );
   }
-  async function transfer(request: TransferRequest) {
+  async function transfer(request: TransferRequest, active: () => boolean) {
     const prepared = await prepareTransfer(doc, request, secret);
+    if (!active()) return;
     if (prepared.kind === "archive") {
       downloadFile(
         prepared.bytes,
@@ -132,29 +207,40 @@ export function ShareCenter({
         : prepared.purpose === "update"
           ? t("Update packet", "بسته به‌روزرسانی")
           : t("Snapshot", "تصویر داده");
-    await showCode(prepared.code, label, prepared.link);
+    await showCode(
+      prepared.code,
+      label,
+      prepared.link,
+      active,
+      request.purpose !== "recipe" && request.privateData,
+      request.purpose !== "recipe" && request.privateData ? "separate" : "none",
+    );
   }
-  async function backup() {
+  async function backup(active: () => boolean) {
     const revisions = includeHistory
       ? await repository.exportHistory(doc.id, doc.revision, secret)
       : undefined;
+    if (!active()) return;
     const bytes = await exportArchive(
       doc,
       encrypt ? password : secret,
       revisions,
     );
+    if (!active()) return;
     downloadFile(bytes, `${doc.slug || "tournament"}.tourney`);
     await repository.markBackup(doc.id, doc.revision);
   }
-  async function recipe() {
+  async function recipe(active: () => boolean) {
     await showCode(
       await encodeRecipe(doc),
       t("Structure recipe", "دستور ساخت"),
       false,
+      active,
     );
   }
-  async function patch() {
+  async function patch(active: () => boolean) {
     const base = await repository.loadRevision(doc.id, baseRevision, secret);
+    if (!active()) return;
     const packet = await createPatch(
       patchScope === "public" ? publicProjection(base) : base,
       patchScope === "public" ? publicProjection(doc) : doc,
@@ -163,11 +249,14 @@ export function ShareCenter({
       await encodePatch(packet, encryptPatch ? patchPassword : undefined),
       t("Update packet", "بسته به‌روزرسانی"),
       false,
+      active,
+      patchScope === "private",
+      encryptPatch ? "separate" : "none",
     );
   }
-  async function copy(value: string) {
+  async function copy(value: string, active: () => boolean) {
     await navigator.clipboard.writeText(value);
-    setCopied(true);
+    if (active()) setCopied(true);
   }
   return (
     <div className="panel-content">
@@ -190,7 +279,8 @@ export function ShareCenter({
       <TransferAssistant
         tournament={doc}
         busy={busy}
-        onTransfer={(request) => work(() => transfer(request))}
+        onSettingsChange={invalidateOutput}
+        onTransfer={(request) => work((active) => transfer(request, active))}
       />
       <div className="share-layout">
         <section className="panel share-main">
@@ -264,7 +354,7 @@ export function ShareCenter({
           <button
             className="button primary"
             disabled={busy || (encrypt && password.length < 8)}
-            onClick={() => work(() => snapshot())}
+            onClick={() => work((active) => snapshot(active))}
           >
             <Link2 size={17} />
             {t("Generate link & code", "ساخت پیوند و کد")}
@@ -272,7 +362,7 @@ export function ShareCenter({
           <button
             className="button secondary"
             disabled={busy}
-            onClick={() => work(() => snapshot(true))}
+            onClick={() => work((active) => snapshot(active, true))}
           >
             <LockKeyhole size={17} />
             {t(
@@ -362,6 +452,17 @@ export function ShareCenter({
             <h3>{outputLabel}</h3>
             <span className="badge">{(code.length / 1024).toFixed(1)} KB</span>
           </div>
+          <p className="muted">
+            {outputPrivate
+              ? t("Private organizer data", "داده خصوصی برگزارکننده")
+              : t("Public spectator data", "داده عمومی تماشاگر")}
+            {" · "}
+            {outputProtection === "embedded"
+              ? t("Decryption key included", "کلید رمزگشایی همراه است")
+              : outputProtection === "separate"
+                ? t("Separate secret required", "رمز جداگانه لازم است")
+                : t("No encryption", "بدون رمزگذاری")}
+          </p>
           <Field label={t("Portable code", "کد قابل انتقال")}>
             <textarea
               readOnly
@@ -385,7 +486,8 @@ export function ShareCenter({
           <div className="button-row">
             <button
               className="button primary"
-              onClick={() => work(() => copy(code))}
+              disabled={busy}
+              onClick={() => work((active) => copy(code, active))}
             >
               {copied ? <Check size={16} /> : <Copy size={16} />}{" "}
               {copied ? t("Copied", "کپی شد") : t("Copy code", "کپی کد")}
@@ -393,7 +495,8 @@ export function ShareCenter({
             {link && (
               <button
                 className="button secondary"
-                onClick={() => work(() => copy(link))}
+                disabled={busy}
+                onClick={() => work((active) => copy(link, active))}
               >
                 <Link2 size={16} />
                 {t("Copy link", "کپی پیوند")}
@@ -560,6 +663,7 @@ export function ShareCenter({
           <div className="export-grid">
             <button
               className="button secondary"
+              disabled={busy}
               onClick={() =>
                 work(() => exportBracketSVG(doc, undefined, locale))
               }
@@ -568,6 +672,7 @@ export function ShareCenter({
             </button>
             <button
               className="button secondary"
+              disabled={busy}
               onClick={() =>
                 work(() => exportBracketPNG(doc, undefined, locale))
               }
@@ -576,6 +681,7 @@ export function ShareCenter({
             </button>
             <button
               className="button secondary"
+              disabled={busy}
               onClick={() => work(() => printTournament(doc, locale))}
             >
               <Printer size={15} />

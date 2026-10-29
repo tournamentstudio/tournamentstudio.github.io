@@ -116,3 +116,49 @@ stalled in Chromium and Firefox after those geometry assertions had passed.
 [RELEASE_STATUS.md](RELEASE_STATUS.md) records the completed checks for this
 follow-up. The earlier performance measurements remain tied to their original
 commit. No CI workflow or external runtime service was added.
+
+## Sharing scope and stale-work review
+
+The next review found generated private codes surviving a change to public
+settings. A delayed encrypted snapshot could also finish under a newer selection.
+Share Center now binds visible output and async completion to the exact document,
+settings and operation. Each output labels its privacy and encryption. Changes
+in the transfer assistant invalidate pending generation too.
+
+Share Center backups, History revision exports and multipart QR archives could
+deliver files after their screen had closed or the vault had locked. Their final
+download step now checks the active screen or generation. The tests reproduced
+late private downloads before the fixes. Files already delivered to a browser
+cannot be recalled by these guards.
+
+WebKit exposed a second timing window: an encrypted History export could finish
+after the workspace DOM was removed but before passive effect cleanup. The
+cancellation guards now run during unmount's commit phase. The test still
+releases encryption immediately after the workspace disappears. SVG, PNG and
+print controls also wait for an active sharing operation instead of canceling it.
+
+The signing screen allowed its generated-code button to replace the input while
+a signature was pending. A held-signature test produced a valid signature for the
+old payload beside a different input. That source-replacement control now waits
+for the active operation, matching the other signing inputs. The signing key and
+deliberately copied payload remain independent of the main sharing selectors.
+
+A delayed image upload could write to a reopened copy of the same tournament,
+including after vault lock or an explicit recovery reload. Workspace callbacks
+now check their original session before mutating data. The regression holds an
+actual image decode, changes session, then verifies that completion causes no
+persistence read, logo update or new recovery candidate.
+
+Malformed supplied placements bypassed validation for manual rulings and set
+scoring, and could enter through imports. Incomplete ranks led to `NaN` standing
+points. A shared validator now checks every supplied non-BYE placement table
+before scoring branches and on import. Optional absent ranks and valid tied
+competition ranks retain their existing behavior. Nine new cases failed before
+the fix; all ten placement cases passed after it.
+
+Live participant, result and schedule presentation lists allowed long names,
+scores and venues to expand their flex/grid tracks. Browser fixtures showed more
+than 1,100 pixels of overflow at 320px. Tracks now shrink and text wraps within
+cards. The tests retain full names and exact scores, switch English and Persian
+in both directions, and check mobile and projector widths. Exported artwork is
+unchanged by this layout correction.

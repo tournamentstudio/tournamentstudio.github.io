@@ -106,6 +106,14 @@ selected storage mode, but cannot reopen the dismissed view or replace a newer
 import draft. Cancellation does not erase an already committed record; inspect
 the local library if a save was in progress when the window closed.
 
+Generated Share Center codes and QR controls are bound to the document and the
+selected privacy/protection settings. Changed settings invalidate unfinished
+generation and hide old output. Pending private archive, revision and multipart
+QR downloads check that their screen is still active before delivering a file.
+Leaving or locking cancels unfinished delivery, not downloads already sent to
+the browser or clipboard writes already requested. A signing operation keeps its
+chosen payload fixed until it finishes. Signing still does not encrypt content.
+
 Separate-secret encrypted snapshots, updates and archives require the secret from another channel. The optional TSK1 link includes a generated secret and opens without another password prompt. Anyone receiving the complete link can decrypt it. Encryption never establishes the recipient or sender identity.
 
 Read-only preview is an interface choice. A recipient who has the document can save or modify their own copy. Previously shared data cannot be remotely revoked.

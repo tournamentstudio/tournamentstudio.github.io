@@ -307,6 +307,7 @@ export function SignatureStudio({
           {!!sourceCode && (
             <button
               className="button secondary"
+              disabled={busy}
               onClick={() => {
                 setPayload(sourceCode);
                 setSigned("");

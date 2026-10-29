@@ -1,47 +1,44 @@
 # TournaStudio release handoff
 
-The October 29, 2026 follow-up fixes save recovery, canceled imports, wildcard
-comparisons, ladder withdrawals and long-text graphic exports.
+The October 29, 2026 follow-up fixes stale sharing output, canceled private
+downloads, delayed workspace edits, placement validation and presentation lists.
 
 ## Published application
 
 - App: [tournamentstudio.github.io](https://tournamentstudio.github.io/).
 - Repository: [tournamentstudio/tournamentstudio.github.io](https://github.com/tournamentstudio/tournamentstudio.github.io).
-- Release: [Safer recovery and tournament corrections](https://github.com/tournamentstudio/tournamentstudio.github.io/releases/tag/release-2026-10-29.4).
+- Release: [Sharing safety and presentation fixes](https://github.com/tournamentstudio/tournamentstudio.github.io/releases/tag/release-2026-10-29.5).
 - Publication: GitHub Pages serves the prepared files from `main/docs`.
 - GitHub Actions is disabled. There are no repository CI workflows.
 - The hosted app needs no development server running on my computer.
 
 ## What changed
 
-Pending saves block route changes and competing imports. Failed saves keep their
-recovery copy until it is resolved or explicitly discarded before leaving.
-Reloading the confirmed document resets editor drafts. Browser close/reload
-warnings are best effort; app updates wait for recovery. Vault locking still
-clears decrypted drafts, including recovery copies.
+Generated codes now belong to their exact document and sharing settings. Changing
+privacy, encryption or transfer options hides stale output and cancels pending
+generation. Output labels state its actual privacy and protection. Pending
+private backup, revision and multipart QR downloads stop when their screen
+closes or the vault locks. Files already sent to the browser cannot be recalled.
 
-An image upload finishing during another save can be rejected because a write
-is already in progress. Its newer recovery candidate now remains exportable
-whether the earlier save succeeds or fails. The two edits are not silently
-merged, and the confirmed database state stays separate from the recovery file.
+Signing keeps its chosen input fixed until the operation finishes. Previously,
+the generated-code button could replace the displayed input while its old
+contents were being signed.
 
-Closing a timezone import during preparation now prevents it from starting a
-write. An already-started write may finish, but cannot reopen the dismissed
-workspace or close a newer import draft. The checks also cover automatic vault
-lock and delayed encrypted persistence.
+Workspace callbacks reject delayed edits from an earlier session, including
+when the same tournament is reopened after leaving, locking or reloading a
+saved version. Ordinary edits retain their session undo history.
 
-Wildcard score and differential comparisons now follow lower-is-better weighted
-rules for totals, per-match values and retained group results. New alternating
-challenge rounds exclude withdrawn and disqualified entrants without erasing
-history. The last two active entrants still pair on an offset round.
+Supplied placement tables now pass the same validation before every scoring
+branch and during import. This prevents incomplete manual rulings from creating
+invalid standing points. Absent optional ranks and valid tied ranks remain
+supported.
 
-Sponsor slide exports grow their cards and rows around wrapped bilingual names
-and logos. Compact overlay headers grow with long tournament titles, keeping
-entrant cards separate. All three browser engines checked the actual exported
-SVG geometry with the bundled fonts.
+Live participant, result and schedule lists wrap long names, scores and resource
+labels inside their cards. Tests switch English and Persian in both directions
+and check mobile and projector widths. The full content remains available.
 
-The previous release's game artwork, startup improvements, Gol Ya Pooch event
-rehearsal and image-import limits remain in place. The performance numbers in
+The previous release's recovery, qualification and graphic export fixes remain
+in place, along with game artwork and startup improvements. The performance numbers in
 [PERFORMANCE.md](PERFORMANCE.md) are tied to that measured commit, not this build.
 [FEATURES.md](FEATURES.md) and [USER_GUIDE.md](USER_GUIDE.md) describe the supported
 behavior and recovery steps.
@@ -51,34 +48,32 @@ behavior and recovery steps.
 | Check | Actual result |
 | --- | --- |
 | TypeScript and ESLint | Passed |
-| Unit and integration suite | 1,175 tests passed across 100 files |
+| Unit and integration suite | 1,185 tests passed across 101 files |
 | Release packaging checks | 4 tests passed |
 | Production build | Passed; 79 precache entries |
-| Final browser selection | 67 tests passed |
-| Cross-browser coverage | Ten new cases in Chromium, Firefox and WebKit |
-| Existing workflow regression selection | 37 Chromium cases passed |
+| Final browser selection | 88 tests passed |
+| Cross-browser coverage | 15 cases in Chromium, Firefox and WebKit |
+| Existing workflow regression selection | 43 further Chromium cases passed |
 | Prepared publication | 90 application files verified against SHA-256 entries |
 | Credentials and authored-text scans | No findings in the changes |
 
-The browser checks cover quota failures, browser departure, recovery archive
-contents, pending uploads, canceled timezone imports, vault locks, sponsor
-layouts, overlay titles and Persian mobile recovery. Existing workflows cover
-full tournaments, sharing, patches, same-revision conflicts, legacy timezone
-review, vault security, presentation updates and offline operation. Actual export
-and 320-pixel Persian dialog screenshots were inspected.
+The new browser checks hold encryption, image decoding, QR rendering and signing
+until after the relevant user action. They reproduced stale output, private
+downloads, a mismatched signing input and edits from closed sessions before the
+fixes. Presentation checks retain full mixed-script names and exact scores at
+320 and 1280 pixels. Actual English and Persian screenshots were inspected.
 
-The new upload tests reproduced both original failures before the fix. Canceled
-import tests also reproduced the prior release's failures. Earlier sponsor
-capture stalled after the exported geometry checks had passed; capture now uses
-an HTML wrapper with bounded waits, and the final combined run passed.
+The first combined browser run caught a WebKit revision-download race after DOM
+removal. Unmount guards now run in layout cleanup. Five focused repetitions and
+the final 88-case selection passed with the original cancellation assertions.
 
 Repeat the selected checks locally:
 
 ```sh
 npm run check
 npm run test:release
-npx playwright test tests/e2e/save-recovery.spec.ts tests/e2e/import-cancellation.spec.ts tests/e2e/export-card-layout.spec.ts tests/e2e/concurrent-save-recovery.spec.ts
-npx playwright test tests/e2e/startup-loading.spec.ts tests/e2e/tournament.spec.ts tests/e2e/same-revision-conflicts.spec.ts tests/e2e/legacy-timezones.spec.ts tests/e2e/vault-inactivity.spec.ts tests/e2e/import-security.spec.ts --project=chromium
+npx playwright test tests/e2e/workspace-session.spec.ts tests/e2e/sharing-output-safety.spec.ts tests/e2e/presentation-list-layout.spec.ts tests/e2e/signatures.spec.ts
+npx playwright test tests/e2e/tournament.spec.ts tests/e2e/history-commands.spec.ts tests/e2e/transfer-tools.spec.ts tests/e2e/qr-transfer.spec.ts tests/e2e/display-design.spec.ts tests/e2e/save-recovery.spec.ts tests/e2e/concurrent-save-recovery.spec.ts tests/e2e/import-cancellation.spec.ts --project=chromium
 ```
 
 The linked GitHub release records the exact published commit and the results

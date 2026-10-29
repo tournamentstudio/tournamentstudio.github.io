@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { History as HistoryIcon, RotateCcw, Download } from "lucide-react";
 import type { Tournament } from "../domain/types";
 import { repository, type RevisionEntry } from "../persistence";
@@ -20,22 +20,46 @@ export function History({
   const [revisions, setRevisions] = useState<RevisionEntry[]>([]);
   const [selected, setSelected] = useState<RevisionEntry>();
   const [error, setError] = useState<unknown>();
+  const mounted = useRef(true);
+  const current = useRef({ doc, secret });
+  current.current = { doc, secret };
+  useLayoutEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   useEffect(() => {
-    void repository.revisions(doc.id).then(setRevisions).catch(setError);
-  }, [doc.id, doc.revision]);
+    let active = true;
+    void repository
+      .revisions(doc.id)
+      .then((value) => {
+        if (active) setRevisions(value);
+      })
+      .catch((value) => {
+        if (active) setError(value);
+      });
+    return () => {
+      active = false;
+    };
+  }, [doc.id, doc.revision, doc.revisionHash]);
   async function backup(r: RevisionEntry) {
+    const active = () =>
+      mounted.current &&
+      current.current.doc === doc &&
+      current.current.secret === secret;
     try {
       const snapshot = await repository.loadRevision(
         doc.id,
         r.revision,
         secret,
       );
-      downloadFile(
-        await exportArchive(snapshot, secret),
-        `${doc.slug}-revision-${r.revision}.tourney`,
-      );
+      if (!active()) return;
+      const bytes = await exportArchive(snapshot, secret);
+      if (!active()) return;
+      downloadFile(bytes, `${doc.slug}-revision-${r.revision}.tourney`);
     } catch (e) {
-      setError(e);
+      if (active()) setError(e);
     }
   }
   return (

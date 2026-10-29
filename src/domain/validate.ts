@@ -3,6 +3,7 @@ import { validatePlayerStatistics } from "../players/model";
 import { readRouteNetwork } from "../scheduling/route-network";
 import { z } from "zod";
 import { validateResult } from "../scoring";
+import { validatePlacements } from "../scoring/placements";
 import { timingSchema } from "../timing/model";
 import {
   golAbilitySchema,
@@ -841,6 +842,8 @@ export function validateTournament(input: unknown): Tournament {
         match.result.metrics,
         match.slots.length,
       );
+    if (match.result && match.status !== "bye")
+      validatePlacements(match.result.placements, match.slots.length);
     if (
       document.rules.scoring === "weighted" &&
       match.result &&

@@ -315,11 +315,12 @@
 }
 .presentation-team-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr));
   gap: 16px;
 }
 .presentation-team-list > div {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: 18px;
   padding: 22px;
@@ -329,20 +330,30 @@
   font-size: 20px;
 }
 .presentation-team-list span {
+  flex-shrink: 0;
   font-size: 13px;
   color: var(--theme-accent);
 }
+.presentation-team-list bdi {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .presentation-team-list img {
+  flex-shrink: 0;
   width: 40px;
   height: 40px;
   object-fit: contain;
 }
 .presentation-result-list {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 .presentation-result-list > div {
   display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
   gap: 20px;
   align-items: center;
   padding: 22px 28px;
@@ -351,15 +362,20 @@
   font-size: clamp(16px, 2vw, 28px);
 }
 .presentation-result-list span {
-  flex: 1;
+  flex: 1 1 240px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .presentation-result-list strong {
   color: var(--theme-accent);
-  white-space: nowrap;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 .presentation-result-list small {
   color: var(--theme-muted);
   font-size: 15px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 .presentation-stat-grid {
   display: grid;

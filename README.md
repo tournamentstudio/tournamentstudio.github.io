@@ -7,14 +7,11 @@ I built TournaStudio so a tournament can belong to the people running it. Open t
 **[Open TournaStudio](https://tournamentstudio.github.io/)** · [User guide](USER_GUIDE.md) · [Feature status](FEATURES.md)
 
 The October 29, 2026 updates improve English/Persian layout and add original
-game artwork to exported scoreboards and champion posters. Long sponsor names
-and overlay titles now fit their exported cards. Failed-save recovery survives
-navigation attempts, and canceled imports cannot reopen a later preview.
-Wildcard comparisons respect lower-is-better weighted scores; new ladder rounds
-exclude withdrawn entrants. The earlier startup update cut initial JavaScript
-transfer by about 46% in the recorded test. I also tested a complete Gol Ya Pooch
-event, offline recovery and a 512-participant bracket with simulated CPU slowdown.
-The
+game artwork to exported scoreboards and champion posters. The latest review
+fixes long names in presentation lists, invalid placement tables and delayed
+sharing work after privacy changes or vault lock. Old uploads cannot change a
+reopened workspace. Earlier updates added failed-save recovery and reduced
+initial JavaScript transfer by about 46% in the recorded test. The
 [release handoff](RELEASE_STATUS.md), [performance measurements](PERFORMANCE.md)
 and [maintenance review](MAINTENANCE_AUDIT.md) record the checks and their limits.
 

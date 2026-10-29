@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { strToU8, zipSync } from "fflate";
 import { QrCode } from "lucide-react";
@@ -19,6 +19,13 @@ export function QRTransfer({ code, slug }: { code: string; slug: string }) {
   const [rotating, setRotating] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>();
+  const generation = useRef(0);
+  useLayoutEffect(() => {
+    generation.current++;
+    return () => {
+      generation.current++;
+    };
+  }, [code]);
   useEffect(() => {
     if (!parts.length) return;
     let active = true;
@@ -30,7 +37,9 @@ export function QRTransfer({ code, slug }: { code: string; slug: string }) {
       .then((value) => {
         if (active) setImage(value);
       })
-      .catch(setError);
+      .catch((reason) => {
+        if (active) setError(reason);
+      });
     return () => {
       active = false;
     };
@@ -44,18 +53,22 @@ export function QRTransfer({ code, slug }: { code: string; slug: string }) {
     return () => window.clearInterval(timer);
   }, [rotating, parts.length]);
   async function create() {
+    const id = generation.current;
     setBusy(true);
     setError(undefined);
     try {
-      setParts(await createQRParts(code));
+      const value = await createQRParts(code);
+      if (id !== generation.current) return;
+      setParts(value);
       setIndex(0);
     } catch (failure) {
-      setError(failure);
+      if (id === generation.current) setError(failure);
     } finally {
-      setBusy(false);
+      if (id === generation.current) setBusy(false);
     }
   }
   async function archive() {
+    const id = generation.current;
     setBusy(true);
     setError(undefined);
     setRotating(false);
@@ -67,6 +80,7 @@ export function QRTransfer({ code, slug }: { code: string; slug: string }) {
           margin: 4,
           scale: 8,
         });
+        if (id !== generation.current) return;
         files[`qr-${String(position + 1).padStart(3, "0")}.png`] =
           Uint8Array.from(atob(data.split(",")[1]), (character) =>
             character.charCodeAt(0),
@@ -84,15 +98,16 @@ export function QRTransfer({ code, slug }: { code: string; slug: string }) {
           2,
         ),
       );
+      if (id !== generation.current) return;
       downloadFile(
         zipSync(files, { level: 6 }),
         `${slug || "tournament"}-qr-parts.zip`,
         "application/zip",
       );
     } catch (failure) {
-      setError(failure);
+      if (id === generation.current) setError(failure);
     } finally {
-      setBusy(false);
+      if (id === generation.current) setBusy(false);
     }
   }
   return (

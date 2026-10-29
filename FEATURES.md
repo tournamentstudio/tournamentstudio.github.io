@@ -91,6 +91,11 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for algorithms and measured engine tests.
 
 ## Creation, participants and organizer tools
 
+Supplied placement tables are checked before every scoring branch and when
+importing non-BYE results. Every entrant needs a valid competition rank, including
+manual rulings and set results. Omitting placements remains valid where the
+chosen scoring model does not require them.
+
 | Capability | Status | Actual behavior |
 | --- | --- | --- |
 | Account-free creation | Implemented | Three-step flow with title, sport, entrants, format and theme; generates an editable draw. |
@@ -153,6 +158,8 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for algorithms and measured engine tests.
 Sponsor slide exports size each row from the wrapped names and logos in that
 row. Grid, strip and spotlight layouts keep complete bilingual names clear of
 neighboring cards and the footer.
+Live presentation participant, result and schedule lists also wrap long names,
+scores and resource labels within their cards in both interface directions.
 
 Theme collections:
 
@@ -224,6 +231,12 @@ Theme collections:
 | Remote revocation / live cross-device sync | Unsupported due to static-hosting constraints | Shared snapshots are independent and cannot be revoked; later changes require another packet or file. |
 
 ## Exports, records and platform
+
+Generated sharing output is tied to its document, privacy and protection
+settings. Changing those settings hides the old output and invalidates pending
+generation. Labels describe the actual output. Pending Share Center, revision
+and multipart QR downloads stop when their screen closes or the vault locks;
+files already delivered to the browser cannot be recalled.
 
 | Capability | Status | Actual behavior |
 | --- | --- | --- |

@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { createParticipant, createTournament } from "../../src/domain/types";
 import { generateStage } from "../../src/engine";
 import { encodeCode } from "../../src/sharing";
-import { signPacket } from "../../src/sharing/signatures";
+import { signPacket, verifySignedPacket } from "../../src/sharing/signatures";
 import {
   createSigningKey,
   decodeSigningData,
@@ -71,6 +71,54 @@ async function generateKey(page: Page) {
   ).toBeVisible();
   return studio;
 }
+
+test("keeps the selected packet fixed while its signature is being created", async ({
+  page,
+}) => {
+  await openStudio(page);
+  const studio = await generateKey(page);
+  await page
+    .getByRole("button", { name: "Generate link & code", exact: true })
+    .click();
+  await expect(page.getByLabel("Portable code", { exact: true })).toBeVisible();
+  const source = "TS1:synthetic-selected-packet.checksum";
+  await studio.getByLabel("Packet to sign", { exact: true }).fill(source);
+  await page.evaluate(() => {
+    const sign = crypto.subtle.sign.bind(crypto.subtle);
+    crypto.subtle.sign = async (...args: Parameters<SubtleCrypto["sign"]>) => {
+      document.documentElement.dataset.signaturePending = "true";
+      await new Promise<void>((resolve) =>
+        document.addEventListener("release-signature", () => resolve(), {
+          once: true,
+        }),
+      );
+      return sign(...args);
+    };
+  });
+  await studio
+    .getByRole("button", { name: "Sign packet", exact: true })
+    .click();
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-signature-pending",
+    "true",
+  );
+  const replace = studio.getByRole("button", {
+    name: "Use the generated share code",
+    exact: true,
+  });
+  await expect.soft(replace).toBeDisabled();
+  if (await replace.isEnabled()) await replace.click();
+  await page.evaluate(() =>
+    document.dispatchEvent(new Event("release-signature")),
+  );
+  const output = studio.getByLabel("Signed packet code", { exact: true });
+  await expect(output).toHaveValue(/^TSS1:/);
+  const verified = await verifySignedPacket(await output.inputValue());
+  expect(verified.payload).toBe(
+    await studio.getByLabel("Packet to sign", { exact: true }).inputValue(),
+  );
+  await expect(replace).toBeEnabled();
+});
 
 test("generates, encrypts, locks and recovers a signing key without persistent private material", async ({
   page,
