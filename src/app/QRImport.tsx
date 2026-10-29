@@ -9,7 +9,13 @@ import {
 } from "../sharing/multipart";
 import { decodeQRImage, scannedPortableCode } from "../sharing/qr-reader";
 
-export function QRImport({ onCode }: { onCode: (code: string) => void }) {
+export function QRImport({
+  onCode,
+  inputSource,
+}: {
+  onCode: (code: string) => void;
+  inputSource?: string | File;
+}) {
   const { t } = useI18n();
   const [error, setError] = useState<unknown>();
   const [busy, setBusy] = useState(false);
@@ -24,32 +30,55 @@ export function QRImport({ onCode }: { onCode: (code: string) => void }) {
   const epoch = useRef(0);
   const handling = useRef(false);
   const previous = useRef("");
+  const accepted = useRef<string | undefined>(undefined);
+  const latestSource = useRef(inputSource);
+  latestSource.current = inputSource;
+  function isCurrent(token: number) {
+    return token === epoch.current && latestSource.current === inputSource;
+  }
   function releaseCamera() {
-    epoch.current++;
     controls.current?.stop();
     controls.current = undefined;
     stream.current?.getTracks().forEach((track) => track.stop());
     stream.current = undefined;
   }
-  function stop() {
+  function cancelPending() {
+    epoch.current++;
+    collector.current.cancelPending();
+    handling.current = false;
     releaseCamera();
-    setCamera(false);
   }
-  useEffect(() => () => releaseCamera(), []);
-  async function accept(raw: string) {
+  function stop() {
+    cancelPending();
+    setCamera(false);
+    setBusy(false);
+  }
+  useEffect(() => () => cancelPending(), []);
+  useEffect(() => {
+    stop();
+    if (inputSource !== accepted.current) setReady(false);
+  }, [inputSource]);
+  async function accept(raw: string, token: number) {
+    if (!isCurrent(token)) return false;
     const code = scannedPortableCode(raw);
+    let completed = code;
     if (code.startsWith("TSQ1:")) {
       const result = await collector.current.add(code);
+      if (!isCurrent(token)) return false;
       setProgress(result);
-      if (!result.code) return;
-      onCode(result.code);
-    } else onCode(code);
+      if (!result.code) return false;
+      completed = result.code;
+    }
+    accepted.current = completed;
+    onCode(completed);
     setReady(true);
     stop();
+    return true;
   }
   async function files(values: File[]) {
     if (!values.length) return;
     stop();
+    const token = epoch.current;
     setBusy(true);
     setError(undefined);
     setReady(false);
@@ -62,11 +91,15 @@ export function QRImport({ onCode }: { onCode: (code: string) => void }) {
         throw new Error(
           "Select at most 128 QR images with a combined size below 32 MB.",
         );
-      for (const file of values) await accept(await decodeQRImage(file));
+      for (const file of values) {
+        const raw = await decodeQRImage(file);
+        if (!isCurrent(token)) return;
+        if (await accept(raw, token)) return;
+      }
     } catch (failure) {
-      setError(failure);
+      if (isCurrent(token)) setError(failure);
     } finally {
-      setBusy(false);
+      if (isCurrent(token)) setBusy(false);
     }
   }
   async function start() {
@@ -89,14 +122,17 @@ export function QRImport({ onCode }: { onCode: (code: string) => void }) {
           height: { ideal: 720 },
         },
       });
-      if (token !== epoch.current) {
+      if (!isCurrent(token)) {
         source.getTracks().forEach((track) => track.stop());
         return;
       }
       stream.current = source;
       const { BrowserQRCodeReader } = await import("@zxing/browser");
       const { DecodeHintType } = await import("@zxing/library");
-      if (token !== epoch.current) return;
+      if (!isCurrent(token)) {
+        source.getTracks().forEach((track) => track.stop());
+        return;
+      }
       setCamera(true);
       const pureReader = new BrowserQRCodeReader(
         new Map([[DecodeHintType.PURE_BARCODE, true]]),
@@ -111,7 +147,7 @@ export function QRImport({ onCode }: { onCode: (code: string) => void }) {
         if (
           !result &&
           video.current?.readyState &&
-          token === epoch.current &&
+          isCurrent(token) &&
           !handling.current
         ) {
           try {
@@ -123,21 +159,24 @@ export function QRImport({ onCode }: { onCode: (code: string) => void }) {
         if (
           !result ||
           handling.current ||
-          token !== epoch.current ||
+          !isCurrent(token) ||
           result.getText() === previous.current
         )
           return;
         handling.current = true;
         previous.current = result.getText();
-        void accept(result.getText())
-          .catch(setError)
+        void accept(result.getText(), token)
+          .catch((failure) => {
+            if (isCurrent(token)) setError(failure);
+          })
           .finally(() => {
-            handling.current = false;
+            if (isCurrent(token)) handling.current = false;
           });
       });
-      if (token !== epoch.current) scanner.stop();
+      if (!isCurrent(token)) scanner.stop();
       else controls.current = scanner;
     } catch {
+      if (!isCurrent(token)) return;
       stop();
       setError(
         new Error(
@@ -148,7 +187,7 @@ export function QRImport({ onCode }: { onCode: (code: string) => void }) {
         ),
       );
     } finally {
-      setBusy(false);
+      if (isCurrent(token)) setBusy(false);
     }
   }
   return (
@@ -186,7 +225,9 @@ export function QRImport({ onCode }: { onCode: (code: string) => void }) {
               onClick={stop}
             >
               <CameraOff size={16} />
-              {t("Stop camera", "توقف دوربین")}
+              {busy && !camera
+                ? t("Cancel QR transfer", "لغو انتقال QR")
+                : t("Stop camera", "توقف دوربین")}
             </button>
             <label className="button secondary">
               {t("Read QR images", "خواندن تصاویر QR")}

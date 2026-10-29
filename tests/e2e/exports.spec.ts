@@ -221,6 +221,164 @@ test("exports selected slides and standalone HTML with no private state", async 
   await printed.close();
 });
 
+test("keeps long bilingual introduction and champion text inside downloaded slides", async ({
+  page,
+  browserName,
+}, testInfo) => {
+  const tournament = fixture(true);
+  const winnerId = tournament.matches.find(
+    (match) => match.metadata.championship,
+  )!.result!.winnerIds[0];
+  const participant = tournament.participants.find(
+    (entrant) => entrant.id === winnerId,
+  )!;
+  participant.name =
+    `${"W".repeat(28)} ${"باشگاه آفتاب Sun Falcons ".repeat(5)}`.trim();
+  participant.organization =
+    `${"W".repeat(65)} ${"دانشگاه نور University ".repeat(3)}`.trim();
+  const lines = Array.from(
+    { length: 12 },
+    (_, index) =>
+      `Line-${String(index).padStart(2, "0")} معرفی رقابت Tournament introduction`,
+  );
+  tournament.subtitle = Array.from(
+    { length: 6 },
+    (_, index) => `Subtitle-${index} رقابت Championship`,
+  ).join("\n");
+  tournament.presentation.scenes = [
+    {
+      id: "long-introduction",
+      type: "introduction",
+      title:
+        `${"W".repeat(70)} ${"معرفی قهرمانان Championship ".repeat(3)}`.trim(),
+      text: lines.join("\n"),
+      participantIds: [participant.id],
+      duration: 15,
+    },
+    {
+      id: "champion",
+      type: "champion",
+      title: "قهرمان Champion",
+      text: "",
+      duration: 15,
+    },
+  ];
+  await openExports(page, tournament);
+  await page
+    .getByRole("button", { name: "Switch to Persian", exact: true })
+    .click();
+  const downloaded = await download(page, "دانلود ZIP نمایش");
+  const files = unzipSync(downloaded.bytes);
+  const manifest = JSON.parse(strFromU8(files["manifest.json"])) as {
+    slides: { file: string; sceneId: string }[];
+  };
+  const introductions = manifest.slides.filter(
+    (slide) => slide.sceneId === "long-introduction",
+  );
+  expect(introductions.length).toBeGreaterThan(1);
+  const introductionSVGs = introductions
+    .map((slide) => strFromU8(files[slide.file]))
+    .join("");
+  for (const line of lines)
+    expect(introductionSVGs.split(line)).toHaveLength(2);
+  for (const content of Object.values(files)) {
+    expect(strFromU8(content)).not.toContain("REFEREE-ONLY-HAND");
+    expect(strFromU8(content)).not.toContain("ORGANIZER-ONLY-NOTE");
+  }
+  const directory = testInfo.outputPath("bilingual-slides");
+  await mkdir(directory, { recursive: true });
+  const viewer = await page.context().newPage();
+  await viewer.setViewportSize({ width: 1600, height: 900 });
+  try {
+    for (const slide of manifest.slides) {
+      const svg = strFromU8(files[slide.file]);
+      expect(svg).toContain("data:font/woff2;base64,");
+      await writeFile(join(directory, slide.file), files[slide.file]);
+      await viewer.goto(pathToFileURL(join(directory, slide.file)).href);
+      await viewer.evaluate(async () => {
+        await document.fonts.load("72px TournaExportArabic", "فارسی");
+        await document.fonts.load("72px TournaExportLatin", "Championship");
+        await document.fonts.ready;
+      });
+      const geometry = await viewer.evaluate(() => {
+        const svg = document.querySelector("svg")!;
+        const bounds = (element: SVGGraphicsElement) => {
+          const box = element.getBBox();
+          return {
+            left: box.x,
+            top: box.y,
+            right: box.x + box.width,
+            bottom: box.y + box.height,
+          };
+        };
+        const regions = Array.from(
+          svg.querySelectorAll<SVGGraphicsElement>("[data-text-region]"),
+          (region) => ({
+            name: region.getAttribute("data-text-region"),
+            ...bounds(region),
+          }),
+        );
+        const footer = Array.from(svg.querySelectorAll("text")).find(
+          (text) => text.textContent === "TournaStudio",
+        )!;
+        return {
+          width: svg.viewBox.baseVal.width,
+          height: svg.viewBox.baseVal.height,
+          regions,
+          text: Array.from(svg.querySelectorAll("text"), bounds),
+          footer: bounds(footer),
+          fontsLoaded:
+            document.fonts.check("72px TournaExportArabic", "فارسی") &&
+            document.fonts.check("72px TournaExportLatin", "Championship"),
+        };
+      });
+      expect(geometry.fontsLoaded).toBe(true);
+      for (const block of geometry.text) {
+        expect(block.left).toBeGreaterThanOrEqual(0);
+        expect(block.right).toBeLessThanOrEqual(geometry.width);
+        expect(block.top).toBeGreaterThanOrEqual(0);
+        expect(block.bottom).toBeLessThanOrEqual(geometry.height);
+      }
+      for (let index = 1; index < geometry.regions.length; index++)
+        expect(geometry.regions[index - 1].bottom).toBeLessThan(
+          geometry.regions[index].top,
+        );
+      if (geometry.regions.length)
+        expect(geometry.regions.at(-1)!.bottom).toBeLessThan(
+          geometry.footer.top,
+        );
+      if (slide.file === introductions[0].file) {
+        expect(geometry.regions.map((region) => region.name)).toEqual([
+          "introduction-title",
+          "introduction-name",
+          "introduction-organization",
+          "introduction-description",
+        ]);
+        if (browserName === "chromium") {
+          await mkdir(".local", { recursive: true });
+          await viewer.goto("about:blank", { timeout: 10000 });
+          await viewer.setContent(
+            `<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0">${svg}</body></html>`,
+            { timeout: 10000 },
+          );
+          await viewer.screenshot({
+            path: ".local/introduction-export.png",
+            fullPage: true,
+            timeout: 10000,
+          });
+        }
+      }
+      if (slide.sceneId === "champion")
+        expect(geometry.regions.map((region) => region.name)).toEqual([
+          "champion-name",
+          "champion-subtitle",
+        ]);
+    }
+  } finally {
+    await viewer.close();
+  }
+});
+
 test("keeps Persian export controls readable at 320px with accessible labels", async ({
   page,
   browserName,

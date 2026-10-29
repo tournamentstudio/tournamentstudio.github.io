@@ -11,6 +11,7 @@ import { saveAggregateProgress } from "../engine/aggregate";
 import { ErrorText, Field, Modal, Notice } from "../components/ui";
 import { generatedMatchLabel, useI18n } from "../i18n";
 import { MatchLifecycle } from "./MatchLifecycle";
+import { MatchEditConflictNotice } from "./MatchEditConflictNotice";
 
 export interface MatchControlProps {
   tournament: Tournament;
@@ -18,6 +19,8 @@ export interface MatchControlProps {
   onChange: (doc: Tournament, action: string) => void;
   onClose: () => void;
   busy?: boolean;
+  externalRevision?: number;
+  stale?: boolean;
 }
 
 export function AggregateMatchControl({
@@ -26,6 +29,7 @@ export function AggregateMatchControl({
   onChange,
   onClose,
   busy = false,
+  stale = false,
 }: MatchControlProps) {
   const { t, locale } = useI18n();
   const policy = doc.stages.find((stage) => stage.id === match.stageId)!.config
@@ -72,7 +76,9 @@ export function AggregateMatchControl({
     policy.legs +
     (policy.tieBreak === "extra-leg" && regulationTied && !awayWinner ? 1 : 0);
   const tied = total.length === 2 && total[0] === total[1];
-  const impact = getCorrectionImpact(doc, match.id).filter(tournamentMatchEvidence(doc));
+  const impact = getCorrectionImpact(doc, match.id).filter(
+    tournamentMatchEvidence(doc),
+  );
   function commit(result: MatchResult, confirmed = false) {
     try {
       const next = recordResult(doc, match.id, result, confirmed);
@@ -147,9 +153,10 @@ export function AggregateMatchControl({
       title={t("Aggregate match control", "کنترل دیدار رفت و برگشت")}
       onClose={onClose}
     >
+      {stale && <MatchEditConflictNotice />}
       <fieldset
         className="match-control-fieldset"
-        disabled={busy}
+        disabled={busy || stale}
         aria-busy={busy}
       >
         <h3>{generatedMatchLabel(match, locale)}</h3>

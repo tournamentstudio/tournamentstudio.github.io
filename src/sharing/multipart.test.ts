@@ -63,6 +63,16 @@ describe("multipart QR transfers", () => {
     await expect(pending).rejects.toThrow("was cleared");
     expect((await collector.add(parts[1])).received).toBe(1);
   });
+  it("cancels pending scans without losing previously collected parts", async () => {
+    const parts = await createQRParts(code);
+    const collector = new QRPartsCollector();
+    await collector.add(parts[0]);
+    const pending = collector.add(parts[1]);
+    collector.cancelPending();
+    await expect(pending).rejects.toThrow("was cleared");
+    expect(await collector.add(parts[2])).toMatchObject({ received: 2 });
+    expect(await collector.add(parts[1])).toMatchObject({ received: 3, code });
+  });
   it("rejects structurally unsafe frames and conflicting duplicates", async () => {
     const hash = await sha256(code);
     const make = async (position: string, value: string) => {

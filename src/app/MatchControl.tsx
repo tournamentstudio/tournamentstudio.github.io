@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Check, RotateCcw, ShieldCheck } from "lucide-react";
-import type { Match, Tournament, Outcome, MatchResult } from "../domain/types";
+import type { Outcome, MatchResult } from "../domain/types";
 import { RefereeMode } from "./gol/RefereeMode";
 import { RunTimer } from "../timing/RunTimer";
 import { MatchMetricsEditor } from "../scoring/MatchMetricsEditor";
@@ -21,14 +21,35 @@ import {
   type MatchControlProps,
 } from "./AggregateMatchControl";
 import { MatchLifecycle } from "./MatchLifecycle";
+import { MatchEditConflictNotice } from "./MatchEditConflictNotice";
 
 export function MatchControl(props: MatchControlProps) {
-  return props.tournament.stages.find(
-    (stage) => stage.id === props.match.stageId,
+  const [editing, setEditing] = useState(() => ({
+    tournament: props.tournament,
+    match: props.match,
+    externalRevision: props.externalRevision,
+  }));
+  const stale = editing.externalRevision !== props.externalRevision;
+  if (
+    !stale &&
+    (editing.tournament !== props.tournament || editing.match !== props.match)
+  )
+    setEditing({
+      tournament: props.tournament,
+      match: props.match,
+      externalRevision: props.externalRevision,
+    });
+  // Keep the draft's entrant names and scoring policy together after an
+  // external reload. Local referee writes keep the same editing session.
+  const current = stale
+    ? { ...props, tournament: editing.tournament, match: editing.match, stale }
+    : props;
+  return current.tournament.stages.find(
+    (stage) => stage.id === current.match.stageId,
   )?.config.aggregate ? (
-    <AggregateMatchControl {...props} />
+    <AggregateMatchControl {...current} />
   ) : (
-    <StandardMatchControl {...props} />
+    <StandardMatchControl {...current} />
   );
 }
 
@@ -38,13 +59,8 @@ function StandardMatchControl({
   onChange,
   onClose,
   busy = false,
-}: {
-  tournament: Tournament;
-  match: Match;
-  onChange: (t: Tournament, action: string) => void;
-  onClose: () => void;
-  busy?: boolean;
-}) {
+  stale = false,
+}: MatchControlProps) {
   const { t, locale } = useI18n();
   const entrants = match.slots.map((s) =>
     doc.participants.find((p) => p.id === s.participantId),
@@ -99,7 +115,9 @@ function StandardMatchControl({
     doc.rules.scoring === "low" ||
     doc.rules.scoring === "time" ||
     doc.stages.find((s) => s.id === match.stageId)?.format === "time-trial";
-  const impact = getCorrectionImpact(doc, match.id).filter(tournamentMatchEvidence(doc));
+  const impact = getCorrectionImpact(doc, match.id).filter(
+    tournamentMatchEvidence(doc),
+  );
   function commit(result: MatchResult, confirmed = false) {
     try {
       const next = recordResult(doc, match.id, result, confirmed);
@@ -203,9 +221,10 @@ function StandardMatchControl({
   }
   return (
     <Modal wide title={t("Match control", "کنترل دیدار")} onClose={onClose}>
+      {stale && <MatchEditConflictNotice />}
       <fieldset
         className="match-control-fieldset game-match-control"
-        disabled={busy}
+        disabled={busy || stale}
         aria-busy={busy}
         data-sport={doc.sport}
         style={themeStyle(doc.theme)}

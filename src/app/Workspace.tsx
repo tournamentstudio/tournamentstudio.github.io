@@ -108,6 +108,7 @@ export function Workspace({
   onLock,
   saving,
   undoActions,
+  externalRevision,
 }: {
   tournament: Tournament;
   onChange: (t: Tournament, a: string) => void;
@@ -119,6 +120,7 @@ export function Workspace({
   onLock: () => void;
   saving: boolean;
   undoActions: UndoActions;
+  externalRevision: number;
 }) {
   const { t, locale } = useI18n();
   const [tab, setTab] = useState("overview");
@@ -716,6 +718,7 @@ export function Workspace({
           onChange={onChange}
           onClose={() => setMatchId(undefined)}
           busy={saving}
+          externalRevision={externalRevision}
         />
       )}
     </div>

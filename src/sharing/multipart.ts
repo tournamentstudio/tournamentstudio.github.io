@@ -36,11 +36,15 @@ export class QRPartsCollector {
   private parts = new Map<number, string>();
   private generation = 0;
 
+  cancelPending() {
+    this.generation++;
+  }
+
   clear() {
     this.hash = "";
     this.total = 0;
     this.parts.clear();
-    this.generation++;
+    this.cancelPending();
   }
 
   async add(raw: string): Promise<QRProgress> {

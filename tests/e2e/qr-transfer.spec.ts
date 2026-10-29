@@ -27,6 +27,166 @@ function fixture() {
   ]);
 }
 
+type PendingQRDecode = {
+  qrDecodeHeld: boolean;
+  qrDecodeFinished: boolean;
+  releaseQRDecode: () => void;
+};
+
+for (const cancellation of ["cancel", "collapse", "replace"] as const) {
+  test(`ignores a pending QR image after ${cancellation}`, async ({ page }) => {
+    const code = await encodeRecipe(fixture());
+    const image = await QRCode.toBuffer(code, { margin: 4, width: 900 });
+    await page.addInitScript(() => {
+      const state = window as unknown as PendingQRDecode;
+      const decode = HTMLImageElement.prototype.decode;
+      const revoke = URL.revokeObjectURL;
+      let heldURL: string | undefined;
+      HTMLImageElement.prototype.decode = async function () {
+        await decode.call(this);
+        if (!heldURL && this.src.startsWith("blob:")) {
+          heldURL = this.src;
+          state.qrDecodeHeld = true;
+          await new Promise<void>((resolve) => {
+            state.releaseQRDecode = resolve;
+          });
+        }
+      };
+      URL.revokeObjectURL = function (url) {
+        revoke.call(URL, url);
+        if (url === heldURL) state.qrDecodeFinished = true;
+      };
+    });
+    const dialog = await importer(page);
+    await dialog.getByLabel("QR image files", { exact: true }).setInputFiles({
+      name: "pending-transfer.png",
+      mimeType: "image/png",
+      buffer: image,
+    });
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => (window as unknown as PendingQRDecode).qrDecodeHeld,
+        ),
+      )
+      .toBe(true);
+    const replacement =
+      cancellation === "replace" ? JSON.stringify(fixture()) : "";
+    if (cancellation === "cancel")
+      await dialog
+        .getByRole("button", { name: "Cancel QR transfer", exact: true })
+        .click();
+    else if (cancellation === "collapse")
+      await dialog
+        .locator("summary")
+        .filter({ hasText: "Scan a QR transfer" })
+        .click();
+    else
+      await dialog.getByLabel("Import code", { exact: true }).fill(replacement);
+    await page.evaluate(() =>
+      (window as unknown as PendingQRDecode).releaseQRDecode(),
+    );
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => (window as unknown as PendingQRDecode).qrDecodeFinished,
+        ),
+      )
+      .toBe(true);
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+    );
+    await expect(dialog.getByLabel("Import code", { exact: true })).toHaveValue(
+      replacement,
+    );
+    if (cancellation === "collapse")
+      await dialog
+        .locator("summary")
+        .filter({ hasText: "Scan a QR transfer" })
+        .click();
+    await expect(
+      dialog.getByText(
+        "Transfer decoded. Use Preview import to inspect it before saving.",
+        { exact: true },
+      ),
+    ).toHaveCount(0);
+    await expect(dialog.getByRole("alert")).toHaveCount(0);
+    await expect(
+      dialog.getByRole("button", { name: "Start QR camera", exact: true }),
+    ).toBeEnabled();
+    await dialog.getByLabel("QR image files", { exact: true }).setInputFiles({
+      name: "retry-transfer.png",
+      mimeType: "image/png",
+      buffer: image,
+    });
+    await expect(dialog.getByLabel("Import code", { exact: true })).toHaveValue(
+      code,
+    );
+    await expect(
+      dialog.getByText(
+        "Transfer decoded. Use Preview import to inspect it before saving.",
+        { exact: true },
+      ),
+    ).toBeVisible();
+  });
+}
+
+test("releases a camera acquired after its request was canceled", async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== "chromium",
+    "The camera fixture uses Chromium canvas captureStream.",
+  );
+  await page.addInitScript(() => {
+    const state = window as unknown as {
+      releaseCameraRequest: () => void;
+      qrLateTrack: MediaStreamTrack;
+    };
+    Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
+      value: async () => {
+        await new Promise<void>((resolve) => {
+          state.releaseCameraRequest = resolve;
+        });
+        const canvas = document.createElement("canvas");
+        const stream = canvas.captureStream(10);
+        state.qrLateTrack = stream.getVideoTracks()[0];
+        return stream;
+      },
+    });
+  });
+  const dialog = await importer(page);
+  await dialog
+    .getByRole("button", { name: "Start QR camera", exact: true })
+    .click();
+  await dialog
+    .getByRole("button", { name: "Cancel QR transfer", exact: true })
+    .click();
+  await page.evaluate(() =>
+    (
+      window as unknown as { releaseCameraRequest: () => void }
+    ).releaseCameraRequest(),
+  );
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as unknown as { qrLateTrack?: MediaStreamTrack }).qrLateTrack
+            ?.readyState,
+      ),
+    )
+    .toBe("ended");
+  await expect(dialog.getByLabel("Import code", { exact: true })).toHaveValue(
+    "",
+  );
+  await expect(dialog.getByRole("alert")).toHaveCount(0);
+  await expect(
+    dialog.getByRole("button", { name: "Start QR camera", exact: true }),
+  ).toBeEnabled();
+});
+
 test("reads a QR image locally and previews the data before saving", async ({
   page,
 }) => {

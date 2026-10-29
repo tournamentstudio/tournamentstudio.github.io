@@ -512,6 +512,12 @@ Protected commands and checkpoints use authenticated revision envelopes; their
 outer hashes fingerprint ciphertext. Protect/unprotect converts every retained
 revision atomically. Expected revision and hash checks reject stale writers.
 
+Commit transactions compare the captured revision, protection mode and stored
+payload hash. Reimporting a backup can reuse a revision number, so that number
+alone is insufficient. Protected record hashes include ciphertext, salt and
+nonce, which also detects a concurrent change of unlocking secret. UI saves
+carry the hash of the document the editor actually used.
+
 Session Undo/Redo retains up to 20 confirmed edits and appends new revisions.
 It refreshes retained command references after restoration so repeated cycles
 remain valid as history is pruned. New edits clear Redo. Reloads, navigation,

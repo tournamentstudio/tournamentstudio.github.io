@@ -17,26 +17,76 @@ export interface VisualPage {
 export const exportLabel = (locale: Locale, en: string, fa: string) =>
   locale === "fa" ? fa : en;
 
-export function wrapVisualText(value: string, columns: number): string[] {
+const graphemes = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+
+function wrapMeasuredText(
+  value: string,
+  width: number,
+  measure: (value: string) => number,
+): string[] {
   const lines: string[] = [];
   for (const paragraph of value.replace(/\r/g, "").split("\n")) {
     let line = "";
     for (const word of paragraph.split(/\s+/).filter(Boolean)) {
-      if (Array.from(line + " " + word).length > columns && line) {
+      const candidate = line ? `${line} ${word}` : word;
+      if (measure(candidate) <= width) {
+        line = candidate;
+        continue;
+      }
+      if (line) {
         lines.push(line);
         line = "";
       }
-      const chars = Array.from(word);
-      while (chars.length > columns) {
-        if (line) lines.push(line);
-        lines.push(chars.splice(0, columns).join(""));
-        line = "";
+      for (const { segment } of graphemes.segment(word)) {
+        if (line && measure(line + segment) > width) {
+          lines.push(line);
+          line = "";
+        }
+        line += segment;
       }
-      line += (line ? " " : "") + chars.join("");
     }
     lines.push(line);
   }
   return lines;
+}
+
+export function wrapVisualText(value: string, columns: number): string[] {
+  return wrapMeasuredText(
+    value,
+    Math.max(1, columns),
+    (text) => Array.from(graphemes.segment(text)).length,
+  );
+}
+
+function measureVisualText(size: number) {
+  const font = `900 ${size}px "Vazirmatn Variable"`;
+  const context =
+    typeof document !== "undefined" &&
+    document.fonts?.check(font, "شاهین Team") &&
+    Array.from(document.fonts).some(
+      (face) =>
+        face.family.replace(/["']/g, "") === "Vazirmatn Variable" &&
+        face.status === "loaded",
+    )
+      ? document.createElement("canvas").getContext("2d")
+      : undefined;
+  if (context) {
+    context.font = font;
+    return (text: string) => context.measureText(text).width * 1.06 + 2;
+  }
+  return (text: string) =>
+    Array.from(graphemes.segment(text), ({ segment }) =>
+      /^\s+$/u.test(segment)
+        ? size * 0.4
+        : size *
+          (/\p{Extended_Pictographic}|[\ufdf0-\ufdff]/u.test(segment)
+            ? 4
+            : 1.2),
+    ).reduce((sum, advance) => sum + advance, 0);
+}
+
+export function visualTextLines(value: string, size: number, width: number) {
+  return wrapMeasuredText(value, Math.max(1, width), measureVisualText(size));
 }
 
 export function visualText(
@@ -49,11 +99,31 @@ export function visualText(
   color: string,
   anchor: "start" | "middle" | "end" = "middle",
 ) {
-  const lines = wrapVisualText(
-    value,
-    Math.max(6, Math.floor(width / (size * 0.62))),
-  );
-  return `<text x="${x}" y="${y}" fill="${color}" font-size="${size}" text-anchor="${anchor}" direction="${locale === "fa" ? "rtl" : "ltr"}" unicode-bidi="plaintext">${lines.map((line, i) => `<tspan x="${x}" dy="${i ? size * 1.5 : 0}">${escapeXML(line)}</tspan>`).join("")}</text>`;
+  const measure = measureVisualText(size);
+  const lines = wrapMeasuredText(value, Math.max(1, width), measure);
+  return `<text x="${x}" y="${y}" fill="${color}" font-size="${size}" text-anchor="${anchor}" direction="${locale === "fa" ? "rtl" : "ltr"}" unicode-bidi="plaintext">${lines
+    .map((line, i) => {
+      const measured = measure(line);
+      const fitted =
+        measured > width && line
+          ? ` font-size="${(size * Math.max(1, width)) / measured}"`
+          : "";
+      return `<tspan x="${x}" dy="${i ? size * 1.5 : 0}"${fitted}>${escapeXML(line)}</tspan>`;
+    })
+    .join("")}</text>`;
+}
+
+export function visualScoreText(
+  value: string,
+  x: number,
+  y: number,
+  size: number,
+  width: number,
+  color: string,
+) {
+  const measured = measureVisualText(size)(value);
+  const fitted = size * Math.min(1, Math.max(1, width - 2) / measured);
+  return `<text x="${x}" y="${y}" fill="${color}" font-size="${fitted}" text-anchor="middle" direction="ltr" unicode-bidi="isolate"><tspan x="${x}" dy="0">${escapeXML(value)}</tspan></text>`;
 }
 
 export function visualPalette(t: Tournament) {
@@ -133,10 +203,7 @@ export function scoreboardSVG(
   const compactField = names.length <= 2,
     nameSize = compactField ? 52 : 38;
   const rows = names.map((name, i) => {
-    const lines = wrapVisualText(
-      name,
-      Math.floor(1100 / (nameSize * 0.62)),
-    ).length;
+    const lines = visualTextLines(name, nameSize, 1100).length;
     return {
       name,
       index: i,
@@ -157,13 +224,10 @@ export function scoreboardSVG(
             0
           ).toLocaleString(locale)
         : "·";
-      const lineCount = wrapVisualText(
-        name,
-        Math.floor(1100 / (nameSize * 0.62)),
-      ).length;
+      const lineCount = visualTextLines(name, nameSize, 1100).length;
       const textY =
         y + (height - (lineCount - 1) * nameSize * 1.5) / 2 + nameSize / 3;
-      const out = `<rect x="80" y="${y}" width="1440" height="${height - 12}" rx="${c.radius}" fill="${c.card}" stroke="${winner ? c.accent : c.muted}" stroke-opacity="${winner ? 1 : 0.2}"/>${visualText(name, 690, textY, nameSize, 1100, locale, winner ? c.accent : c.foreground)}${visualText(score, 1405, y + height / 2 + 16, compactField ? 72 : 48, 180, locale, c.foreground)}`;
+      const out = `<rect x="80" y="${y}" width="1440" height="${height - 12}" rx="${c.radius}" fill="${c.card}" stroke="${winner ? c.accent : c.muted}" stroke-opacity="${winner ? 1 : 0.2}"/>${visualText(name, 690, textY, nameSize, 1100, locale, winner ? c.accent : c.foreground)}${visualScoreText(score, 1405, y + height / 2 + 16, compactField ? 72 : 48, 180, c.foreground)}`;
       y += height;
       return out;
     })
@@ -201,12 +265,16 @@ export function championPosterSVG(
         "پیش از خروجی پوستر قهرمان، مرحله نهایی را کامل و تساوی رتبه اول را تعیین کنید.",
       ),
     );
-  const nameLines = wrapVisualText(champion.name, 20);
-  const height = Math.max(1600, 880 + nameLines.length * 104);
+  const nameBottom =
+    720 + (visualTextLines(champion.name, 80, 1040).length - 1) * 120;
+  const subtitleLines = visualTextLines(t.subtitle, 26, 1040).length;
+  const subtitleHeight = (subtitleLines - 1) * 39;
+  const height = Math.max(1600, nameBottom + 280 + subtitleHeight);
+  const subtitleY = height - 180 - subtitleHeight;
   return visualFrame(
     t,
     champion.name,
-    `<circle cx="600" cy="340" r="118" fill="${c.card}" stroke="${c.accent}" stroke-width="4"/><path d="M525 315L555 350L600 285L645 350L675 315L658 395H542Z" fill="${c.accent}"/>${visualText(exportLabel(locale, "CHAMPION", "قهرمان"), 600, 560, 38, 1040, locale, c.accent)}${visualText(champion.name, 600, 720, 80, 1040, locale, c.foreground)}${visualText(t.subtitle, 600, height - 180, 26, 1040, locale, c.muted)}`,
+    `<circle cx="600" cy="340" r="118" fill="${c.card}" stroke="${c.accent}" stroke-width="4"/><path d="M525 315L555 350L600 285L645 350L675 315L658 395H542Z" fill="${c.accent}"/>${visualText(exportLabel(locale, "CHAMPION", "قهرمان"), 600, 560, 38, 1040, locale, c.accent)}<g data-text-region="champion-name">${visualText(champion.name, 600, 720, 80, 1040, locale, c.foreground)}</g><g data-text-region="champion-subtitle">${visualText(t.subtitle, 600, subtitleY, 26, 1040, locale, c.muted)}</g>`,
     locale,
     1200,
     height,
@@ -222,7 +290,7 @@ export function tableVisualPages(
 ): VisualPage[] {
   const c = visualPalette(t),
     pages: VisualPage[] = [];
-  const wrapped = rows.flatMap((row) => wrapVisualText(row, 70));
+  const wrapped = rows.flatMap((row) => visualTextLines(row, 26, 1400));
   if (!wrapped.length)
     wrapped.push(
       exportLabel(locale, "No entries yet.", "هنوز داده‌ای ثبت نشده است."),

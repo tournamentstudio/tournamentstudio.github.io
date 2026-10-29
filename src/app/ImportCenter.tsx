@@ -366,6 +366,7 @@ export function ImportCenter({
             />
           </Field>
           <QRImport
+            inputSource={file ?? text}
             onCode={(value) => {
               setText(value);
               setFile(undefined);

@@ -12,7 +12,7 @@ import {
   visualFrame,
   visualPalette,
   visualText,
-  wrapVisualText,
+  visualTextLines,
   type VisualPage,
 } from "./visuals";
 
@@ -66,49 +66,81 @@ export function advancedSlidePages(
         ],
         locale,
       );
-    return entrants.map((p) => {
+    return entrants.flatMap((p) => {
       const title =
         scene.title || label("MEET THE COMPETITORS", "آشنایی با رقبا");
-      const nameLines = wrapVisualText(p.name, 26).length;
+      const titleBottom =
+        410 + (visualTextLines(title, 30, 1400).length - 1) * 45;
+      const nameY = Math.max(520, titleBottom + 100);
+      const nameBottom =
+        nameY + (visualTextLines(p.name, 72, 1400).length - 1) * 108;
+      const organizationY = nameBottom + 80;
+      const organizationBottom = p.organization
+        ? organizationY +
+          (visualTextLines(p.organization, 28, 1400).length - 1) * 42
+        : nameBottom;
+      const descriptionLines = visualTextLines(scene.text, 28, 1400);
+      const firstDescription = descriptionLines.slice(0, 6);
+      const descriptionHeight = (firstDescription.length - 1) * 42;
       const height = Math.max(
         900,
-        570 + nameLines * 108 + wrapVisualText(scene.text, 55).length * 42,
+        organizationBottom + 210 + descriptionHeight,
       );
+      const descriptionY = height - 110 - descriptionHeight;
+      const continuationTitle = label("Introduction continued", "ادامه معرفی");
+      if (height > 2400)
+        return tableVisualPages(
+          t,
+          label("Participant introduction", "معرفی شرکت‌کننده"),
+          [title, p.name, p.organization ?? "", scene.text].filter(Boolean),
+          locale,
+        );
       const identity =
         p.logo && validateRasterAsset(p.logo)
           ? `<image href="${escapeXML(p.logo)}" x="690" y="125" width="220" height="220" preserveAspectRatio="xMidYMid meet"/>`
           : `<circle cx="800" cy="235" r="110" fill="${c.card}" stroke="${c.accent}"/>${visualText(Array.from(p.name).slice(0, 2).join(""), 800, 260, 72, 200, locale, c.accent)}`;
-      return {
+      const firstPage = {
         title: `${title}: ${p.name}`,
         svg: visualFrame(
           t,
           p.name,
           identity +
-            visualText(title, 800, 410, 30, 1400, locale, c.accent) +
-            visualText(p.name, 800, 520, 72, 1400, locale, c.foreground) +
-            visualText(
+            `<g data-text-region="introduction-title">${visualText(title, 800, 410, 30, 1400, locale, c.accent)}</g>` +
+            `<g data-text-region="introduction-name">${visualText(p.name, 800, nameY, 72, 1400, locale, c.foreground)}</g>` +
+            `<g data-text-region="introduction-organization">${visualText(
               p.organization ?? "",
               800,
-              540 + nameLines * 108,
+              organizationY,
               28,
               1400,
               locale,
               c.foreground,
-            ) +
-            visualText(
-              scene.text,
+            )}</g>` +
+            `<g data-text-region="introduction-description">${visualText(
+              firstDescription.join("\n"),
               800,
-              height - 110,
+              descriptionY,
               28,
               1400,
               locale,
               c.foreground,
-            ),
+            )}</g>`,
           locale,
           1600,
           height,
         ),
       };
+      return [
+        firstPage,
+        ...(descriptionLines.length > firstDescription.length
+          ? tableVisualPages(
+              t,
+              continuationTitle,
+              descriptionLines.slice(6),
+              locale,
+            )
+          : []),
+      ];
     });
   }
   const match = introductionMatch(t, scene.type, scene.matchId);

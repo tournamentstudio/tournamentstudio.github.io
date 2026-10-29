@@ -94,6 +94,7 @@ function Studio({
   const [route, setRoute] = useState(getRoute);
   const [entries, setEntries] = useState<LibraryEntry[]>([]);
   const [doc, setDoc] = useState<Tournament>();
+  const [externalRevision, setExternalRevision] = useState(0);
   const [secret, setSecret] = useState<string>();
   const [unlockId, setUnlockId] = useState<string>();
   const [password, setPassword] = useState("");
@@ -290,9 +291,13 @@ function Studio({
           !savingRef.current &&
           session.current.doc?.id === current.doc.id &&
           session.current.doc.revision === current.doc.revision &&
-          loaded.revision !== current.doc.revision
-        )
+          session.current.doc.revisionHash === current.doc.revisionHash &&
+          (loaded.revision !== current.doc.revision ||
+            loaded.revisionHash !== current.doc.revisionHash)
+        ) {
+          setExternalRevision((value) => value + 1);
           openDocument(loaded, current.secret);
+        }
       } catch (e) {
         if (alive && epoch === sessionEpoch.current && session.current.doc)
           setSaveError(e);
@@ -398,6 +403,7 @@ function Studio({
         value.revision,
         action,
         current.secret,
+        value.revisionHash,
       );
       await refresh();
       if (epoch === sessionEpoch.current) {
@@ -493,6 +499,7 @@ function Studio({
         current.doc.revision,
         t("Replace from imported snapshot", "جایگزینی از تصویر وارد شده"),
         current.secret,
+        current.doc.revisionHash,
       );
     } else if (revisions.length) {
       saved = await repository.createWithHistory(
@@ -923,6 +930,7 @@ function Studio({
               <Workspace
                 key={doc.id}
                 tournament={doc}
+                externalRevision={externalRevision}
                 onChange={(next, action) => void save(next, action)}
                 onImported={(value) => {
                   if (

@@ -147,7 +147,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for algorithms and measured engine tests.
 | Local live display | Implemented | Confirmed saves notify same-origin tabs; displays reload saved state. Protected tabs must be unlocked separately. |
 | OBS use | Implemented | Capture the unlocked browser window, use chroma backgrounds, or export overlay images. Separate OBS browser sources do not share another browser profile's IndexedDB. |
 | QR generation | Implemented | Creates a QR for links up to the conservative 1,800-byte limit; otherwise recommends a file/code. |
-| QR camera scanning / multipart transfer | Implemented | Local PNG/JPEG decoding, explicit camera start/stop, and numbered multipart QR export/reassembly. Up to 128 parts of 900 characters with part/package checksums. Incomplete or mixed transfers cannot be imported; camera hardware availability varies. |
+| QR camera scanning / multipart transfer | Implemented | Local PNG/JPEG decoding, explicit camera start/stop, and numbered multipart QR export/reassembly. Canceling or changing import input invalidates pending reads and releases late camera streams. Up to 128 parts of 900 characters with part/package checksums. Incomplete or mixed transfers cannot be imported; camera hardware availability varies. |
 
 Theme collections:
 
@@ -192,7 +192,7 @@ Theme collections:
 | Save failure recovery | Implemented | Errors are shown; an unsaved copy can be exported or the saved document reloaded. |
 | Revision history | Implemented | Last 50 logical revisions with command deltas and periodic full checkpoints. Restore creates a new revision; individual revisions and retained history can be exported. |
 | Event-sourced history and visual diffs | Implemented | Validated command-v1 updates between checkpoint-v1 documents, full checkpoint every tenth consecutive revision or large change, atomic pruning/rebasing, encrypted protected history and paged revision comparisons. Private fields are hidden by default. |
-| Multi-tab conflicts | Implemented | Expected-revision checks reject stale writes; BroadcastChannel notifications follow the successful transaction. Document saves and vault transitions retain concurrent favorite, trash, restore and backup changes. |
+| Multi-tab conflicts | Implemented | Revision, content hash and protection-state checks reject stale writes, including same-revision reimports and vault secret changes. BroadcastChannel notifications follow the successful transaction. Document saves and vault transitions retain concurrent favorite, trash, restore and backup changes. |
 | Trash and permanent deletion | Implemented | Restore from trash; separate confirmation before permanent deletion. |
 | Library tools | Implemented | Search, recent/name sorting, grid/list view, favorites, in-progress/trash filters and duplication. |
 | Sport/format library filters | Implemented | Filter local tournaments by sport and any included stage format. Protected library entries omit sport and format metadata. |
@@ -226,7 +226,7 @@ Theme collections:
 | PDF | Implemented | Browser print dialog offers Save as PDF where the platform supports it. No separate PDF rendering engine. |
 | Print-friendly HTML | Implemented | Standalone public tournament HTML download with standings, schedule and stage brackets, escaped content and printable pages, alongside browser print output. |
 | Participant/match CSV and schedule ICS | Implemented | Portable tabular data and calendar events, with formula/injection defenses. |
-| Scoreboard images, posters and slide files | Implemented | SVG/PNG scoreboards, champion posters and paginated standings. Selected presentation scenes export as a ZIP of standalone SVGs, manifest and offline HTML viewer. These are snapshots; no PPTX or running countdown is implied. |
+| Scoreboard images, posters and slide files | Implemented | SVG/PNG scoreboards, champion posters and paginated standings. Width-aware text wrapping preserves graphemes, scores keep every digit, and long introduction descriptions continue on extra slides. Selected presentation scenes export as a ZIP of standalone SVGs, manifest and offline HTML viewer. These are snapshots; no PPTX or running countdown is implied. |
 | Statistics | Implemented | Recorded wins/losses/draws, win percentage, scores, difference, points, recent results and a points chart; BYEs do not inflate played totals. |
 | Elo and rating history | Implemented | Configurable Elo from completed played/drawn two-entrant matches, explicit cross-tournament identity mappings and TSH1 result packets. |
 | Multi-format predictions | Implemented | TSB1 version 2 supports generated static stages and dynamic-round scopes: winner/loser paths, draws, conditional resets and full placement rankings with ties. Swiss, three-loss and challenge formats predict only the generated round. Exact correct outcomes score one point, with shared ranks and separate scope/schema leaderboards. Legacy version-1 packets remain readable. Imported identity/time claims remain unverified. |

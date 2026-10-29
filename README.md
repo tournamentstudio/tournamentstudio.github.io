@@ -6,8 +6,9 @@ I built TournaStudio so a tournament can belong to the people running it. Open t
 
 **[Open TournaStudio](https://tournamentstudio.github.io/)** · [User guide](USER_GUIDE.md) · [Feature status](FEATURES.md)
 
-The October 29, 2026 correction release fixes English/Persian language changes,
-bracket text alignment and embedded print fonts. I am leaving the published app
+The October 29, 2026 updates fix English/Persian language changes, bracket text
+alignment, embedded print fonts, conflicting local saves and canceled QR reads.
+Long introduction text continues across exported slides. I am leaving the published app
 available between updates. The [release handoff](RELEASE_STATUS.md) records the
 checks, hosting settings and steps for returning to the project.
 

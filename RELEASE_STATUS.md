@@ -1,19 +1,34 @@
 # TournaStudio release handoff
 
-The October 29, 2026 correction release finishes the language and layout review.
+The October 29, 2026 follow-up fixes conflicting saves, QR cancellation and
+long text in exported graphics.
 The application remains available at [tournamentstudio.github.io](https://tournamentstudio.github.io/).
 I can leave it published without running a local development server.
 
 ## Published application
 
 - Repository: [tournamentstudio/tournamentstudio.github.io](https://github.com/tournamentstudio/tournamentstudio.github.io).
-- Release: [Language and export corrections](https://github.com/tournamentstudio/tournamentstudio.github.io/releases/tag/release-2026-10-29).
+- Release: [Save and transfer corrections](https://github.com/tournamentstudio/tournamentstudio.github.io/releases/tag/release-2026-10-29.1).
 - Publication: GitHub Pages serves the prepared static files from `main/docs`.
 - GitHub Actions is disabled. There are no repository CI workflows.
 - The hosted application does not need a development server running on my computer.
 - The source, tests, deployment files and documentation are committed to `main`.
 
-This release fixes live English/Persian switching in mounted brackets. Default
+Transactions now check the captured revision, payload hash and protection mode.
+A same-revision reimport or vault secret change cannot be overwritten by an
+older pending operation. Open match drafts remain visible but become read-only
+after another tab refreshes the document. Local referee saves retain their form.
+
+Canceled QR image reads and camera requests cannot replace a newer import input.
+Late camera streams are released. Confirmed numbered parts remain available for
+the next scan until explicitly cleared.
+
+Introduction slides reserve the actual wrapped height of each text block and
+continue long descriptions on extra pages. Champion subtitles stay clear of the
+winner and footer. Width-aware wrapping preserves graphemes; scoreboard and
+overlay totals keep every digit on one line.
+
+The preceding release fixed live English/Persian switching in mounted brackets. Default
 orientation follows the interface language; a manual choice remains until
 Follow language resets it. Names and scores have separate text areas, larger
 fonts enlarge cards, and long names retain their full accessible labels.
@@ -39,19 +54,18 @@ These checks were run locally against the correction build:
 | Check | Result |
 | --- | --- |
 | TypeScript and ESLint | Passed |
-| Unit and integration suite | 1,091 tests passed across 91 files |
+| Unit and integration suite | 1,110 tests passed across 93 files |
 | Release packaging checks | 4 tests passed |
 | Production build | Passed |
-| Final browser regression selection | 46 tests passed across Chromium, Firefox and WebKit |
-| Mixed-script form checks | 12 tests passed across Chromium, Firefox and WebKit |
+| Browser regression selection | 73 tests passed across Chromium, Firefox and WebKit; 4 camera-fixture cases skipped outside Chromium |
 | Prepared publication | 71 application files with SHA-256 entries |
 
-The final browser selection includes 21 language-switch and export cases,
-three 512-participant checks, 15 core Chromium workflows and seven WebKit
-accessibility interaction cases. Earlier targeted runs also checked display
-layouts, mixed-script fields, Persian controls at 320 to 1280 CSS pixels, and
-presentation localization. The print-font and SVG element-count failures found
-during that work were fixed and their cases passed on the final build.
+The browser selection covers conflicting saves and editors, QR cancellation and
+retry, camera release, actual downloaded graphics, history, language switching
+and 15 core workflows. Camera stream fixtures use Chromium's canvas capture API;
+image-based QR transfer runs in all three engines. A Chromium screenshot stall
+on a standalone SVG was isolated to the test capture step. Geometry checks still
+load the actual downloaded file; screenshots use the same SVG inside an HTML page.
 
 Core workflows include knockout completion, groups and playoffs, Swiss,
 independent snapshot copies, versioned patches, encrypted backup recovery,
@@ -64,9 +78,8 @@ Repeat the final local checks with:
 ```sh
 npm run check
 npm run test:release
-npx playwright test tests/e2e/language-switch-layout.spec.ts tests/e2e/performance.spec.ts
-npx playwright test tests/e2e/tournament.spec.ts --project=chromium
-npx playwright test tests/e2e/assistive-navigation.spec.ts --project=webkit
+npx playwright test tests/e2e/same-revision-conflicts.spec.ts tests/e2e/qr-transfer.spec.ts tests/e2e/exports.spec.ts
+npx playwright test tests/e2e/tournament.spec.ts tests/e2e/history-commands.spec.ts tests/e2e/language-switch-layout.spec.ts --project=chromium
 ```
 
 The linked GitHub release records the published commit and post-publication

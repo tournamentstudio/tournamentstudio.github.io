@@ -25,6 +25,10 @@ it("exports separate aggregate leg bookings with original entrants and translate
   expect(en).not.toContain("NEVER-EXPORT");
   expect(en).not.toContain("TBD");
   const fa = (await presentationSlideFiles(doc, "fa"))[0].svg;
-  expect(fa).toContain("بازی رفت‌وبرگشت");
+  const faText = Array.from(
+    fa.matchAll(/<tspan[^>]*>(.*?)<\/tspan>/g),
+    (match) => match[1],
+  ).join(" ");
+  expect(faText).toContain("بازی رفت‌وبرگشت");
   expect(fa).not.toContain("Leg 2");
 });

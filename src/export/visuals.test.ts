@@ -8,6 +8,9 @@ import {
   scoreboardSVG,
   standingsVisualPages,
   tableVisualPages,
+  visualText,
+  visualTextLines,
+  visualScoreText,
   wrapVisualText,
 } from "./visuals";
 import {
@@ -29,6 +32,85 @@ function fixture(count = 8) {
 }
 
 describe("public graphics", () => {
+  it("fits large numeric scores on one line without losing digits", () => {
+    for (const value of ["123,456,789", "۱۲۳٬۴۵۶٬۷۸۹", "-123456.789"]) {
+      const svg = visualScoreText(value, 1405, 200, 72, 180, "#000000");
+      expect(svg.match(/<tspan/g)).toHaveLength(1);
+      expect(svg).toContain(`>${value}</tspan>`);
+      expect(svg).toContain('direction="ltr"');
+      const size = Number(svg.match(/font-size="([\d.]+)"/)?.[1]);
+      expect(size).toBeLessThan(72);
+      expect(visualTextLines(value, size, 180)).toEqual([value]);
+    }
+  });
+  it("wraps wide names by measured width without stretching short text", () => {
+    const context = {
+      font: "",
+      measureText: (text: string) => ({
+        width: Array.from(text).reduce(
+          (width, character) => width + (character === "W" ? 20 : 5),
+          0,
+        ),
+      }),
+    };
+    vi.stubGlobal("document", {
+      fonts: {
+        check: () => true,
+        *[Symbol.iterator]() {
+          yield { family: "Vazirmatn Variable", status: "loaded" };
+        },
+      },
+      createElement: () => ({ getContext: () => context }),
+    });
+    try {
+      const wide = "W".repeat(13);
+      const lines = visualTextLines(wide, 10, 50);
+      expect(lines.join("")).toBe(wide);
+      expect(lines.every((line) => context.measureText(line).width < 50)).toBe(
+        true,
+      );
+      expect(visualTextLines("iiiiiiii", 10, 50)).toEqual(["iiiiiiii"]);
+      expect(context.font).toBe('900 10px "Vazirmatn Variable"');
+      const svg = visualText("iii", 100, 100, 10, 50, "en", "#000000");
+      expect(svg).not.toContain("textLength");
+      expect(svg).toContain('<tspan x="100" dy="0">iii</tspan>');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+  it("preserves whole graphemes in both measured and column wrapping", () => {
+    const combined = `e\u0301`;
+    const joined = String.fromCodePoint(0x1f469, 0x200d, 0x1f4bb);
+    for (const glyph of [combined, joined, "ن\u0651"]) {
+      const value = glyph.repeat(20);
+      const columns = wrapVisualText(value, 3);
+      const measured = visualTextLines(value, 20, 100);
+      for (const lines of [columns, measured]) {
+        expect(lines.join("")).toBe(value);
+        expect(lines.every((line) => line.replaceAll(glyph, "") === "")).toBe(
+          true,
+        );
+      }
+    }
+    const tiny = visualText(joined, 50, 50, 20, 10, "en", "#000000");
+    expect(tiny).toContain(joined);
+    expect(tiny).toMatch(/<tspan[^>]*font-size="[\d.]+"/);
+  });
+  it("paginates wide table entries using the same wrapping as rendered rows", () => {
+    const tournament = fixture();
+    const value = "W".repeat(1000);
+    const lines = visualTextLines(value, 26, 1400);
+    const pages = tableVisualPages(tournament, "Wide entries", [value], "en");
+    expect(pages).toHaveLength(Math.ceil(lines.length / 10));
+    const rendered = pages.flatMap((page) =>
+      Array.from(
+        page.svg.matchAll(/<tspan[^>]*>(W+)<\/tspan>/g),
+        (match) => match[1],
+      ),
+    );
+    expect(rendered).toEqual(lines);
+    expect(rendered.join("")).toBe(value);
+  });
   it("exports live public scores without referee secrets or organizer metadata", () => {
     const t = fixture();
     t.matches[0].status = "live";

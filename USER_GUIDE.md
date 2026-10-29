@@ -549,6 +549,11 @@ acknowledge any affected played match before applying. Ctrl/Command+Z opens
 Undo outside text controls; Shift+Z or Ctrl+Y opens Redo. Normal text editing keeps
 its own native undo. Another tab's save invalidates an open restoration preview.
 
+If another tab refreshes the tournament while a match editor is open, its draft
+stays visible with a warning and its controls become read-only. Close and reopen
+the match to inspect the saved result before making a new edit. This also applies
+when an imported replacement has the same revision number as the old copy.
+
 To recover an older saved document, use **History**, compare a revision, then
 choose **Restore**. Both flows create a new revision rather than rewriting the
 past. The latest 50 logical revisions are retained; export important older ones.
@@ -820,6 +825,11 @@ If the code is large, use a `.tourney` file. The Share Center warns about long
 links and only generates a single QR when its payload is short enough. Multipart
 QR export divides supported larger codes into numbered images. The importer
 can read QR images locally or start a camera scan after an explicit action.
+
+Canceling a transfer, closing its scanner panel or choosing another import input
+stops pending QR work from replacing that input. Already collected numbered parts
+remain until **Clear collected QR parts** is selected. A canceled camera request
+also releases its stream if permission arrives later.
 
 With encryption, send the secret separately. Anyone with both the full payload
 and the secret can read it. Encryption does not prove who sent the package.

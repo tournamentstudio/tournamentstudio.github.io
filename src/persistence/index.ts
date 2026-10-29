@@ -220,9 +220,24 @@ function preserveLibraryState(
   };
 }
 
+function assertCurrentRecord(
+  expected: DocumentRecord,
+  current: DocumentRecord | undefined,
+): void {
+  // Revision numbers can repeat after a backup is reimported. Protected
+  // hashes also identify the encrypted payload, including its salt and nonce.
+  if (
+    !current ||
+    current.revision !== expected.revision ||
+    current.protected !== expected.protected ||
+    current.revisionHash !== expected.revisionHash
+  )
+    throw new RevisionConflictError(expected.revision, current?.revision ?? -1);
+}
+
 async function storeRecord(
   record: DocumentRecord,
-  expectedRevision: number | undefined,
+  expected: DocumentRecord | undefined,
   action: string,
   previous?: Tournament,
   secret?: string,
@@ -253,21 +268,12 @@ async function storeRecord(
     }
     await db.transaction("rw", db.documents, db.snapshots, async () => {
       const current = await db.documents.get(record.id);
-      if (expectedRevision === undefined) {
+      if (expected === undefined) {
         if (current)
           throw new Error(
             "A tournament with this ID already exists. Save a separate copy or explicitly replace it.",
           );
-      } else if (
-        !current ||
-        current.revision !== expectedRevision ||
-        current.protected !== record.protected
-      ) {
-        throw new RevisionConflictError(
-          expectedRevision,
-          current?.revision ?? -1,
-        );
-      }
+      } else assertCurrentRecord(expected, current);
       await db.documents.put(preserveLibraryState(record, current));
       await db.snapshots.put(snapshot);
       if (checkpoint) await db.snapshots.put(checkpoint);
@@ -413,6 +419,7 @@ export const repository = {
     expectedRevision: number,
     action = "Updated tournament",
     secret?: string,
+    expectedHash?: string,
   ): Promise<Tournament> {
     const current = await db.documents.get(input.id);
     if (!current || current.revision !== expectedRevision)
@@ -422,6 +429,8 @@ export const repository = {
       );
     // Unlocking is checked on every protected write. A wrong secret never replaces a vault.
     const previous = await openRecord(current, secret);
+    if (expectedHash !== undefined && previous.revisionHash !== expectedHash)
+      throw new RevisionConflictError(expectedRevision, current.revision);
     const validated = validateTournament(
       reconcilePlayerStatistics(
         previous,
@@ -445,7 +454,7 @@ export const repository = {
     });
     await storeRecord(
       await prepareRecord(document, current.protected, secret, current),
-      expectedRevision,
+      current,
       action,
       previous,
       secret,
@@ -547,7 +556,7 @@ export const repository = {
     const next = await applyPatch(base, patch);
     await storeRecord(
       await prepareRecord(next, current.protected, secret, current),
-      current.revision,
+      current,
       "Applied update packet",
       base,
       secret,
@@ -579,6 +588,7 @@ export const repository = {
       current.revision,
       `Merged ${selected.length} selected update changes`,
       secret,
+      current.revisionHash,
     );
   },
 
@@ -647,6 +657,7 @@ export const repository = {
       current.revision,
       `Restored revision ${revision}`,
       secret,
+      current.revisionHash,
     );
   },
 
@@ -672,7 +683,13 @@ export const repository = {
       throw new Error(
         "Confirm the affected played matches before restoring this revision.",
       );
-    return repository.save(target, expectedRevision, action, secret);
+    return repository.save(
+      target,
+      expectedRevision,
+      action,
+      secret,
+      expectedHash,
+    );
   },
 
   async protect(id: string, secret: string): Promise<Tournament> {
@@ -705,11 +722,7 @@ export const repository = {
     }
     await db.transaction("rw", db.documents, db.snapshots, async () => {
       const latest = await db.documents.get(id);
-      if (latest?.revision !== current.revision || latest.protected)
-        throw new RevisionConflictError(
-          current.revision,
-          latest?.revision ?? -1,
-        );
+      assertCurrentRecord(current, latest);
       await db.documents.put(preserveLibraryState(record, latest));
       await db.snapshots.bulkPut(snapshots);
     });
@@ -743,11 +756,7 @@ export const repository = {
     const record = await prepareRecord(document, false, undefined, current);
     await db.transaction("rw", db.documents, db.snapshots, async () => {
       const latest = await db.documents.get(id);
-      if (latest?.revision !== current.revision || !latest.protected)
-        throw new RevisionConflictError(
-          current.revision,
-          latest?.revision ?? -1,
-        );
+      assertCurrentRecord(current, latest);
       await db.documents.put(preserveLibraryState(record, latest));
       await db.snapshots.bulkPut(decrypted);
     });
