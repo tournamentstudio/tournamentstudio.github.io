@@ -81,3 +81,38 @@ old overflow and confirmed the corrected bounds in all three engines.
 [PERFORMANCE.md](PERFORMANCE.md) records startup byte counts, CPU-throttled
 measurements and the 512-participant display check. The tests and measurement
 script run locally. GitHub Actions remains disabled.
+
+## Follow-up recovery and competition review
+
+The next review reproduced two qualification defects. Wildcard comparisons used
+the wrong direction for lower-is-better weighted scores and differences, across
+total, per-match and retained-results policies. New alternating challenge rounds
+could still pair withdrawn or disqualified entrants. Both now use the intended
+rules without changing completed results or removing historical participants.
+
+Closing a timezone import during its asynchronous preparation could still start
+a write. The importer now invalidates that preparation on close or unmount.
+Parent callbacks also check the import session before starting and after waiting.
+A write that already started can finish, but cannot reopen its old workspace or
+close a new preview. Tests cover explicit close, automatic vault lock and delayed
+encrypted persistence in isolated browser profiles.
+
+A failed save previously lost its in-memory recovery copy when leaving the
+workspace. Pending saves now block route changes and competing imports; failed
+saves offer staying to export or explicitly discarding before leaving. Reloading
+the saved document also resets editor drafts. App updates wait for recovery, and
+browser close/reload warnings are best effort. Vault locking still clears private
+draft references. A delayed image upload that completes during another save keeps
+its rejected candidate available for export after the first save finishes.
+
+Exported sponsor cards and compact overlay headers used fixed heights even when
+accepted names or titles wrapped across extra lines. Their heights now follow
+the measured text, with aligned sponsor rows and space for logos. Unit checks
+cover all sponsor layouts; browser checks load the actual SVG files and bundled
+fonts, then measure every name against its card and neighboring content.
+Test screenshots use an HTML wrapper because standalone SVG screenshot capture
+stalled in Chromium and Firefox after those geometry assertions had passed.
+
+[RELEASE_STATUS.md](RELEASE_STATUS.md) records the completed checks for this
+follow-up. The earlier performance measurements remain tied to their original
+commit. No CI workflow or external runtime service was added.

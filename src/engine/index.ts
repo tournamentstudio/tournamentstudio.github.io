@@ -278,7 +278,7 @@ export function generateStage(input: Tournament, stageId: string): Tournament {
         ? hillRound(tournament, stage, 1)
         : mode === "invitations"
           ? []
-          : ladderRound(stage, 1);
+          : ladderRound(tournament, stage, 1);
   }
   if (["free-for-all", "time-trial", "grand-prix"].includes(stage.format)) {
     const capacity =
@@ -791,7 +791,7 @@ export function advanceStage(input: Tournament, stageId: string): Tournament {
         ? tripleRound(tournament, stage, round)
         : ladderPolicy(stage).mode === "king-of-hill"
           ? hillRound(tournament, stage, round)
-          : ladderRound(stage, round);
+          : ladderRound(tournament, stage, round);
   if (!next.length)
     throw new Error("There are no valid matches for the next round.");
   if (next.length + tournament.matches.length > 20000)

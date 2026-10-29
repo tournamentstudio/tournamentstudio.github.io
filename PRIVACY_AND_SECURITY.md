@@ -14,13 +14,21 @@ Browser storage is not permanent safekeeping. Clearing site data, deleting a bro
 
 Export `.tourney` backups to a place you control. The library records when a backup was requested, but the application cannot verify that a downloaded file was retained or copied to another device.
 
+A failed-save recovery copy remains in application memory until it is replaced,
+explicitly discarded, or cleared by leaving the session through vault lock.
+Export it before choosing to discard or reload the saved version. Ordinary
+pending saves block route exits and import changes; failed-save copies require an
+explicit decision before route exit. The browser unload warning is a best-effort
+request, not durable storage. A crash, forced shutdown or suppressed warning can
+still lose the unsaved copy.
+
 ## Protected vault
 
 Protected mode encrypts the complete tournament before it reaches IndexedDB. Titles, sport, status, rosters, notes, referee information, and audit entries are inside the encrypted document. Library rows show a generic title. The row still exposes an opaque tournament ID, revision, update time, encryption state, trash state, favorite state, backup time, ciphertext size, and a ciphertext fingerprint. The plaintext document hash stays inside the encryption envelope.
 
 Revision commands and checkpoints are encrypted too. Protecting a previously standard tournament reconstructs and encrypts every retained revision, then replaces private library metadata in one transaction. The outer hash of a protected record fingerprints ciphertext, not the plaintext document.
 
-The vault unlocking secret is held in application memory while the document is open. It is not saved in local storage or IndexedDB. A separately requested embedded-key share link deliberately carries its own newly generated sharing secret; this is a different transport choice, not vault key storage. Locking must close the document and clear the application references to its plaintext and secret.
+The vault unlocking secret is held in application memory while the document is open. It is not saved in local storage or IndexedDB. A separately requested embedded-key share link deliberately carries its own newly generated sharing secret; this is a different transport choice, not vault key storage. Locking closes the document and clears the application references to its plaintext and secret, including decrypted previews and unsaved recovery copies.
 
 JavaScript memory cannot be guaranteed to be physically erased on demand. A person with developer tools, a compromised extension, malware, or access to an already unlocked browser can read data in memory. Local encryption does not provide server-side identity or permissions.
 
@@ -91,6 +99,12 @@ code in memory and offers copy or text download. Clipboard denial selects the
 text for manual copying. The app does not put the code back in the URL or save
 it to browser storage. Keep the code before closing or reloading; an embedded
 sharing key or private payload remains sensitive in the downloaded copy.
+
+Closing an import or locking its session invalidates pending timezone preparation
+before it starts a write. A write that already started may finish, retaining its
+selected storage mode, but cannot reopen the dismissed view or replace a newer
+import draft. Cancellation does not erase an already committed record; inspect
+the local library if a save was in progress when the window closed.
 
 Separate-secret encrypted snapshots, updates and archives require the secret from another channel. The optional TSK1 link includes a generated secret and opens without another password prompt. Anyone receiving the complete link can decrypt it. Encryption never establishes the recipient or sender identity.
 

@@ -526,6 +526,24 @@ Undo and History Restore share a preview with explicit acknowledgement of
 played/live/contested result changes. An external save invalidates an open
 preview; confirmation never applies it to a different current revision.
 
+The UI retains a failed-save candidate in memory and offers a recovery file.
+Save attempts have an increasing sequence: if an asynchronous edit arrives
+during a write, that write cannot clear or replace the newer rejected candidate.
+Ordinary pending saves block route exits and new import mutations. A failed-save
+candidate blocks imports and app updates; leaving its workspace requires an
+explicit discard. Reloading the saved document remounts the workspace so stale
+form drafts do not survive recovery. A `beforeunload` handler requests a browser
+warning while a save or recovery copy is pending, but cannot guarantee delivery
+on every browser or shutdown path. Vault locking clears the recovery copy with
+the other decrypted session state.
+
+Import sessions have a separate epoch captured by the rendered callbacks. Open,
+close and session clearing invalidate older callbacks before persistence and
+before publishing a completed write into the UI. `ImportCenter` also invalidates
+pending timezone preparation and inspection when closed or unmounted. A write
+that already started can finish transactionally, but its completion cannot reopen
+a closed importer or replace a later import draft.
+
 The revision hash is SHA-256 over canonical JSON, excluding its own field.
 It detects inconsistent content and anchors update packets. It does not identify
 an author or prove that the content came from a trusted organizer.

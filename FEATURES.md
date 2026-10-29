@@ -33,7 +33,7 @@ succeeded.
 | Free-for-all | Implemented | More than two entrants per match, balanced heats, repeated rounds, placement scores and ties. A one-entrant heat is rejected. |
 | Battle royale scoring | Implemented | Multi-entrant heats with placement awards, measured eliminations/survival values and weighted dimensions. Tied placements average the awards of occupied positions. Organizers enter the evidence; no game-server feed is required. |
 | Gauntlet | Implemented | Lower seeds play first; each winner meets the next higher seed. |
-| Challenge ladder | Implemented | Named alternating-adjacent-challenges policy, next-round generation and rank swaps after a successful challenge. |
+| Challenge ladder | Implemented | Named alternating-adjacent-challenges policy, next-round generation and rank swaps after a successful challenge. New rounds exclude withdrawn/disqualified entrants while preserving their history; the last two active entrants still pair on an offset round. |
 | Arbitrary challenge invitations | Implemented | Persisted pending, approved, declined, canceled and resolved invitations; bounded rank gap, one approved match at a time, private notes and rank swaps after actual results. Cancel only before play; corrections require reviewed downstream recovery. |
 | Time trial and race | Implemented | Lower numeric times win; select placement points or cumulative elapsed time. Cumulative ranking keeps incomplete entrants unranked until required runs are recorded. Use one agreed time unit. |
 | Speedrun tooling | Implemented | Per-entrant persisted start/pause/reset timer, named splits and private evidence references; explicit transfer of elapsed seconds into score entry. Timing uses the device clock. Automated game/video verification and certified timing are outside this workflow. |
@@ -58,7 +58,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for algorithms and measured engine tests.
 | Stage graph validation | Implemented | Cycles, missing stages, invalid sources and duplicate or excessive qualifiers are rejected. |
 | Visual stage editor | Implemented | Movable nodes, output/input ports, pan, zoom, saved positions, inspector and keyboard/form alternatives. Connections validate as a complete draft before saving. |
 | Parallel and multiple source stages | Implemented | Add, edit and remove multiple connections per destination. Cycles and duplicate selections are rejected; generated descendants lock input changes. |
-| Exact cross-group slots and wildcard qualification | Implemented | Exact group/rank picks and physical first-round slots for single/double elimination. Group wildcards compare totals, per-match values or results after discarding bottom opponents, with ordered criteria and candidate previews. Unresolved ties block qualification. |
+| Exact cross-group slots and wildcard qualification | Implemented | Exact group/rank picks and physical first-round slots for single/double elimination. Group wildcards compare totals, per-match values or results after discarding bottom opponents, with ordered criteria and candidate previews. Score and differential criteria respect lower-is-better weighted rules. Unresolved ties block qualification. |
 | Winner/loser routing between separate stages | Implemented | Select actual source matches and their recorded winners or losers, with explicit expected counts. Generated source references lock unsafe regeneration. Correction invalidates dependent stages with recovery; recipes reject these result-specific connections and direct users to full snapshots. |
 | Manual qualifier overrides | Implemented | Review and confirm explicit entrant choices when source standings have a tied cutoff. Generated descendants and played draws remain protected. |
 | Manual group composition / forbidden pairs | Implemented | Group membership editor validates every entrant, group sizes and stage locks. Swiss forbidden-pair controls reject duplicate, missing and self-pair references. |
@@ -144,11 +144,15 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for algorithms and measured engine tests.
 | Presentation playlist | Implemented | Add/remove/reorder scenes, duration/title/public text, rotation, pause and manual controls. |
 | Presentation scenes | Implemented | 21 types, including title, participant list and introductions, brackets, standings, scoreboard, upcoming/results/schedule/statistics, countdown, break, rules, sponsors, announcement, semifinals/final introductions, champion, podium, trophy and QR. |
 | Dedicated introductions and celebrations | Implemented | Selected-participant introductions, semifinal and final introductions, and a trophy scene backed by an actual decided champion. Reduced motion and offline slide export are supported. |
-| Display modes | Implemented | Fullscreen, 16:9, 4:3, portrait and strip/stacked/compact overlays with transparent, chroma or theme backgrounds. SVG/PNG overlays retain transparency; window capture can be opaque. |
+| Display modes | Implemented | Fullscreen, 16:9, 4:3, portrait and strip/stacked/compact overlays with transparent, chroma or theme backgrounds. Exported overlay headers grow with wrapped titles. SVG/PNG overlays retain transparency; window capture can be opaque. |
 | Local live display | Implemented | Confirmed saves notify same-origin tabs; displays reload saved state. Protected tabs must be unlocked separately. |
 | OBS use | Implemented | Capture the unlocked browser window, use chroma backgrounds, or export overlay images. Separate OBS browser sources do not share another browser profile's IndexedDB. |
 | QR generation | Implemented | Creates a QR for links up to the conservative 1,800-byte limit; otherwise recommends a file/code. |
 | QR camera scanning / multipart transfer | Implemented | Local PNG/JPEG decoding, explicit camera start/stop, and numbered multipart QR export/reassembly. Canceling or changing import input invalidates pending reads and releases late camera streams. Up to 128 parts of 900 characters with part/package checksums. Incomplete or mixed transfers cannot be imported; camera hardware availability varies. |
+
+Sponsor slide exports size each row from the wrapped names and logos in that
+row. Grid, strip and spotlight layouts keep complete bilingual names clear of
+neighboring cards and the footer.
 
 Theme collections:
 
@@ -190,7 +194,7 @@ Theme collections:
 | Capability | Status | Actual behavior |
 | --- | --- | --- |
 | IndexedDB persistence | Implemented | Versioned documents behind a repository interface, transactional saves and confirmed-save feedback. |
-| Save failure recovery | Implemented | Errors are shown; an unsaved copy can be exported or the saved document reloaded. |
+| Save failure recovery | Implemented | Errors are shown; an unsaved copy can be exported or the saved document reloaded, resetting editor drafts. Pending saves block route changes and imports. Failed saves require recovery or explicit discard before leaving; app updates wait and browser departure warnings are best effort. A later edit rejected during a save remains exportable after that save finishes. Vault lock still clears decrypted drafts. |
 | Revision history | Implemented | Last 50 logical revisions with command deltas and periodic full checkpoints. Restore creates a new revision; individual revisions and retained history can be exported. |
 | Event-sourced history and visual diffs | Implemented | Validated command-v1 updates between checkpoint-v1 documents, full checkpoint every tenth consecutive revision or large change, atomic pruning/rebasing, encrypted protected history and paged revision comparisons. Private fields are hidden by default. |
 | Multi-tab conflicts | Implemented | Revision, content hash and protection-state checks reject stale writes, including same-revision reimports and vault secret changes. BroadcastChannel notifications follow the successful transaction. Document saves and vault transitions retain concurrent favorite, trash, restore and backup changes. |
@@ -209,7 +213,7 @@ Theme collections:
 | Embedded-key encrypted links | Implemented | TSK1 wraps an encrypted snapshot with a generated 192-bit secret. Anyone holding the full link can decrypt it; the interface explains this before sharing. |
 | `.tourney` archives | Implemented | Validated two-entry ZIP with current document, embedded raster assets, theme and audit entries; optional encryption. |
 | Full revision-table export | Implemented | Optional archive v2 includes the current document and up to 50 retained snapshots. Each revision is validated and hashed; history imports atomically and can remain encrypted. Version 1 archives still import. |
-| Import preview / local copy / fork | Implemented | Preview first; preserve identity for a local copy or assign a new identity for an independent fork. Changing the selected input invalidates pending previews and errors from the previous selection. |
+| Import preview / local copy / fork | Implemented | Preview first; preserve identity for a local copy or assign a new identity for an independent fork. Changing input or closing invalidates pending preparation and errors. An already-started write may finish, but cannot reopen a dismissed importer or overwrite a later preview. |
 | Replace current document | Implemented | Explicit confirmation and a recoverable previous revision. |
 | Compact recipe | Implemented | TSR1 handles single stages and TSR2 recreates multi-stage configuration with new IDs, positional entrant references and venue placeholders. Names, results, sponsor content and assets are omitted. Connections to recorded match outcomes require a full snapshot. |
 | Incremental updates | Implemented | Versioned `TSP1` packets with exact ID/base revision/base hash, target hash, allowed operations, preview and transactional application. |

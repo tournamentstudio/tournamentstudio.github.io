@@ -240,8 +240,19 @@ export function tripleRound(
   return result;
 }
 
-export function ladderRound(stage: Stage, round: number): Match[] {
-  const ids = (stage.metadata.ladderOrder ?? stage.participantIds) as string[];
+export function ladderRound(
+  tournament: Tournament,
+  stage: Stage,
+  round: number,
+): Match[] {
+  const active = new Set(
+    tournament.participants
+      .filter((participant) => participant.status === "active")
+      .map((participant) => participant.id),
+  );
+  const ids = (
+    (stage.metadata.ladderOrder ?? stage.participantIds) as string[]
+  ).filter((id) => active.has(id));
   const result: Match[] = [];
   const offset = ids.length > 2 && round % 2 === 0 ? 1 : 0;
   for (let index = offset; index < ids.length - 1; index += 2) {

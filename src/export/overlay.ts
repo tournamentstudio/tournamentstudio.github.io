@@ -41,6 +41,18 @@ export function broadcastOverlaySVG(
           : 752;
   const columns = settings.layout === "strip" ? 2 : 1,
     fontSize = settings.layout === "compact" ? 26 : 36;
+  const titleWidth = cardWidth * columns + 16 * (columns - 1),
+    titleTextWidth = titleWidth - 40,
+    titleSize = Math.max(
+      16,
+      Math.min(28, 1400 / Math.max(1, Array.from(t.title).length)),
+    ),
+    titleLines = visualTextLines(t.title, titleSize, titleTextWidth).length,
+    titleHeight = Math.max(
+      72,
+      (titleLines - 1) * titleSize * 1.5 + titleSize + 32,
+    ),
+    titleOffset = settings.showTournament ? titleHeight + 18 : 0;
   const cardHeight = Math.max(
     112,
     ...names.map(
@@ -52,8 +64,7 @@ export function broadcastOverlaySVG(
     ),
   );
   const boardHeight =
-    Math.ceil(names.length / columns) * (cardHeight + 12) +
-    (settings.showTournament ? 90 : 0);
+    Math.ceil(names.length / columns) * (cardHeight + 12) + titleOffset;
   const height = Math.max(900, boardHeight + 64),
     top =
       settings.position === "top"
@@ -62,15 +73,12 @@ export function broadcastOverlaySVG(
           ? (height - boardHeight) / 2
           : height - boardHeight - 32;
   const title = settings.showTournament
-    ? `<rect x="32" y="${top}" width="${Math.min(1536, cardWidth * columns + 12 * (columns - 1))}" height="72" rx="${c.radius}" fill="${c.card}"/>${visualText(t.title, 52 + Math.min(1496, cardWidth * columns - 40) / 2, top + 44, Math.max(16, Math.min(28, 1400 / Math.max(1, Array.from(t.title).length))), Math.min(1496, cardWidth * columns - 40), locale, c.foreground)}`
+    ? `<g data-overlay-title="true"><rect x="32" y="${top}" width="${titleWidth}" height="${titleHeight}" rx="${c.radius}" fill="${c.card}"/>${visualText(t.title, 32 + titleWidth / 2, top + (titleHeight - (titleLines - 1) * titleSize * 1.5) / 2 + titleSize / 3, titleSize, titleTextWidth, locale, c.foreground)}</g>`
     : "";
   const rows = names
     .map((name, index) => {
       const x = 32 + (index % columns) * (cardWidth + 16),
-        y =
-          top +
-          (settings.showTournament ? 90 : 0) +
-          Math.floor(index / columns) * (cardHeight + 12);
+        y = top + titleOffset + Math.floor(index / columns) * (cardHeight + 12);
       const score = t.presentation.showScores
         ? (
             (match.status === "live" ? match.liveScores?.[index] : undefined) ??

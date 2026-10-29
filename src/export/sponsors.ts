@@ -8,6 +8,7 @@ import {
   visualFrame,
   visualPalette,
   visualText,
+  visualTextLines,
   type VisualPage,
 } from "./visuals";
 
@@ -31,65 +32,116 @@ export function sponsorVisualPages(
       spotlight =
         t.presentation.sponsorLayout === "spotlight" &&
         cards[0]?.tier === "main";
-    const content = cards
-      .map((card, index) => {
-        let x: number, y: number, width: number, height: number;
-        if (spotlight && index === 0) {
-          x = 50;
-          y = 130;
-          width = 1500;
-          height = 190;
-        } else if (spotlight) {
-          const offset = index - 1;
-          x = 50 + (offset % 4) * 381;
-          y = 346 + Math.floor(offset / 4) * 228;
-          width = 357;
-          height = 204;
-        } else {
-          const columns = strip ? 2 : 4;
-          width = strip ? 738 : 357;
-          height = strip ? 158 : 304;
-          x = 50 + (index % columns) * (width + 24);
-          y = 136 + Math.floor(index / columns) * (height + 24);
-        }
-        const horizontal = strip || (spotlight && index === 0);
-        const logoWidth = horizontal
-          ? Math.min(220, width * 0.24)
-          : Math.min(220, width - 40);
-        const logoHeight = horizontal ? height - 40 : spotlight ? 60 : 138;
-        const logoX = horizontal ? x + 24 : x + (width - logoWidth) / 2;
-        const logoY = y + 20;
-        const logo =
-          card.logo && validateRasterAsset(card.logo)
-            ? `<image href="${escapeXML(card.logo)}" x="${logoX}" y="${logoY}" width="${logoWidth}" height="${logoHeight}" preserveAspectRatio="xMidYMid meet"/>`
+    const prepared = cards.map((card, index) => {
+      let column: number, row: number, width: number, baseHeight: number;
+      if (spotlight && index === 0) {
+        column = 0;
+        row = 0;
+        width = 1500;
+        baseHeight = 190;
+      } else if (spotlight) {
+        const offset = index - 1;
+        column = offset % 4;
+        row = 1 + Math.floor(offset / 4);
+        width = 357;
+        baseHeight = 204;
+      } else {
+        const columns = strip ? 2 : 4;
+        column = index % columns;
+        row = Math.floor(index / columns);
+        width = strip ? 738 : 357;
+        baseHeight = strip ? 158 : 304;
+      }
+      const horizontal = strip || (spotlight && index === 0);
+      const logoWidth = horizontal
+        ? Math.min(220, width * 0.24)
+        : Math.min(220, width - 40);
+      const logoHeight = horizontal ? baseHeight - 40 : spotlight ? 60 : 138;
+      const hasLogo = Boolean(card.logo && validateRasterAsset(card.logo));
+      const textWidth =
+        horizontal && hasLogo ? width - logoWidth - 72 : width - 32;
+      const size =
+        Array.from(card.name).length > 55
+          ? spotlight
+            ? 15
+            : 18
+          : horizontal
+            ? 28
+            : 22;
+      const textHeight =
+        visualTextLines(card.name, size, textWidth).length * size * 1.5;
+      const textTop = hasLogo ? logoHeight + 46 - size : 56 - size;
+      const height = Math.max(
+        baseHeight,
+        horizontal ? textHeight + 40 : textTop + textHeight + 24,
+      );
+      return {
+        card,
+        column,
+        row,
+        width,
+        height,
+        horizontal,
+        logoWidth,
+        logoHeight,
+        hasLogo,
+        textWidth,
+        size,
+        textHeight,
+        textTop,
+      };
+    });
+    const rowHeights: number[] = [];
+    for (const card of prepared)
+      rowHeights[card.row] = Math.max(rowHeights[card.row] ?? 0, card.height);
+    const rowTops: number[] = [spotlight ? 130 : 136];
+    for (let row = 1; row < rowHeights.length; row++)
+      rowTops[row] = rowTops[row - 1] + rowHeights[row - 1] + 24;
+    const content = prepared
+      .map(
+        ({
+          card,
+          column,
+          row,
+          width,
+          horizontal,
+          logoWidth,
+          logoHeight,
+          hasLogo,
+          textWidth,
+          size,
+          textHeight,
+          textTop,
+        }) => {
+          const x = 50 + column * (width + 24),
+            y = rowTops[row],
+            height = rowHeights[row];
+          const logoX = horizontal ? x + 24 : x + (width - logoWidth) / 2;
+          const logo = hasLogo
+            ? `<image href="${escapeXML(card.logo!)}" x="${logoX}" y="${y + 20}" width="${logoWidth}" height="${logoHeight}" preserveAspectRatio="xMidYMid meet"/>`
             : "";
-        const textWidth =
-          horizontal && logo ? width - logoWidth - 72 : width - 32;
-        const textX =
-          horizontal && logo
-            ? x + logoWidth + 36 + textWidth / 2
-            : x + width / 2;
-        const size =
-          Array.from(card.name).length > 55
-            ? spotlight
-              ? 15
-              : 18
-            : horizontal
-              ? 28
-              : 22;
-        const textY = horizontal
-          ? y + height * 0.45
-          : logo
-            ? y + logoHeight + 46
-            : y + 56;
-        return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="${palette.radius}" fill="${palette.card}" stroke="${card.tier === "main" ? palette.accent : palette.muted}" stroke-width="${card.tier === "main" ? 3 : 1}"/>${logo}${visualText(card.name, textX, textY, size, textWidth, locale, palette.foreground)}`;
-      })
+          const textX =
+            horizontal && hasLogo
+              ? x + logoWidth + 36 + textWidth / 2
+              : x + width / 2;
+          const textY =
+            y + (horizontal ? (height - textHeight) / 2 : textTop) + size;
+          return `<g data-sponsor-card="true"><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="${palette.radius}" fill="${palette.card}" stroke="${card.tier === "main" ? palette.accent : palette.muted}" stroke-width="${card.tier === "main" ? 3 : 1}"/>${logo}<g data-text-region="sponsor-name">${visualText(card.name, textX, textY, size, textWidth, locale, palette.foreground)}</g></g>`;
+        },
+      )
       .join("");
     const pageTitle =
       pages.length > 1 ? `${title} (${page + 1}/${pages.length})` : title;
     return {
       title: pageTitle,
-      svg: visualFrame(t, pageTitle, content, locale),
+      svg: visualFrame(
+        t,
+        pageTitle,
+        content,
+        locale,
+        1600,
+        Math.max(900, rowTops.at(-1)! + rowHeights.at(-1)! + 92),
+      ),
     };
   });
 }

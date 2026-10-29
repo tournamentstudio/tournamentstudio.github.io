@@ -102,13 +102,16 @@ function Studio({
   const [entries, setEntries] = useState<LibraryEntry[]>([]);
   const [doc, setDoc] = useState<Tournament>();
   const [externalRevision, setExternalRevision] = useState(0);
+  const [workspaceReset, setWorkspaceReset] = useState(0);
   const [secret, setSecret] = useState<string>();
   const [unlockId, setUnlockId] = useState<string>();
   const [password, setPassword] = useState("");
   const [unlockError, setUnlockError] = useState<unknown>();
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<unknown>();
-  const [unsaved, setUnsaved] = useState<Tournament>();
+  const [unsaved, setUnsavedState] = useState<Tournament>();
+  const unsavedRef = useRef<Tournament | undefined>(undefined);
+  const [leavePath, setLeavePath] = useState<string>();
   const [error, setError] = useState<unknown>();
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState("");
@@ -116,6 +119,7 @@ function Studio({
   const navigation = useNavigationDrawer(sidebar, () => setSidebar(false));
   const [importOpen, setImportOpen] = useState(false);
   const [importCode, setImportCode] = useState("");
+  const importEpoch = useRef(0);
   const [template, setTemplate] = useState<string>();
   const [initialFormat, setInitialFormat] = useState<FormatId>();
   const [initialPlan, setInitialPlan] = useState<AdvisorPlan>();
@@ -123,6 +127,7 @@ function Studio({
   const [online, setOnline] = useState(navigator.onLine);
   const [help, setHelp] = useState(false);
   const savingRef = useRef(false);
+  const saveAttempt = useRef(0);
   const sessionEpoch = useRef(0);
   const refreshSequence = useRef(0);
   const routeRef = useRef(route);
@@ -138,6 +143,24 @@ function Studio({
     const list = await repository.list();
     if (sequence === refreshSequence.current) setEntries(list);
   }, []);
+  function setUnsaved(value: Tournament | undefined) {
+    unsavedRef.current = value;
+    setUnsavedState(value);
+  }
+  function changeImport(code?: string) {
+    importEpoch.current++;
+    setImportCode(code ?? "");
+    setImportOpen(code !== undefined);
+  }
+  useEffect(() => {
+    if (!saving && !unsaved) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [saving, unsaved]);
   function openDocument(
     value?: Tournament,
     unlockedSecret?: string,
@@ -158,22 +181,44 @@ function Studio({
     setUnlockId(undefined);
     setUnlockError(undefined);
     setUnsaved(undefined);
+    setLeavePath(undefined);
     setSaveError(undefined);
-    setImportOpen(false);
-    setImportCode("");
+    changeImport();
     setError(undefined);
   }
-  function navigate(path: string) {
-    if (path === routeRef.current) return;
+  function navigate(path: string, discardRecovery = false) {
+    if (path === routeRef.current) return true;
     const nextId = documentId(path);
+    if (savingRef.current || (unsavedRef.current && !discardRecovery)) {
+      if (savingRef.current)
+        setToast(
+          t(
+            "Wait for the current save before leaving.",
+            "پیش از خروج منتظر پایان ذخیره جاری بمانید.",
+          ),
+        );
+      else setLeavePath(path);
+      if (getRoute() !== routeRef.current)
+        history.replaceState(
+          null,
+          "",
+          location.pathname + location.search + `#${routeRef.current}`,
+        );
+      return false;
+    }
+    if (discardRecovery) {
+      setUnsaved(undefined);
+      setSaveError(undefined);
+      setLeavePath(undefined);
+    }
     if (!nextId || nextId !== session.current.doc?.id) clearSession();
     routeRef.current = path;
     setRoute(path);
+    return true;
   }
-  function go(path: string) {
+  function go(path: string, discardRecovery = false) {
     setSidebar(false);
-    navigate(path);
-    location.hash = path;
+    if (navigate(path, discardRecovery)) location.hash = path;
   }
   function lock() {
     clearSession();
@@ -225,8 +270,7 @@ function Studio({
       const payload = route.slice("/open/".length);
       clearSession();
       try {
-        setImportCode(decodeURIComponent(payload));
-        setImportOpen(true);
+        changeImport(decodeURIComponent(payload));
       } catch (e) {
         setError(e);
       }
@@ -391,6 +435,7 @@ function Studio({
     const current = session.current,
       epoch = sessionEpoch.current;
     if (current.doc?.id !== value.id) return;
+    const attempt = ++saveAttempt.current;
     if (savingRef.current) {
       setUnsaved(value);
       setSaveError(
@@ -416,12 +461,12 @@ function Studio({
       if (epoch === sessionEpoch.current) {
         undoSession.record(current.doc!, saved, action);
         openDocument(saved, current.secret, true);
-        setUnsaved(undefined);
+        if (attempt === saveAttempt.current) setUnsaved(undefined);
       }
     } catch (e) {
       if (epoch === sessionEpoch.current) {
         setSaveError(e);
-        setUnsaved(value);
+        if (attempt === saveAttempt.current) setUnsaved(value);
       }
     } finally {
       if (epoch === sessionEpoch.current) {
@@ -478,13 +523,17 @@ function Studio({
     }
   }
   async function imported(
+    expectedImport: number,
     value: Tournament,
     mode: "save" | "fork" | "replace",
     vaultSecret?: string,
     revisions: ArchiveRevision[] = [],
   ) {
+    if (expectedImport !== importEpoch.current) return;
+    requireRecoveryResolved();
     const current = session.current,
-      epoch = sessionEpoch.current;
+      epoch = sessionEpoch.current,
+      attempt = importEpoch.current;
     let saved: Tournament;
     if (mode === "replace") {
       if (current.doc?.id !== value.id)
@@ -521,14 +570,18 @@ function Studio({
         vaultSecret,
       );
     await refresh();
-    if (epoch !== sessionEpoch.current) return;
+    if (epoch !== sessionEpoch.current || attempt !== importEpoch.current)
+      return;
     openDocument(saved, mode === "replace" ? current.secret : vaultSecret);
     if (mode !== "replace") go(`/t/${saved.id}`);
     setToast(t("Tournament imported", "مسابقات وارد شد"));
   }
-  async function patch(packet: TournamentPatch) {
+  async function patch(expectedImport: number, packet: TournamentPatch) {
+    if (expectedImport !== importEpoch.current) return;
+    requireRecoveryResolved();
     const current = session.current,
-      epoch = sessionEpoch.current;
+      epoch = sessionEpoch.current,
+      attempt = importEpoch.current;
     if (!current.doc)
       throw new Error(
         t("Open a tournament first.", "ابتدا مسابقات را باز کنید."),
@@ -539,16 +592,21 @@ function Studio({
       current.secret,
     );
     await refresh();
-    if (epoch !== sessionEpoch.current) return;
+    if (epoch !== sessionEpoch.current || attempt !== importEpoch.current)
+      return;
     openDocument(updated, current.secret);
     setToast(t("Update applied", "به‌روزرسانی اعمال شد"));
   }
   async function mergePatch(
+    expectedImport: number,
     packet: TournamentPatch,
     selection: MergeSelection,
   ) {
+    if (expectedImport !== importEpoch.current) return;
+    requireRecoveryResolved();
     const current = session.current,
-      epoch = sessionEpoch.current;
+      epoch = sessionEpoch.current,
+      attempt = importEpoch.current;
     if (!current.doc)
       throw new Error(
         t("Open a tournament first.", "ابتدا مسابقات را باز کنید."),
@@ -562,7 +620,8 @@ function Studio({
       current.secret,
     );
     await refresh();
-    if (epoch !== sessionEpoch.current) return;
+    if (epoch !== sessionEpoch.current || attempt !== importEpoch.current)
+      return;
     openDocument(updated, current.secret);
     setToast(t("Selected changes applied", "تغییرهای انتخاب‌شده اعمال شد"));
   }
@@ -629,6 +688,7 @@ function Studio({
       )
         return;
       openDocument(value, current.secret);
+      setWorkspaceReset((value) => value + 1);
       setUnsaved(undefined);
       setSaveError(undefined);
     } catch (e) {
@@ -647,6 +707,22 @@ function Studio({
       if (epoch === sessionEpoch.current) setError(e);
     }
   }
+  function requireRecoveryResolved() {
+    if (savingRef.current)
+      throw new Error(
+        t(
+          "Wait for the current save before importing changes.",
+          "پیش از ورود تغییرها منتظر پایان ذخیره جاری بمانید.",
+        ),
+      );
+    if (unsavedRef.current)
+      throw new Error(
+        t(
+          "Recover the unsaved copy or reload the saved version before importing changes.",
+          "پیش از ورود تغییرها، نسخه ذخیره‌نشده را بازیابی کنید یا نسخه ذخیره‌شده را دوباره بخوانید.",
+        ),
+      );
+  }
   function start(templateId?: string, formatId?: FormatId, plan?: AdvisorPlan) {
     setTemplate(templateId);
     setInitialFormat(formatId);
@@ -654,6 +730,7 @@ function Studio({
     go("/create");
   }
   const renderedEpoch = sessionEpoch.current;
+  const renderedImportEpoch = importEpoch.current;
   if (presentation && doc)
     return (
       <Suspense
@@ -771,8 +848,7 @@ function Studio({
         <button
           className="sidebar-link"
           onClick={() => {
-            setImportCode("");
-            setImportOpen(true);
+            changeImport("");
           }}
         >
           <Upload size={17} />
@@ -935,7 +1011,7 @@ function Studio({
               </div>
             ) : doc && id ? (
               <Workspace
-                key={doc.id}
+                key={`${doc.id}:${workspaceReset}`}
                 tournament={doc}
                 externalRevision={externalRevision}
                 onChange={(next, action) => void save(next, action)}
@@ -950,8 +1026,7 @@ function Studio({
                   }
                 }}
                 onImport={(code = "") => {
-                  setImportCode(code);
-                  setImportOpen(true);
+                  changeImport(code);
                 }}
                 secret={secret}
                 isProtected={isProtected}
@@ -989,8 +1064,7 @@ function Studio({
                 onCreate={start}
                 onOpen={(entryId) => go(`/t/${entryId}`)}
                 onImport={() => {
-                  setImportCode("");
-                  setImportOpen(true);
+                  changeImport("");
                 }}
                 onAction={(entryId, kind) => void action(entryId, kind)}
                 library={route === "/library"}
@@ -1001,16 +1075,22 @@ function Studio({
         {needRefresh && (
           <div className="update-banner">
             <span>
-              {t(
-                "A new version is ready. Your tournaments remain in local storage.",
-                "نسخه تازه آماده است. مسابقات در ذخیره محلی می‌مانند.",
-              )}
+              {unsaved
+                ? t(
+                    "Recover the unsaved copy or reload the saved version before updating the app.",
+                    "پیش از به‌روزرسانی برنامه، نسخه ذخیره‌نشده را بازیابی کنید یا نسخه ذخیره‌شده را دوباره بخوانید.",
+                  )
+                : t(
+                    "A new version is ready. Your tournaments remain in local storage.",
+                    "نسخه تازه آماده است. مسابقات در ذخیره محلی می‌مانند.",
+                  )}
             </span>
             <button
               onClick={() => {
-                if (!saving) void updateServiceWorker(true);
+                if (!savingRef.current && !unsavedRef.current)
+                  void updateServiceWorker(true);
               }}
-              disabled={saving}
+              disabled={saving || !!unsaved}
             >
               {t("Update now", "به‌روزرسانی")}
             </button>
@@ -1037,6 +1117,36 @@ function Studio({
           <CheckCircle2 size={18} />
           {toast}
         </div>
+      )}
+      {leavePath && (
+        <Modal
+          title={t(
+            "Leave without the unsaved copy?",
+            "خروج بدون نسخه ذخیره‌نشده؟",
+          )}
+          onClose={() => setLeavePath(undefined)}
+        >
+          <p>
+            {t(
+              "The last confirmed version is still saved. Stay here to export your unsaved changes, or discard this recovery copy and leave.",
+              "آخرین نسخه تأییدشده همچنان ذخیره است. برای خروجی گرفتن از تغییرهای ذخیره‌نشده اینجا بمانید، یا از این نسخه بازیابی صرف‌نظر کنید و خارج شوید.",
+            )}
+          </p>
+          <div className="modal-actions">
+            <button
+              className="button secondary"
+              onClick={() => setLeavePath(undefined)}
+            >
+              {t("Stay here", "اینجا بمان")}
+            </button>
+            <button
+              className="button danger"
+              onClick={() => go(leavePath, true)}
+            >
+              {t("Discard and leave", "صرف‌نظر و خروج")}
+            </button>
+          </div>
+        </Modal>
       )}
       {unlockId && (
         <Modal
@@ -1087,17 +1197,20 @@ function Studio({
       )}
       {importOpen && (
         <ImportLoader
-          key={importCode}
+          key={renderedImportEpoch}
           initialCode={importCode}
           current={doc}
           currentSecret={secret}
           onClose={() => {
-            setImportOpen(false);
-            setImportCode("");
+            if (renderedImportEpoch === importEpoch.current) changeImport();
           }}
-          onImport={imported}
-          onPatch={patch}
-          onMerge={mergePatch}
+          onImport={(value, mode, vaultSecret, revisions) =>
+            imported(renderedImportEpoch, value, mode, vaultSecret, revisions)
+          }
+          onPatch={(packet) => patch(renderedImportEpoch, packet)}
+          onMerge={(packet, selection) =>
+            mergePatch(renderedImportEpoch, packet, selection)
+          }
         />
       )}
       {purgeId && (

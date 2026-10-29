@@ -98,6 +98,10 @@ export function ImportCenter({
     },
     [],
   );
+  function close() {
+    inspectionId.current++;
+    onClose();
+  }
   async function inspect(raw = text) {
     const id = ++inspectionId.current;
     const valid = () =>
@@ -240,6 +244,8 @@ export function ImportCenter({
       (correctingTimes && mode === "replace")
     )
       return;
+    const id = ++inspectionId.current;
+    const active = () => inspectionId.current === id;
     setSaving(true);
     try {
       if (patch) await onPatch(patch);
@@ -254,6 +260,7 @@ export function ImportCenter({
           ),
           t("Original imported backup", "پشتیبان اصلی واردشده"),
         );
+        if (!active()) return;
         await onImport(
           reviewed.tournament,
           mode,
@@ -261,11 +268,11 @@ export function ImportCenter({
           reviewed.revisions,
         );
       }
-      onClose();
+      if (active()) close();
     } catch (e) {
-      setError(e);
+      if (active()) setError(e);
     } finally {
-      setSaving(false);
+      if (active()) setSaving(false);
     }
   }
   return (
@@ -275,7 +282,7 @@ export function ImportCenter({
         "Bring a tournament into your studio",
         "مسابقات را به استودیو بیاورید",
       )}
-      onClose={onClose}
+      onClose={close}
     >
       <ErrorText error={error} />
       <CompetitionTaskNotice task={computation} />
@@ -289,16 +296,18 @@ export function ImportCenter({
           forkProtected={Boolean(currentSecret || secret)}
           onBack={() => setMerge(undefined)}
           onMerge={async (selection) => {
+            const id = inspectionId.current;
             await onMerge(merge.packet, selection);
-            onClose();
+            if (inspectionId.current === id) close();
           }}
           onFork={async (target) => {
+            const id = inspectionId.current;
             await onImport(
               target,
               "fork",
               currentSecret || secret || undefined,
             );
-            onClose();
+            if (inspectionId.current === id) close();
           }}
         />
       ) : !preview ? (

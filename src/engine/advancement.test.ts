@@ -319,6 +319,47 @@ describe("advancement contracts", () => {
 });
 
 describe("wildcard qualification", () => {
+  it.each([
+    ["total", "scored", "p6"],
+    ["per-match", "scored", "p6"],
+    ["discard-bottom", "scored", "p6"],
+    ["total", "differential", "p2"],
+    ["per-match", "differential", "p2"],
+    ["discard-bottom", "differential", "p2"],
+  ] as const)(
+    "uses lower weighted %s %s values for wildcard qualification",
+    (comparison, breaker, expected) => {
+      let tournament = groups([4, 4]);
+      tournament.rules.scoring = "weighted";
+      tournament.rules.weightedDirection = "low";
+      tournament.rules.metricDefinitions = [{
+        id: "elapsed", name: "Elapsed time", unit: "seconds", kind: "number",
+        min: 0, max: 1000, aggregate: "sum", weight: 1,
+      }];
+      for (const match of tournament.matches) {
+        const scores = match.slots.map((slot) => {
+          const seed = Number(slot.participantId!.slice(1));
+          return seed <= 4 ? 100 + seed * 10 : seed - 4;
+        });
+        tournament = recordResult(tournament, match.id, {
+          scores, metrics: { elapsed: scores }, winnerIds: [],
+          outcome: "played", recordedAt: tournament.updatedAt,
+        });
+      }
+      const source = wildcard(comparison);
+      if (source.selection?.kind === "wildcard")
+        source.selection.tieBreakers = [breaker];
+      const connected = destination(tournament, [source]);
+      expect(getStandings(connected, "groups", "A")[1].participantId).toBe("p2");
+      expect(getStandings(connected, "groups", "B")[1].participantId).toBe("p6");
+      const preview = previewAdvancement(connected, "finals");
+      expect(preview.ready).toBe(true);
+      expect(preview.participantIds).toEqual([expected]);
+      expect(generateStage(connected, "finals").stages[1].participantIds).toEqual([expected]);
+      expect(validateTournament(connected)).toEqual(connected);
+    },
+  );
+
   it.each(["low", "time"] as const)(
     "uses lower %s values for per-match wildcard comparison",
     (scoring) => {

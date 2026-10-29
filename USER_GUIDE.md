@@ -668,6 +668,12 @@ back does not write to storage. Update packets use their existing integrity and
 conflict review and do not rewrite legacy times. After a correction, later packets
 based on the uncorrected copy may need conflict review or a fresh full snapshot.
 
+Closing the import window while corrected times are still being prepared cancels
+the pending import before it starts saving. Once a write has started, it may
+finish after the window closes. It will not reopen the dismissed importer or
+replace a newer import draft. Check the local library before importing that copy
+again.
+
 Choose **Generate schedule**. Unknown future opponents are reserved
 conservatively, so a schedule can be longer than the simple playing-time estimate.
 Schedule regeneration is disabled after a played result, live/contested match or
@@ -1020,8 +1026,10 @@ Enable the vault during creation, or open **Settings** and choose
 Use a long secret rather than a short familiar password.
 
 **Lock tournament now** closes the decrypted document and clears the secret
-from the app's active state. Reopening requires the secret. Another person using
-an already-unlocked browser session can still access its open content.
+from the app's active state, including any unsaved recovery copy. Export that
+copy before locking if you need to keep it. Reopening requires the secret.
+Another person using an already-unlocked browser session can still access its
+open content.
 
 To recover on another device, import the encrypted `.tourney` file and enter the
 same secret. You can choose to keep the imported copy protected locally. A wrong
@@ -1051,14 +1059,26 @@ After that, supported browsers can reopen the cached app offline. If your browse
 offers installation, install it from the browser menu. Tournament data remains in
 IndexedDB; application caches and tournament data are separate.
 
-When an application update is offered, save your work before reloading.
+When an application update is offered, save your work before reloading. The
+update control waits for an ordinary save to finish and for any failed-save
+recovery copy to be resolved. The app also asks the browser to warn before
+closing or reloading during these states. Browsers can suppress that warning;
+it does not protect against a crash or forced shutdown.
 No workflow intentionally clears the tournament database during an update.
 Private browsing, storage quotas, browser cleanup and device loss remain practical
 limits. Keep regular file backups.
 
 If a save fails, read the error banner. **Export unsaved copy** keeps the candidate
 document as a file; **Reload saved version** returns to the last confirmed local
-revision. Do not assume an edit reached another display until its save succeeds.
+revision and resets open editor drafts. Route changes and imports wait while an
+ordinary save is pending. After a failure, leaving a workspace asks you to stay
+or explicitly **Discard and leave**. Exporting does not itself save the candidate
+back into the tournament: keep the file, then reload the saved version or discard
+the recovery copy. Resolve the recovery copy before importing another change.
+If an image upload finishes while another edit is still saving, its rejected
+candidate remains available through **Export unsaved copy**. The app does not
+silently merge it into the confirmed edit; review the exported copy before import.
+Do not assume an edit reached another display until its save succeeds.
 
 ## Persian and keyboard use
 

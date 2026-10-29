@@ -1,81 +1,84 @@
 # TournaStudio release handoff
 
-The October 29, 2026 maintenance release adds activity artwork to graphic
-exports, reduces startup code, fixes mixed-script poster layout and protects
-received share codes when the import screen cannot load.
+The October 29, 2026 follow-up fixes save recovery, canceled imports, wildcard
+comparisons, ladder withdrawals and long-text graphic exports.
 
 ## Published application
 
 - App: [tournamentstudio.github.io](https://tournamentstudio.github.io/).
 - Repository: [tournamentstudio/tournamentstudio.github.io](https://github.com/tournamentstudio/tournamentstudio.github.io).
-- Release: [Game posters and safer local imports](https://github.com/tournamentstudio/tournamentstudio.github.io/releases/tag/release-2026-10-29.3).
+- Release: [Safer recovery and tournament corrections](https://github.com/tournamentstudio/tournamentstudio.github.io/releases/tag/release-2026-10-29.4).
 - Publication: GitHub Pages serves the prepared files from `main/docs`.
 - GitHub Actions is disabled. There are no repository CI workflows.
 - The hosted app needs no development server running on my computer.
 
 ## What changed
 
-Fourteen original activity scenes now appear in scoreboard and champion
-exports. Gol Ya Pooch uses closed hands, a bead, a bell, cards and an arch.
-Participant logos remain available. Each wrapped SVG line now has its own
-position and text direction, fixing mixed Persian/Latin overflow in Firefox
-and WebKit without discarding the names.
+Pending saves block route changes and competing imports. Failed saves keep their
+recovery copy until it is resolved or explicitly discarded before leaving.
+Reloading the confirmed document resets editor drafts. Browser close/reload
+warnings are best effort; app updates wait for recovery. Vault locking still
+clears decrypted drafts, including recovery copies.
 
-The Dutch solver loads inside the competition worker when needed. Creation,
-imports, storage settings and the advisor also load on demand. Initial home
-JavaScript transfer fell from 500,061 to 272,504 bytes, about 46%, in the
-recorded localhost setup. Offline caching still includes those modules.
-[PERFORMANCE.md](PERFORMANCE.md) records the method and the 512-entrant check.
+An image upload finishing during another save can be rejected because a write
+is already in progress. Its newer recovery candidate now remains exportable
+whether the earlier save succeeds or fails. The two edits are not silently
+merged, and the confirmed database state stays separate from the recovery file.
 
-A scoped import recovery dialog keeps incoming share codes in memory after a
-module-loading failure. It supports copying, selected-text fallback, explicit
-download, retry and close. Codes are not restored to the URL or persisted to
-browser storage. Closing discards the temporary code.
+Closing a timezone import during preparation now prevents it from starting a
+write. An already-started write may finish, but cannot reopen the dismissed
+workspace or close a newer import draft. The checks also cover automatic vault
+lock and delayed encrypted persistence.
 
-PNG, JPEG and WebP imports receive container and dimension checks before
-rendering or decoding. The limits are 16 million pixels and 16,384 pixels per
-axis, with a combined animation frame budget. Existing byte limits remain.
-The browser decoder still validates compressed pixels.
+Wildcard score and differential comparisons now follow lower-is-better weighted
+rules for totals, per-match values and retained group results. New alternating
+challenge rounds exclude withdrawn and disqualified entrants without erasing
+history. The last two active entrants still pair on an offset round.
 
-A complete eight-team Gol Ya Pooch rehearsal covers two groups, semifinals,
-a final, hand undo, timer pause, offline scoring, projector updates, private
-information exclusion and archive recovery in a fresh browser profile.
+Sponsor slide exports grow their cards and rows around wrapped bilingual names
+and logos. Compact overlay headers grow with long tournament titles, keeping
+entrant cards separate. All three browser engines checked the actual exported
+SVG geometry with the bundled fonts.
 
-The previous releases' result-correction safeguards, timezone review,
-transactional saves and bilingual bracket behavior remain in place.
-[FEATURES.md](FEATURES.md) records supported behavior; [USER_GUIDE.md](USER_GUIDE.md)
-explains operation.
+The previous release's game artwork, startup improvements, Gol Ya Pooch event
+rehearsal and image-import limits remain in place. The performance numbers in
+[PERFORMANCE.md](PERFORMANCE.md) are tied to that measured commit, not this build.
+[FEATURES.md](FEATURES.md) and [USER_GUIDE.md](USER_GUIDE.md) describe the supported
+behavior and recovery steps.
 
 ## Local verification
 
 | Check | Actual result |
 | --- | --- |
 | TypeScript and ESLint | Passed |
-| Unit and integration suite | 1,161 tests passed across 98 files |
+| Unit and integration suite | 1,175 tests passed across 100 files |
 | Release packaging checks | 4 tests passed |
-| Production build | Passed |
-| Final browser selection | 80 tests passed across Chromium, Firefox and WebKit |
-| Simulated slower mobile check | 1 test passed with 512 entrants and 4x CPU slowdown |
+| Production build | Passed; 79 precache entries |
+| Final browser selection | 67 tests passed |
+| Cross-browser coverage | Ten new cases in Chromium, Firefox and WebKit |
+| Existing workflow regression selection | 37 Chromium cases passed |
 | Prepared publication | 90 application files verified against SHA-256 entries |
-| Production dependency audit | Zero advisories |
-| Full dependency audit | Four low-severity build-tool entries; see maintenance review |
+| Credentials and authored-text scans | No findings in the changes |
 
-The final browser selection includes 15 core tournament workflows, exported
-SVG/PNG/HTML/slides, the Gol event rehearsal, failed and canceled import loading,
-Dutch pairing under the production CSP, vault replacement safety, mixed-script
-fields and Persian keyboard/AA checks. Actual desktop and mobile screenshots
-were inspected. An earlier Firefox export run had a browser-context teardown
-protocol error; its unchanged single-case repeat and the final combined run
-passed. Credentials and authored-text scans found no issues in the changes.
+The browser checks cover quota failures, browser departure, recovery archive
+contents, pending uploads, canceled timezone imports, vault locks, sponsor
+layouts, overlay titles and Persian mobile recovery. Existing workflows cover
+full tournaments, sharing, patches, same-revision conflicts, legacy timezone
+review, vault security, presentation updates and offline operation. Actual export
+and 320-pixel Persian dialog screenshots were inspected.
 
-Repeat locally after installing the browsers:
+The new upload tests reproduced both original failures before the fix. Canceled
+import tests also reproduced the prior release's failures. Earlier sponsor
+capture stalled after the exported geometry checks had passed; capture now uses
+an HTML wrapper with bounded waits, and the final combined run passed.
+
+Repeat the selected checks locally:
 
 ```sh
 npm run check
 npm run test:release
-npx playwright test tests/e2e/startup-loading.spec.ts tests/e2e/game-poster-art.spec.ts tests/e2e/event-rehearsal.spec.ts tests/e2e/fide-dutch.spec.ts tests/e2e/import-security.spec.ts tests/e2e/i18n-accessibility.spec.ts tests/e2e/exports.spec.ts
-npx playwright test tests/e2e/tournament.spec.ts tests/e2e/mixed-script-fields.spec.ts tests/e2e/performance.spec.ts --project=chromium
-npx playwright test --config playwright.performance.config.ts
+npx playwright test tests/e2e/save-recovery.spec.ts tests/e2e/import-cancellation.spec.ts tests/e2e/export-card-layout.spec.ts tests/e2e/concurrent-save-recovery.spec.ts
+npx playwright test tests/e2e/startup-loading.spec.ts tests/e2e/tournament.spec.ts tests/e2e/same-revision-conflicts.spec.ts tests/e2e/legacy-timezones.spec.ts tests/e2e/vault-inactivity.spec.ts tests/e2e/import-security.spec.ts --project=chromium
 ```
 
 The linked GitHub release records the exact published commit and the results
@@ -88,10 +91,10 @@ technology still require those devices and human reviewers. Browser emulation,
 keyboard tests, accessibility trees and axe do not replace that work. No
 independent security or accessibility certification is claimed.
 
-The dependency review updated `serialize-javascript` to its patched release.
-The remaining low-severity `deepmerge` advisory has no patched release at the
-time of review and is confined to the local build dependency chain. See
-[MAINTENANCE_AUDIT.md](MAINTENANCE_AUDIT.md) and [ACCESSIBILITY.md](ACCESSIBILITY.md).
+This follow-up changes no dependencies. The preceding dependency review found
+zero production advisories and four low-severity build-tool entries traced to
+an unpatched `deepmerge` advisory at that time. See [MAINTENANCE_AUDIT.md](MAINTENANCE_AUDIT.md)
+and [ACCESSIBILITY.md](ACCESSIBILITY.md) for the recorded findings and limits.
 
 ## Returning to development
 

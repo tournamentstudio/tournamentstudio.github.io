@@ -288,7 +288,9 @@ function wildcardPreview(
   );
   const direction = (breaker: WildcardTieBreaker) =>
     (tournament.rules.scoring === "low" ||
-      tournament.rules.scoring === "time") &&
+      tournament.rules.scoring === "time" ||
+      (tournament.rules.scoring === "weighted" &&
+        tournament.rules.weightedDirection === "low")) &&
     (breaker === "scored" || breaker === "differential")
       ? -1
       : 1;

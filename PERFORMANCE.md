@@ -6,6 +6,9 @@ of the application for offline use.
 
 ## October 29, 2026 measurements
 
+These measurements apply to commit `34d35c5`, tagged `release-2026-10-29.3`.
+Later maintenance changes have not been remeasured with this setup.
+
 The previous release loaded the Dutch Swiss solver and several editing screens
 with the home page. The solver now loads inside the competition worker before
 Dutch pairing. Creation, imports, the format advisor and storage settings load
