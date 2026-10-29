@@ -375,6 +375,7 @@
   color: var(--theme-accent);
   font-size: 28px;
   margin: 0 0 20px;
+  overflow-wrap: anywhere;
 }
 .theme-preview-card {
   background: var(--theme-card);

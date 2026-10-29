@@ -1451,9 +1451,13 @@ kbd {
   margin: 0;
   opacity: 0.7;
 }
+.template-card h3,
+.template-card p {
+  padding-inline-end: 28px;
+}
 .template-arrow {
   position: absolute;
-  right: 19px;
+  inset-inline-end: 19px;
   bottom: 24px;
   opacity: 0.6;
 }
@@ -2875,7 +2879,7 @@ kbd {
     padding: 18px;
   }
   .template-arrow {
-    right: 13px;
+    inset-inline-end: 13px;
     bottom: 19px;
   }
   .create-layout {
@@ -3689,11 +3693,12 @@ kbd {
   }
   .template-card {
     min-height: 110px;
-    padding: 20px 20px 20px 72px;
+    padding: 20px;
+    padding-inline-start: 72px;
   }
   .template-top {
     position: absolute;
-    left: 23px;
+    inset-inline-start: 23px;
     top: 27px;
   }
   .template-top > span {
@@ -3709,7 +3714,7 @@ kbd {
   }
   .template-arrow {
     display: block;
-    right: 20px;
+    inset-inline-end: 20px;
     bottom: 26px;
   }
   .template-section .section-heading > .muted {

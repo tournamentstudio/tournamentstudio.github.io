@@ -13,6 +13,9 @@
   background: transparent;
   background-image: none;
 }
+.presentation-content > .broadcast-overlay {
+  min-height: 100%;
+}
 .broadcast-overlay[data-position="top"] {
   justify-content: flex-start;
 }

@@ -160,6 +160,9 @@ row. Grid, strip and spotlight layouts keep complete bilingual names clear of
 neighboring cards and the footer.
 Live presentation participant, result and schedule lists also wrap long names,
 scores and resource labels within their cards in both interface directions.
+Theme preview titles and podium names wrap too; tied podium places can use
+multiple rows. Home template icons and arrows have space separate from captions
+in both interface directions.
 
 Theme collections:
 

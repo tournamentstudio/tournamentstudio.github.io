@@ -8,9 +8,9 @@ I built TournaStudio so a tournament can belong to the people running it. Open t
 
 The October 29, 2026 updates improve English/Persian layout and add original
 game artwork to exported scoreboards and champion posters. The latest review
-fixes long names in presentation lists, invalid placement tables and delayed
-sharing work after privacy changes or vault lock. Old uploads cannot change a
-reopened workspace. Earlier updates added failed-save recovery and reduced
+separates template arrows from captions, wraps long preview and podium names,
+keeps presentation controls below content and fits export headers above artwork.
+Earlier updates fixed placement tables and delayed sharing work, added failed-save recovery and reduced
 initial JavaScript transfer by about 46% in the recorded test. The
 [release handoff](RELEASE_STATUS.md), [performance measurements](PERFORMANCE.md)
 and [maintenance review](MAINTENANCE_AUDIT.md) record the checks and their limits.

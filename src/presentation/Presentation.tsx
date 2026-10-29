@@ -688,67 +688,76 @@ export function Presentation({
           </>
         )}
       </p>
-      {safe.presentation.overlay?.enabled ? (
-        <BroadcastOverlay
-          tournament={safe}
-          settings={safe.presentation.overlay}
-          locale={locale}
-        />
-      ) : (
-        <>
-          <div className="presentation-topline">
-            <span>TournaStudio</span>
-            <span>{safe.title}</span>
-            <span>
-              {t("LOCAL DISPLAY", "نمایش محلی")} · {t("Rev.", "نسخه")}{" "}
-              {safe.revision.toLocaleString(locale)}
-            </span>
-          </div>
-          {safe.theme.design?.sponsorPosition === "top" && (
-            <SponsorWall
-              settings={safe.presentation}
-              locale={locale}
-              elapsed={elapsed}
-              band
-            />
-          )}
-          <main
-            className={`presentation-scene ${safe.presentation.transition === "fade" ? "scene-fade" : ""}`}
-            style={{ aspectRatio: safe.presentation.aspect.replace(":", "/") }}
-            key={scene.id}
-          >
-            {![
-              "title",
-              "champion",
-              "break",
-              "announcement",
-              "introduction",
-              "semifinal",
-              "final-intro",
-              "trophy",
-            ].includes(scene.type) && (
-              <header className="presentation-scene-heading">
-                <p>{safe.title}</p>
-                <h1>{scene.title || sceneLabel(scene.type, locale)}</h1>
-              </header>
+      <div
+        className="presentation-content"
+        role="region"
+        aria-label={t("Presentation content", "محتوای نمایش")}
+        tabIndex={0}
+      >
+        {safe.presentation.overlay?.enabled ? (
+          <BroadcastOverlay
+            tournament={safe}
+            settings={safe.presentation.overlay}
+            locale={locale}
+          />
+        ) : (
+          <>
+            <div className="presentation-topline">
+              <span>TournaStudio</span>
+              <span>{safe.title}</span>
+              <span>
+                {t("LOCAL DISPLAY", "نمایش محلی")} · {t("Rev.", "نسخه")}{" "}
+                {safe.revision.toLocaleString(locale)}
+              </span>
+            </div>
+            {safe.theme.design?.sponsorPosition === "top" && (
+              <SponsorWall
+                settings={safe.presentation}
+                locale={locale}
+                elapsed={elapsed}
+                band
+              />
             )}
-            <SceneContent
-              tournament={safe}
-              scene={scene}
-              locale={locale}
-              elapsed={elapsed}
-            />
-          </main>
-          {safe.theme.design?.sponsorPosition !== "top" && (
-            <SponsorWall
-              settings={safe.presentation}
-              locale={locale}
-              elapsed={elapsed}
-              band
-            />
-          )}
-        </>
-      )}
+            <main
+              className={`presentation-scene ${safe.presentation.transition === "fade" ? "scene-fade" : ""}`}
+              style={{
+                aspectRatio: safe.presentation.aspect.replace(":", "/"),
+              }}
+              key={scene.id}
+            >
+              {![
+                "title",
+                "champion",
+                "break",
+                "announcement",
+                "introduction",
+                "semifinal",
+                "final-intro",
+                "trophy",
+              ].includes(scene.type) && (
+                <header className="presentation-scene-heading">
+                  <p>{safe.title}</p>
+                  <h1>{scene.title || sceneLabel(scene.type, locale)}</h1>
+                </header>
+              )}
+              <SceneContent
+                tournament={safe}
+                scene={scene}
+                locale={locale}
+                elapsed={elapsed}
+              />
+            </main>
+            {safe.theme.design?.sponsorPosition !== "top" && (
+              <SponsorWall
+                settings={safe.presentation}
+                locale={locale}
+                elapsed={elapsed}
+                band
+              />
+            )}
+          </>
+        )}
+      </div>
       <nav
         className="presentation-controls"
         aria-label={t("Presentation controls", "کنترل‌های نمایش")}

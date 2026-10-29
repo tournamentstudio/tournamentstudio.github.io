@@ -81,10 +81,19 @@
   position: fixed;
   inset: 0;
   z-index: 1000;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   border-radius: 0;
-  padding: 28px clamp(14px, 4vw, 70px) 90px;
+  padding: 28px clamp(14px, 4vw, 70px) 18px;
   min-height: 100vh;
+}
+.presentation-content {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  padding-bottom: 24px;
 }
 .presentation-topline {
   display: flex;
@@ -110,7 +119,7 @@
   min-width: 0;
   max-width: 1600px;
   margin: 28px auto 0;
-  min-height: 60vh;
+  min-height: min-content;
 }
 .presentation-scene[style*="9/16"] {
   max-width: 700px;
@@ -203,12 +212,10 @@
   background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
 }
 .presentation-controls {
-  position: fixed;
-  bottom: 18px;
-  inset-inline: 0;
-  margin: auto;
+  flex-shrink: 0;
+  margin: 12px auto 0;
   width: fit-content;
-  max-width: calc(100% - 20px);
+  max-width: 100%;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -436,19 +443,22 @@
 }
 .presentation-podium {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: end;
   gap: 20px;
   min-height: 50vh;
 }
 .presentation-podium > div {
-  flex: 1;
+  flex: 1 1 220px;
+  min-width: 0;
   max-width: 320px;
   text-align: center;
   padding: 30px;
   background: var(--theme-card);
   border-top: 4px solid var(--theme-accent);
   border-radius: var(--theme-radius);
+  overflow-wrap: anywhere;
 }
 .presentation-podium strong {
   font-size: 64px;

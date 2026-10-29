@@ -171,14 +171,17 @@ export function visualFrame(
     t.theme.backgroundImage && validateRasterAsset(t.theme.backgroundImage)
       ? `<image href="${escapeXML(t.theme.backgroundImage)}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid slice" opacity=".12"/>`
       : "";
-  const titleSize = Math.max(
-    14,
-    Math.min(
-      28,
-      ((width - 220) / Math.max(1, Array.from(t.title).length)) * 2.4,
-    ),
+  // The repeated masthead has one reserved line above every scene.
+  const masthead = t.title.replace(/\s+/gu, " ").trim();
+  const titleSize =
+    28 *
+    Math.min(1, Math.max(1, width - 224) / measureVisualText(28)(masthead));
+  const titleDirection = bracketTextDirection(
+    masthead,
+    locale === "fa" ? "rtl" : "ltr",
   );
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="title"><title id="title">${escapeXML(title)}</title><style>text{font-family:TournaExportArabic,TournaExportLatin,sans-serif}</style>${paint}<rect width="100%" height="100%" fill="${gradient ? "url(#scene-gradient)" : c.background}"/>${background}${logo}<path d="M0 0H${width}V12H0Z" fill="${c.accent}"/><g font-weight="${design.success ? (design.data.fontWeight ?? 600) : 600}">${visualText(t.title, width / 2, 56, titleSize, width - 220, locale, c.muted)}${body}${visualText("TournaStudio", width / 2, height - 30, 18, width - 100, "en", c.muted)}</g></svg>`;
+  const header = `<g data-export-masthead="true"><text x="${width / 2}" y="56" fill="${c.muted}" font-size="${titleSize}" text-anchor="middle" direction="${titleDirection}" unicode-bidi="isolate">${escapeXML(masthead)}</text></g>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="title"><title id="title">${escapeXML(title)}</title><style>text{font-family:TournaExportArabic,TournaExportLatin,sans-serif}</style>${paint}<rect width="100%" height="100%" fill="${gradient ? "url(#scene-gradient)" : c.background}"/>${background}${logo}<path d="M0 0H${width}V12H0Z" fill="${c.accent}"/><g font-weight="${design.success ? (design.data.fontWeight ?? 600) : 600}">${header}${body}${visualText("TournaStudio", width / 2, height - 30, 18, width - 100, "en", c.muted)}</g></svg>`;
 }
 
 export function selectedScoreboardMatch(t: Tournament): Match | undefined {

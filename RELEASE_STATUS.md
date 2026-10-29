@@ -1,44 +1,36 @@
 # TournaStudio release handoff
 
-The October 29, 2026 follow-up fixes stale sharing output, canceled private
-downloads, delayed workspace edits, placement validation and presentation lists.
+The October 29, 2026 visual follow-up fixes text collisions with template icons,
+podium cards, presentation controls and exported artwork.
 
 ## Published application
 
 - App: [tournamentstudio.github.io](https://tournamentstudio.github.io/).
 - Repository: [tournamentstudio/tournamentstudio.github.io](https://github.com/tournamentstudio/tournamentstudio.github.io).
-- Release: [Sharing safety and presentation fixes](https://github.com/tournamentstudio/tournamentstudio.github.io/releases/tag/release-2026-10-29.5).
+- Release: [Text and artwork spacing fixes](https://github.com/tournamentstudio/tournamentstudio.github.io/releases/tag/release-2026-10-29.6).
 - Publication: GitHub Pages serves the prepared files from `main/docs`.
 - GitHub Actions is disabled. There are no repository CI workflows.
 - The hosted app needs no development server running on my computer.
 
 ## What changed
 
-Generated codes now belong to their exact document and sharing settings. Changing
-privacy, encryption or transfer options hides stale output and cancels pending
-generation. Output labels state its actual privacy and protection. Pending
-private backup, revision and multipart QR downloads stop when their screen
-closes or the vault locks. Files already sent to the browser cannot be recalled.
+Home template cards reserve an arrow lane and place their icons using the
+interface direction. Previously, arrows covered Persian captions at mobile
+and desktop widths.
 
-Signing keeps its chosen input fixed until the operation finishes. Previously,
-the generated-code button could replace the displayed input while its old
-contents were being signed.
+Long unbroken theme preview titles wrap inside their cards. Podium places wrap
+into rows and retain full names, including four tied first-place entrants.
+Presentation controls have a separate row below a named, keyboard-focusable
+scrolling region, so they cannot cover the final displayed name. Scenes grow
+with their content to keep following sponsor bands separate.
 
-Workspace callbacks reject delayed edits from an earlier session, including
-when the same tournament is reopened after leaving, locking or reloading a
-saved version. Ordinary edits retain their session undo history.
+The repeated header in exported graphics uses one measured line. Imported title
+newlines no longer extend that header into scores, artwork or slide content.
+The complete title remains in the header with normalized whitespace; saved
+data, participant names and multiline subtitle behavior are unchanged.
 
-Supplied placement tables now pass the same validation before every scoring
-branch and during import. This prevents incomplete manual rulings from creating
-invalid standing points. Absent optional ranks and valid tied ranks remain
-supported.
-
-Live participant, result and schedule lists wrap long names, scores and resource
-labels inside their cards. Tests switch English and Persian in both directions
-and check mobile and projector widths. The full content remains available.
-
-The previous release's recovery, qualification and graphic export fixes remain
-in place, along with game artwork and startup improvements. The performance numbers in
+Earlier sharing, recovery, qualification and graphic export fixes remain in
+place, along with game artwork and startup improvements. The performance numbers in
 [PERFORMANCE.md](PERFORMANCE.md) are tied to that measured commit, not this build.
 [FEATURES.md](FEATURES.md) and [USER_GUIDE.md](USER_GUIDE.md) describe the supported
 behavior and recovery steps.
@@ -48,32 +40,35 @@ behavior and recovery steps.
 | Check | Actual result |
 | --- | --- |
 | TypeScript and ESLint | Passed |
-| Unit and integration suite | 1,185 tests passed across 101 files |
+| Unit and integration suite | 1,188 tests passed across 102 files |
 | Release packaging checks | 4 tests passed |
 | Production build | Passed; 79 precache entries |
-| Final browser selection | 88 tests passed |
-| Cross-browser coverage | 15 cases in Chromium, Firefox and WebKit |
-| Existing workflow regression selection | 43 further Chromium cases passed |
+| Browser selection | 115 distinct cases validated across the main run and targeted rerun |
+| Cross-browser coverage | 29 cases in Chromium, Firefox and WebKit |
+| Existing workflow regression selection | 28 further Chromium cases passed |
 | Prepared publication | 90 application files verified against SHA-256 entries |
 | Credentials and authored-text scans | No findings in the changes |
 
-The new browser checks hold encryption, image decoding, QR rendering and signing
-until after the relevant user action. They reproduced stale output, private
-downloads, a mismatched signing input and edits from closed sessions before the
-fixes. Presentation checks retain full mixed-script names and exact scores at
-320 and 1280 pixels. Actual English and Persian screenshots were inspected.
+The first 115-case run passed 114 cases and caught one Firefox export header
+wrapping defect. After that correction, all 36 affected export and long-text
+cases passed across the three browsers. The rerun also checks the presentation
+scroll region for horizontal overflow. Screenshots of the corrected home cards,
+theme preview, podium and exported poster were inspected.
 
-The first combined browser run caught a WebKit revision-download race after DOM
-removal. Unmount guards now run in layout cleanup. Five focused repetitions and
-the final 88-case selection passed with the original cancellation assertions.
+The live baseline passed 39 existing visual tests, but the added intersection
+and long-text checks reproduced the defects above. These checks compare actual
+text bounds with icon, card, toolbar and artwork bounds after fonts load. Layouts
+include English and Persian at 320, 390, 768 and 1280 pixels where relevant.
+Background watermarks are intentional; foreground text and controls must remain
+readable. This review does not establish every possible content/theme combination.
 
 Repeat the selected checks locally:
 
 ```sh
 npm run check
 npm run test:release
-npx playwright test tests/e2e/workspace-session.spec.ts tests/e2e/sharing-output-safety.spec.ts tests/e2e/presentation-list-layout.spec.ts tests/e2e/signatures.spec.ts
-npx playwright test tests/e2e/tournament.spec.ts tests/e2e/history-commands.spec.ts tests/e2e/transfer-tools.spec.ts tests/e2e/qr-transfer.spec.ts tests/e2e/display-design.spec.ts tests/e2e/save-recovery.spec.ts tests/e2e/concurrent-save-recovery.spec.ts tests/e2e/import-cancellation.spec.ts --project=chromium
+npx playwright test tests/e2e/home-icon-spacing.spec.ts tests/e2e/long-display-text.spec.ts tests/e2e/export-title-lines.spec.ts tests/e2e/rtl-layout.spec.ts tests/e2e/game-icons.spec.ts tests/e2e/game-poster-art.spec.ts tests/e2e/export-card-layout.spec.ts tests/e2e/themes.spec.ts tests/e2e/presentation-list-layout.spec.ts tests/e2e/presentation-localization.spec.ts
+npx playwright test tests/e2e/tournament.spec.ts tests/e2e/display-design.spec.ts tests/e2e/assistive-navigation.spec.ts --project=chromium
 ```
 
 The linked GitHub release records the exact published commit and the results

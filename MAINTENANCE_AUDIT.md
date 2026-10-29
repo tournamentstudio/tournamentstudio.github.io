@@ -162,3 +162,35 @@ than 1,100 pixels of overflow at 320px. Tracks now shrink and text wraps within
 cards. The tests retain full names and exact scores, switch English and Persian
 in both directions, and check mobile and projector widths. Exported artwork is
 unchanged by this layout correction.
+
+## Text and artwork collision review
+
+The follow-up visual review checks intersections between visible text and icons,
+not just whether both fit inside a card. Home template arrows overlapped Persian
+captions at 320, 390 and 1280 pixels. The cards now reserve an arrow lane and use
+logical positioning for their game icons, arrows and padding.
+
+Long unbroken tournament titles were clipped in Theme Studio. Long podium names
+also extended outside their own cards and into neighboring places, including
+four-way ties. Theme titles wrap within the preview; podium cards wrap into rows
+and retain full names inside each place. The six English/Persian baseline cases
+failed before the fixes at mobile or desktop widths.
+
+The mobile presentation toolbar also covered final podium names after maximum
+scrolling. Presentation content now scrolls in its own named, keyboard-focusable
+region above the controls. Scene height grows with content so following sponsor
+bands do not cover overflowing names. The toolbar keeps its own layout row.
+
+Imported titles containing newlines expanded the repeated graphic masthead into
+scoreboard status, game artwork and slide text. That compact header now displays
+the complete title on one measured line with normalized whitespace. The saved
+title and other multiline fields remain unchanged. Both English and Persian
+export regressions reproduced the original intersections before the fix.
+
+The first candidate's 115-case browser run caught a Firefox header wrapping a
+second time after fitting. The header now renders as one escaped SVG text
+element, and the regression requires exactly one line while preserving all
+words. The other 114 cases passed. All 36 affected export and long-text cases
+then passed across Chromium, Firefox and WebKit, including an added horizontal
+overflow check on the presentation's inner scroll region. Corrected home card,
+theme preview, podium and poster screenshots were inspected.
