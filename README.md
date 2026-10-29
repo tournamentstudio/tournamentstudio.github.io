@@ -6,9 +6,10 @@ I built TournaStudio so a tournament can belong to the people running it. Open t
 
 **[Open TournaStudio](https://tournamentstudio.github.io/)** · [User guide](USER_GUIDE.md) · [Feature status](FEATURES.md)
 
-The current development cycle is complete as of October 22, 2026. I am leaving
-the published app available and development on hold. The [release handoff](RELEASE_STATUS.md)
-records the tested release, hosting settings and steps for returning to the project.
+The October 29, 2026 correction release fixes English/Persian language changes,
+bracket text alignment and embedded print fonts. I am leaving the published app
+available between updates. The [release handoff](RELEASE_STATUS.md) records the
+checks, hosting settings and steps for returning to the project.
 
 ![TournaStudio home with its local tournament library](docs/screenshots/home.png)
 

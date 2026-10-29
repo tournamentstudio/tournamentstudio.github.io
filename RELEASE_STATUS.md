@@ -1,53 +1,84 @@
 # TournaStudio release handoff
 
-I am closing the current development cycle on October 22, 2026. The published
-application remains available at [tournamentstudio.github.io](https://tournamentstudio.github.io/).
-Development is on hold until I choose to return to it.
+The October 29, 2026 correction release finishes the language and layout review.
+The application remains available at [tournamentstudio.github.io](https://tournamentstudio.github.io/).
+I can leave it published without running a local development server.
 
 ## Published application
 
 - Repository: [tournamentstudio/tournamentstudio.github.io](https://github.com/tournamentstudio/tournamentstudio.github.io).
-- Tested application commit: [`705a609`](https://github.com/tournamentstudio/tournamentstudio.github.io/commit/705a6090225363fdf45e3b4a028f92a99a358ea4).
+- Release: [Language and export corrections](https://github.com/tournamentstudio/tournamentstudio.github.io/releases/tag/release-2026-10-29).
 - Publication: GitHub Pages serves the prepared static files from `main/docs`.
 - GitHub Actions is disabled. There are no repository CI workflows.
 - The hosted application does not need a development server running on my computer.
 - The source, tests, deployment files and documentation are committed to `main`.
 
-The final application change adds review of older backup times before import.
-Organizers can choose source timezones, edit clock times, resolve daylight-saving
-ambiguities and retain the original revision. Existing explicit offsets and
-verified update packets stay unchanged. Corrected imports use save or fork to
-preserve recovery history.
+This release fixes live English/Persian switching in mounted brackets. Default
+orientation follows the interface language; a manual choice remains until
+Follow language resets it. Names and scores have separate text areas, larger
+fonts enlarge cards, and long names retain their full accessible labels.
+
+Editable titles, participant names, rosters and stage names follow the text's
+direction. SVG, PNG and print include bundled fonts. Print verifies those fonts
+loaded before opening the print dialog. Generated match labels translate in
+graphics, schedules, CSV, calendars and presentation slides; organizer labels
+and stored competition data remain unchanged.
+
+Shared SVG clipping definitions keep a 512-entry bracket inside the existing
+page element-count limit. The older-backup timezone review from the previous
+release remains available.
 
 [FEATURES.md](FEATURES.md) records supported behavior.
 [USER_GUIDE.md](USER_GUIDE.md) explains operation, and
 [ARCHITECTURE.md](ARCHITECTURE.md) describes the module boundaries.
 
-## Verification at closeout
+## Local verification
 
-These checks were run locally for the application release above:
+These checks were run locally against the correction build:
 
 | Check | Result |
 | --- | --- |
 | TypeScript and ESLint | Passed |
-| Unit and integration suite | 1,061 tests passed across 89 files |
+| Unit and integration suite | 1,091 tests passed across 91 files |
 | Release packaging checks | 4 tests passed |
 | Production build | Passed |
-| Import, history, timezone and core browser regression selection | 117 tests passed across Chromium, Firefox and WebKit |
-| Published-site regression selection | 39 Chromium tests passed |
-| Published asset verification | All 71 files matched the prepared bundle |
+| Final browser regression selection | 46 tests passed across Chromium, Firefox and WebKit |
+| Mixed-script form checks | 12 tests passed across Chromium, Firefox and WebKit |
+| Prepared publication | 71 application files with SHA-256 entries |
 
-Browser coverage included encrypted backup recovery, unchanged update packets,
-cross-profile transfer, original revision recovery, offline import, local
-presentation updates and Persian layouts at 320px and 390px. The Persian timezone
-review also passed automated accessibility checks. These results are a dated
-release record, not a claim of independent accessibility certification or a
-guarantee about future browser changes.
+The final browser selection includes 21 language-switch and export cases,
+three 512-participant checks, 15 core Chromium workflows and seven WebKit
+accessibility interaction cases. Earlier targeted runs also checked display
+layouts, mixed-script fields, Persian controls at 320 to 1280 CSS pixels, and
+presentation localization. The print-font and SVG element-count failures found
+during that work were fixed and their cases passed on the final build.
 
-The public site returned HTTP 200 with working manifest, icons and service worker.
-The production smoke check found no page errors, failed assets or external
-runtime requests. Credentials and authored-text scans found no issues in the
-release changes.
+Core workflows include knockout completion, groups and playoffs, Swiss,
+independent snapshot copies, versioned patches, encrypted backup recovery,
+safe result correction, confirmed presentation updates and offline scoring.
+Desktop and mobile browser screenshots were inspected. Credentials and
+authored-text scans found no issues in the release changes.
+
+Repeat the final local checks with:
+
+```sh
+npm run check
+npm run test:release
+npx playwright test tests/e2e/language-switch-layout.spec.ts tests/e2e/performance.spec.ts
+npx playwright test tests/e2e/tournament.spec.ts --project=chromium
+npx playwright test tests/e2e/assistive-navigation.spec.ts --project=webkit
+```
+
+The linked GitHub release records the published commit and post-publication
+asset and browser verification. GitHub Actions remains disabled.
+
+## Review boundary
+
+The code fixes identified by the finishing audit are complete. Physical-phone
+testing and human review of spoken Persian with assistive technology still need
+those devices and reviewers. Browser emulation, keyboard tests, accessibility
+trees and axe checks do not replace that work. [ACCESSIBILITY.md](ACCESSIBILITY.md)
+records the exact scope; no independent accessibility certification is claimed.
 
 ## Returning to development
 

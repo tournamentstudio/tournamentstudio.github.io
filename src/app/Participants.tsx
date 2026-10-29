@@ -270,6 +270,7 @@ export function Participants({ tournament: doc, onChange }: EditorProps) {
         <div className="search-field roomy">
           <Search size={17} />
           <input
+            dir="auto"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t("Search entrants...", "جستجوی شرکت‌کنندگان...")}
@@ -435,6 +436,7 @@ export function Participants({ tournament: doc, onChange }: EditorProps) {
             <ErrorText error={error} />
             <Field label={t("Display name", "نام نمایشی")}>
               <input
+                dir="auto"
                 required
                 maxLength={180}
                 value={editing.name}
@@ -477,6 +479,7 @@ export function Participants({ tournament: doc, onChange }: EditorProps) {
             </div>
             <Field label={t("Organization", "سازمان")}>
               <input
+                dir="auto"
                 maxLength={180}
                 value={editing.organization ?? ""}
                 onChange={(e) =>
@@ -492,6 +495,7 @@ export function Participants({ tournament: doc, onChange }: EditorProps) {
               )}
             >
               <input
+                dir="auto"
                 maxLength={180}
                 value={editing.region ?? ""}
                 onChange={(event) =>
@@ -545,6 +549,7 @@ export function Participants({ tournament: doc, onChange }: EditorProps) {
             {editing.roster.map((r, i) => (
               <div className="roster-row" key={r.id}>
                 <input
+                  dir="auto"
                   aria-label={t("Player name", "نام بازیکن")}
                   required
                   value={r.name}
@@ -617,6 +622,7 @@ export function Participants({ tournament: doc, onChange }: EditorProps) {
           <ErrorText error={error} />
           <Field label={t("One name per line", "هر نام در یک خط")}>
             <textarea
+              dir="auto"
               rows={9}
               value={bulk}
               onChange={(e) => setBulk(e.target.value)}

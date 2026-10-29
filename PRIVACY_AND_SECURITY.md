@@ -139,6 +139,11 @@ The application caps a document at 512 entrants, 20,000 matches, and 16 MiB of J
 
 The static entry page carries a Content Security Policy where supported. A meta-delivered policy cannot replace every HTTP security header. GitHub Pages does not provide per-project control of all response headers.
 
+The font policy permits same-origin files and embedded `data:` fonts so print
+windows can use the bundled Persian and Latin fonts offline. It does not permit
+remote font hosts. Popup documents inherit the opening page policy and apply
+their own narrower export policy.
+
 Core application scripts, fonts, icons, and styles are bundled. Uploaded content does not get a script execution path. Network access is not needed for tournament calculations after the application is cached.
 
 ## Remaining security limits

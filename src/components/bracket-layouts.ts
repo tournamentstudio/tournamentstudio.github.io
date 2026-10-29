@@ -63,13 +63,15 @@ export function supportsCenteredBracket(graph: BracketGeometry) {
   return Boolean(championshipTree(graph));
 }
 export function compressVisibleDepths(graph: BracketGeometry): BracketGeometry {
+  const columnWidth =
+    Math.max(236, ...graph.nodes.map((node) => node.width)) + 64;
   const depths = [...new Set(graph.nodes.map((node) => node.depth))].sort(
     (a, b) => a - b,
   );
   return extent(
     graph.nodes.map((node) => {
       const depth = depths.indexOf(node.depth);
-      return { ...node, depth, x: 16 + depth * 300 };
+      return { ...node, depth, x: 16 + depth * columnWidth };
     }),
   );
 }
@@ -125,6 +127,8 @@ export function transformBracketLayout(
   for (const node of graph.nodes)
     layers.set(node.depth, [...(layers.get(node.depth) ?? []), node]);
   const ordered = [...layers].sort((a, b) => a[0] - b[0]);
+  const compactColumnWidth =
+    Math.max(...graph.nodes.map((node) => node.width)) + 32;
   if (layout === "compact")
     return extent(
       ordered.flatMap(([depth, layer]) => {
@@ -132,7 +136,11 @@ export function transformBracketLayout(
         return layer
           .sort((a, b) => a.y - b.y)
           .map((node) => {
-            const positioned = { ...node, x: 16 + depth * 268, y };
+            const positioned = {
+              ...node,
+              x: 16 + depth * compactColumnWidth,
+              y,
+            };
             y += node.height + 14;
             return positioned;
           });
@@ -183,6 +191,6 @@ export function bracketConnectorPath(
   const x1 = x(source) + (forward ? source.width : 0),
     y1 = source.y + source.height / 2;
   const x2 = x(target) + (forward ? 0 : target.width),
-    y2 = target.y + 49 + slot * 30;
+    y2 = target.y + target.headerHeight + target.rowHeight * (slot + 0.5);
   return `M${x1},${y1}H${(x1 + x2) / 2}V${y2}H${x2}`;
 }

@@ -31,6 +31,8 @@ Relevant checks include:
 - `tests/e2e/assistive-navigation.spec.ts`: English/Persian mobile focus containment, inert backgrounds, Escape/restoration, current page semantics, route titles, section names, keyboard scrolling, public score announcements, reduced motion and forced colors. Reflow checks use 640 by 360 and 320 by 180 CSS-pixel viewports, equivalent to the available layout area at 200% and 400% of a 1280 by 720 baseline.
 - `tests/e2e/fide-dutch.spec.ts`: translated Swiss policy errors and 320-pixel Persian controls.
 - `tests/e2e/persian-audit.spec.ts`: Persian half-space card names wrap within narrow fieldsets, and mobile roster names have a full row. Both workflows retain edits after reload.
+- `tests/e2e/language-switch-layout.spec.ts`: live English/Persian switching, reload, manual bracket orientation, measured SVG text bounds at the largest supported theme font size, unchanged saved data and standalone/printed export alignment.
+- `tests/e2e/mixed-script-fields.spec.ts`: creation drafts, participant and roster names, settings and stage names keep their values and content-based alignment when the interface language changes at desktop and mobile widths.
 - `tests/e2e/presentation-localization.spec.ts`: translated schedule labels, Persian countdown digits, RTL scene controls, nested bracket/table keyboard handling and public broadcast score announcements.
 - `tests/e2e/i18n-accessibility.spec.ts`: Persian form errors, modal focus cycles, disclosure sections, focus restoration, saved language, and operator sections.
 - `tests/e2e/player-statistics.spec.ts`: player observations, correction history, private export boundaries, Persian at 320 CSS pixels, keyboard opening, and dialog checks.

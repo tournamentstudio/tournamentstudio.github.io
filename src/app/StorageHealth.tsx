@@ -188,6 +188,7 @@ export function Settings({
         ].map(([key, label]) => (
           <Field label={label} key={key}>
             <input
+              dir={key === "timezone" ? "ltr" : "auto"}
               value={draft[key as keyof typeof draft]}
               maxLength={180}
               onChange={(e) => setDraft({ ...draft, [key]: e.target.value })}
@@ -196,6 +197,7 @@ export function Settings({
         ))}
         <Field label={t("Private description", "شرح خصوصی")}>
           <textarea
+            dir="auto"
             rows={4}
             maxLength={5000}
             value={draft.description}

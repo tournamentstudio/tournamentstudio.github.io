@@ -111,6 +111,7 @@ export function StageSettings({
       </div>
       <Field label={t("Stage name", "نام مرحله")}>
         <input
+          dir="auto"
           key={stage.id + stage.name}
           defaultValue={stage.name}
           maxLength={180}

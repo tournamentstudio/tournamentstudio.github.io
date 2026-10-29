@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Locale, Match, Tournament } from "../domain/types";
 import { getTheme, themeStyle } from "../themes";
 import "../themes/themes.css";
@@ -11,6 +11,15 @@ import {
   transformBracketLayout,
 } from "./bracket-layouts";
 import { groupLabel } from "../i18n";
+import {
+  bracketTextMetrics,
+  bracketTextRegions,
+  fitBracketScoreFontSize,
+  fitBracketText,
+  svgTextPlacement,
+  type TextDirection,
+  type TextRegion,
+} from "../presentation/bracket-text";
 
 export interface BracketNode {
   match: Match;
@@ -18,12 +27,19 @@ export interface BracketNode {
   y: number;
   width: number;
   height: number;
+  headerHeight: number;
+  rowHeight: number;
   depth: number;
+}
+function clipGeometryKey(node: BracketNode) {
+  return `${node.width}:${node.height}:${node.headerHeight}`;
 }
 export function layoutBracket(
   matches: Match[],
   spacing = 1,
+  fontScale = 1,
 ): { nodes: BracketNode[]; width: number; height: number } {
+  const metrics = bracketTextMetrics(fontScale);
   const byId = new Map(matches.map((m) => [m.id, m]));
   const depths = new Map<string, number>();
   function depth(m: Match, visited = new Set<string>()): number {
@@ -54,7 +70,9 @@ export function layoutBracket(
     for (const [d, layer] of [...layers].sort((a, b) => a[0] - b[0])) {
       let nextY = baseline;
       for (const match of layer.sort((a, b) => a.index - b.index)) {
-        const height = 34 + Math.max(2, match.slots.length) * 30;
+        const height =
+          metrics.headerHeight +
+          Math.max(2, match.slots.length) * metrics.rowHeight;
         const sourceNodes = match.slots.flatMap((s) =>
           s.source && nodeMap.has(s.source.matchId)
             ? [nodeMap.get(s.source.matchId)!]
@@ -67,10 +85,12 @@ export function layoutBracket(
           : nextY;
         const node = {
           match,
-          x: 16 + d * 300,
+          x: 16 + d * (metrics.cardWidth + 64),
           y: Math.max(nextY, preferred),
-          width: 236,
+          width: metrics.cardWidth,
           height,
+          headerHeight: metrics.headerHeight,
+          rowHeight: metrics.rowHeight,
           depth: d,
         };
         nodes.push(node);
@@ -101,6 +121,91 @@ export function layoutBracket(
     height: Math.max(180, ...nodes.map((n) => n.y + n.height + 24)),
   };
 }
+
+function FittedBracketText({
+  text,
+  region,
+  y,
+  fontSize,
+  className,
+  direction,
+  x,
+  textAnchor = "start",
+  clipPath,
+  fontKey,
+  truncate = true,
+}: {
+  text: string;
+  region: TextRegion;
+  y: number;
+  fontSize: number;
+  className: string;
+  direction: TextDirection;
+  x: number;
+  textAnchor?: "start" | "middle";
+  clipPath: string;
+  fontKey: string;
+  truncate?: boolean;
+}) {
+  const ref = useRef<SVGTextElement>(null);
+  const [fitted, setFitted] = useState({
+    text,
+    fontSize,
+  });
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    let active = true;
+    const fit = () => {
+      if (!active) return;
+      element.style.fontSize = `${fontSize}px`;
+      const measure = (value: string) => {
+        element.textContent = value;
+        return element.getComputedTextLength();
+      };
+      const next = truncate
+        ? fitBracketText(text, Math.max(0, region.width - 2), fontSize, measure)
+        : text;
+      const fittedFontSize = fitBracketScoreFontSize(
+        next,
+        Math.max(0, region.width - 2),
+        fontSize,
+        measure,
+      );
+      element.style.fontSize = `${fittedFontSize}px`;
+      setFitted((current) =>
+        current.text === next && current.fontSize === fittedFontSize
+          ? current
+          : { text: next, fontSize: fittedFontSize },
+      );
+    };
+    fit();
+    void document.fonts.ready.then(fit);
+    document.fonts.addEventListener("loadingdone", fit);
+    return () => {
+      active = false;
+      document.fonts.removeEventListener("loadingdone", fit);
+    };
+  }, [text, region.width, fontSize, fontKey, className, truncate]);
+  return (
+    <text
+      ref={ref}
+      x={x}
+      y={y}
+      textAnchor={textAnchor}
+      direction={direction}
+      style={{ unicodeBidi: "isolate", fontSize: fitted.fontSize }}
+      className={className}
+      clipPath={clipPath}
+      aria-label={text}
+      data-region-x={region.x}
+      data-region-width={region.width}
+    >
+      {fitted.text}
+    </text>
+  );
+}
+
 export function matchNames(
   tournament: Tournament,
   match: Match,
@@ -140,11 +245,16 @@ export function Bracket({
   const [stageId, setStageId] = useState(tournament.stages[0]?.id ?? "");
   const [zoom, setZoom] = useState(1),
     [layoutOverride, setLayout] = useState<BracketLayout>(),
-    [rtl, setRtl] = useState(locale === "fa"),
+    [rtlOverride, setRtlOverride] = useState<boolean>(),
     [round, setRound] = useState("all"),
     [search, setSearch] = useState(""),
     [showScores, setShowScores] = useState(true),
     [showSeeds, setShowSeeds] = useState(false);
+  const rtl = rtlOverride ?? locale === "fa";
+  const clipPrefix = useId().replace(/:/g, "-");
+  const fontScale = tournament.theme.fontScale ?? 1;
+  const metrics = bracketTextMetrics(fontScale);
+  const fontKey = `${tournament.theme.font ?? getTheme(tournament.theme.preset).font ?? "inter"}:${tournament.theme.design?.fontWeight ?? "inherit"}`;
   const [collapsedRounds, setCollapsedRounds] = useState<number[]>([]);
   const [dragToPan, setDragToPan] = useState(false);
   const drag = useRef<
@@ -169,9 +279,9 @@ export function Bracket({
     [allMatches, round, collapsedRounds],
   );
   const baseGraph = useMemo(() => {
-    const graph = layoutBracket(matches, tournament.theme.spacing);
+    const graph = layoutBracket(matches, tournament.theme.spacing, fontScale);
     return collapsedRounds.length ? compressVisibleDepths(graph) : graph;
-  }, [matches, tournament.theme.spacing, collapsedRounds]);
+  }, [matches, tournament.theme.spacing, fontScale, collapsedRounds]);
   const requestedLayout =
     layoutOverride ?? tournament.theme.design?.bracketLayout ?? "horizontal";
   const centeredSupported = useMemo(
@@ -190,6 +300,15 @@ export function Bracket({
     () => new Map(graph.nodes.map((n) => [n.match.id, n])),
     [graph],
   );
+  const clipGeometries = useMemo(() => {
+    const geometries = new Map<string, { node: BracketNode; index: number }>();
+    for (const node of graph.nodes) {
+      const key = clipGeometryKey(node);
+      if (!geometries.has(key))
+        geometries.set(key, { node, index: geometries.size });
+    }
+    return geometries;
+  }, [graph]);
   const participantMap = useMemo(
     () => new Map(tournament.participants.map((p) => [p.id, p])),
     [tournament.participants],
@@ -235,8 +354,6 @@ export function Bracket({
   ].includes(stage?.format ?? "");
   const xFor = (n: BracketNode) => (rtl ? graph.width - n.x - n.width : n.x);
   const nameFor = (m: Match, i: number) => namesByMatch.get(m.id)?.[i] ?? "?";
-  const short = (s: string) =>
-    Array.from(s).length > 26 ? `${Array.from(s).slice(0, 25).join("")}…` : s;
   const caption = (m: Match) =>
     m.bracket === "final"
       ? t("Grand final", "فینال بزرگ")
@@ -292,6 +409,7 @@ export function Bracket({
         </label>
         <input
           type="search"
+          dir="auto"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t("Highlight a participant", "برجسته‌سازی شرکت‌کننده")}
@@ -351,11 +469,16 @@ export function Bracket({
             <button type="button" onClick={fit}>
               {t("Fit", "اندازه صفحه")}
             </button>
-            <button type="button" onClick={() => setRtl(!rtl)}>
+            <button type="button" onClick={() => setRtlOverride(!rtl)}>
               {rtl
                 ? t("Left to right", "چپ به راست")
                 : t("Right to left", "راست به چپ")}
             </button>
+            {rtlOverride !== undefined && (
+              <button type="button" onClick={() => setRtlOverride(undefined)}>
+                {t("Follow language", "هم‌جهت با زبان")}
+              </button>
+            )}
             <button
               type="button"
               aria-pressed={dragToPan}
@@ -504,6 +627,8 @@ export function Bracket({
             aria-label={stage?.name}
             data-testid="bracket-svg"
             data-layout={layout}
+            data-direction={rtl ? "rtl" : "ltr"}
+            direction="ltr"
             width={graph.width * zoom}
             height={graph.height * zoom}
             viewBox={`0 0 ${graph.width} ${graph.height}`}
@@ -511,6 +636,43 @@ export function Bracket({
             <title>
               {tournament.title} · {stage?.name}
             </title>
+            <defs>
+              {[...clipGeometries.values()].flatMap(({ node, index }) => {
+                const regions = bracketTextRegions(
+                  node.width,
+                  locale === "fa",
+                  showScores,
+                  fontScale,
+                );
+                const clipId = `${clipPrefix}-geometry-${index}`;
+                return [
+                  <clipPath key={`${clipId}-caption`} id={`${clipId}-caption`}>
+                    <rect
+                      x={regions.caption.x}
+                      y={0}
+                      width={regions.caption.width}
+                      height={node.headerHeight}
+                    />
+                  </clipPath>,
+                  <clipPath key={`${clipId}-name`} id={`${clipId}-name`}>
+                    <rect
+                      x={regions.name.x}
+                      y={node.headerHeight}
+                      width={regions.name.width}
+                      height={node.height - node.headerHeight}
+                    />
+                  </clipPath>,
+                  <clipPath key={`${clipId}-score`} id={`${clipId}-score`}>
+                    <rect
+                      x={regions.score.x}
+                      y={node.headerHeight}
+                      width={regions.score.width}
+                      height={node.height - node.headerHeight}
+                    />
+                  </clipPath>,
+                ];
+              })}
+            </defs>
             {graph.nodes.flatMap((node) =>
               node.match.slots.map((slot, i) => {
                 const source = slot.source
@@ -547,6 +709,14 @@ export function Bracket({
                 highlighted = m.slots.some(
                   (s) => s.participantId && selectedIds.has(s.participantId),
                 );
+              const regions = bracketTextRegions(
+                node.width,
+                locale === "fa",
+                showScores,
+                fontScale,
+              );
+              const clipId = `${clipPrefix}-geometry-${clipGeometries.get(clipGeometryKey(node))!.index}`;
+              const fallbackDirection = locale === "fa" ? "rtl" : "ltr";
               return (
                 <g
                   key={m.id}
@@ -573,45 +743,78 @@ export function Bracket({
                       getTheme(tournament.theme.preset).radius
                     }
                   />
-                  <text x="12" y="21" className="bracket-title">
-                    {caption(m)}
-                  </text>
+                  <FittedBracketText
+                    text={caption(m)}
+                    region={regions.caption}
+                    {...svgTextPlacement(
+                      caption(m),
+                      regions.caption,
+                      fallbackDirection,
+                    )}
+                    y={metrics.captionBaseline}
+                    fontSize={metrics.titleFontSize}
+                    className="bracket-title"
+                    clipPath={`url(#${clipId}-caption)`}
+                    fontKey={fontKey}
+                  />
                   {m.slots.map((slot, i) => {
                     const winner =
                       slot.participantId &&
                       m.result?.winnerIds.includes(slot.participantId);
+                    const seed = slot.participantId
+                      ? participantMap.get(slot.participantId)?.seed
+                      : undefined;
+                    const name = `${showSeeds && seed !== undefined ? `${seed.toLocaleString(locale)}. ` : ""}${nameFor(m, i)}`;
+                    const score =
+                      (
+                        (m.status === "live" ? m.liveScores?.[i] : undefined) ??
+                        m.result?.scores[i]
+                      )?.toLocaleString(locale) ?? "·";
                     return (
                       <g key={i}>
                         <line
                           x1="0"
                           x2={node.width}
-                          y1={34 + i * 30}
-                          y2={34 + i * 30}
+                          y1={node.headerHeight + i * node.rowHeight}
+                          y2={node.headerHeight + i * node.rowHeight}
                           className="match-separator"
                         />
-                        <text
-                          x="12"
-                          y={54 + i * 30}
+                        <FittedBracketText
+                          text={name}
+                          region={regions.name}
+                          {...svgTextPlacement(
+                            name,
+                            regions.name,
+                            fallbackDirection,
+                          )}
+                          y={
+                            node.headerHeight +
+                            metrics.rowBaseline +
+                            i * node.rowHeight
+                          }
+                          fontSize={metrics.nameFontSize}
                           className={`bracket-team ${winner ? "bracket-winner" : ""}`}
-                        >
-                          {showSeeds && slot.participantId
-                            ? `${participantMap.get(slot.participantId)?.seed}. `
-                            : ""}
-                          {short(nameFor(m, i))}
-                        </text>
+                          clipPath={`url(#${clipId}-name)`}
+                          fontKey={fontKey}
+                        />
                         {showScores && (
-                          <text
-                            x={node.width - 12}
-                            y={54 + i * 30}
-                            textAnchor="end"
+                          <FittedBracketText
+                            text={score}
+                            region={regions.score}
+                            x={regions.score.x + regions.score.width / 2}
+                            y={
+                              node.headerHeight +
+                              metrics.rowBaseline +
+                              i * node.rowHeight
+                            }
+                            textAnchor="middle"
+                            direction="ltr"
+                            fontSize={metrics.scoreFontSize}
                             className={`bracket-score ${winner ? "bracket-winner" : ""}`}
-                          >
-                            {(
-                              (m.status === "live"
-                                ? m.liveScores?.[i]
-                                : undefined) ?? m.result?.scores[i]
-                            )?.toLocaleString(locale) ?? "·"}
-                          </text>
+                            clipPath={`url(#${clipId}-score)`}
+                            fontKey={fontKey}
+                            truncate={false}
+                          />
                         )}
                       </g>
                     );

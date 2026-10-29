@@ -1039,8 +1039,19 @@ revision. Do not assume an edit reached another display until its save succeeds.
 ## Persian and keyboard use
 
 Use the language control in the application header to switch between English and
-Persian. Persian switches the interface to RTL, while `bdi` isolates mixed-script
-names. Bracket direction can also be changed using its own left/right control.
+Persian. Names, results and saved tournament settings stay unchanged. Editable
+names and titles align with their own text, so English names remain readable in
+Persian screens and Persian names remain readable in English screens.
+
+Bracket direction follows the current interface language. Its left/right control
+sets a manual direction for the open view; **Follow language** returns to the
+automatic direction. Larger theme fonts enlarge bracket cards. Long names use
+an ellipsis while the full names remain available to assistive technology and
+in the match details. Names and scores occupy separate areas in each card.
+
+SVG, PNG and printed brackets use the same text-direction rules. Downloaded
+graphics and printable pages include their Persian and Latin fonts for offline
+use. User-written match labels keep their original text.
 Generated match labels and known validation messages follow the selected language. An unexpected external error retains its original technical details after a localized explanation.
 
 Use Tab to move through controls. A focused match card opens with Enter or Space.

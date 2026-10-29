@@ -310,6 +310,7 @@ export function CreateFlow({
             <div className="form-stack">
               <Field label={t("Tournament title", "عنوان مسابقات")}>
                 <input
+                  dir="auto"
                   autoFocus
                   placeholder={t("e.g. Autumn Invitational", "مثلاً جام پاییز")}
                   value={title}
@@ -457,6 +458,7 @@ export function CreateFlow({
                 )}
               >
                 <textarea
+                  dir="auto"
                   rows={5}
                   placeholder={t(
                     "North Stars\nAtlas United\nSolar Club",

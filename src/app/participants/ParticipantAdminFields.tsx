@@ -177,6 +177,7 @@ export function ParticipantAdminFields({
       </div>
       <Field label={t("Private organizer note", "یادداشت خصوصی برگزارکننده")}>
         <textarea
+          dir="auto"
           maxLength={2000}
           value={record.note}
           onChange={(event) => update({ note: event.target.value })}

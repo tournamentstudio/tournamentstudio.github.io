@@ -2,6 +2,7 @@ import { strToU8, zipSync } from "fflate";
 import QRCode from "qrcode";
 import type { Locale, Scene, Tournament } from "../domain/types";
 import { scheduleOccurrences } from "../scheduling/legs";
+import { generatedMatchLabel } from "../i18n/match-labels";
 import { matchNames } from "../components/Bracket";
 import { podiumPlaces, sceneLabel } from "../presentation/Presentation";
 import { encodeCode, publicProjection } from "../sharing";
@@ -111,7 +112,7 @@ async function scenePages(
           .sort((a, b) => a.scheduledAt!.localeCompare(b.scheduledAt!))
           .map(
             (m) =>
-              `${new Date(m.scheduledAt!).toLocaleString(locale, { timeZone: t.timezone })} · ${m.label} · ${matchNames(t, m, locale).join(" / ")} · ${t.schedule.resources.find((r) => r.id === m.resourceId)?.name ?? ""}`,
+              `${new Date(m.scheduledAt!).toLocaleString(locale, { timeZone: t.timezone })} · ${generatedMatchLabel(m, locale)} · ${matchNames(t, m, locale).join(" / ")} · ${t.schedule.resources.find((r) => r.id === m.resourceId)?.name ?? ""}`,
           ),
         locale,
       );

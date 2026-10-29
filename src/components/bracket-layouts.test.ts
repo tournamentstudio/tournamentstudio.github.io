@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { createParticipant, createTournament } from "../domain/types";
 import { generateStage } from "../engine";
-import { layoutBracket } from "./Bracket";
+import { Bracket, layoutBracket } from "./Bracket";
 import {
   bracketConnectorPath,
   compressVisibleDepths,
@@ -23,6 +25,92 @@ function graph(count: number, double = false) {
 }
 
 describe("bracket display geometry", () => {
+  it("reuses clipping geometry across a 512-entry bracket", () => {
+    let tournament = createTournament(
+      "Shared clipping",
+      Array.from({ length: 512 }, (_, index) =>
+        createParticipant(`Team ${index + 1}`, index + 1),
+      ),
+      "single-elimination",
+    );
+    tournament = generateStage(tournament, tournament.stages[0].id);
+    const markup = renderToStaticMarkup(createElement(Bracket, { tournament }));
+    expect(markup.match(/class="bracket-node /g)).toHaveLength(511);
+    const definitions = Array.from(
+      markup.matchAll(/<clipPath id="([^"]+)"/g),
+      (match) => match[1],
+    );
+    const references = Array.from(
+      markup.matchAll(/clip-path="url\(#([^)]+)\)"/g),
+      (match) => match[1],
+    );
+    expect(definitions).toHaveLength(3);
+    expect(new Set(references)).toEqual(new Set(definitions));
+  });
+  it.each([0.5, 1, 1.5, 3])(
+    "keeps scaled card rows and connectors aligned at scale %s",
+    (fontScale) => {
+      const original = graph(13);
+      const scaled = layoutBracket(
+        original.nodes.map((node) => node.match),
+        1,
+        fontScale,
+      );
+      const scale = Math.max(1, fontScale);
+      for (const layout of [
+        "horizontal",
+        "compact",
+        "vertical",
+        "centered",
+      ] as const) {
+        const rendered = transformBracketLayout(scaled, layout);
+        for (const node of rendered.nodes) {
+          expect(node.width).toBe(236 * scale);
+          expect(node.height).toBe(
+            node.headerHeight +
+              node.rowHeight * Math.max(2, node.match.slots.length),
+          );
+          for (const other of rendered.nodes.filter(
+            (other) => other !== node,
+          )) {
+            expect(
+              node.x < other.x + other.width &&
+                node.x + node.width > other.x &&
+                node.y < other.y + other.height &&
+                node.y + node.height > other.y,
+            ).toBe(false);
+          }
+        }
+      }
+      const target = scaled.nodes.find((node) =>
+        node.match.slots.some((slot) => slot.source),
+      )!;
+      const source = scaled.nodes.find(
+        (node) => node.match.id === target.match.slots[0].source!.matchId,
+      )!;
+      expect(
+        bracketConnectorPath(
+          source,
+          target,
+          0,
+          "horizontal",
+          false,
+          scaled.width,
+        ),
+      ).toContain(`V${target.y + target.headerHeight + target.rowHeight / 2}`);
+      const compressed = compressVisibleDepths(
+        layoutBracket(
+          scaled.nodes
+            .filter((node) => node.depth > 0)
+            .map((node) => node.match),
+          1,
+          fontScale,
+        ),
+      );
+      const secondColumn = compressed.nodes.find((node) => node.depth === 1);
+      expect(secondColumn?.x).toBe(16 + 236 * scale + 64);
+    },
+  );
   it("compresses hidden round columns without changing source references", () => {
     const original = graph(16);
     const visible = original.nodes.filter((node) => node.match.round > 1);

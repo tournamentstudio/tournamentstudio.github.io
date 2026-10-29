@@ -67,6 +67,7 @@ export function ParticipantImportPreview({
               <tr key={item.id}>
                 <td>
                   <input
+                    dir="auto"
                     aria-label={`${t("Imported name", "نام واردشده")} ${index + 1}`}
                     maxLength={240}
                     value={item.name}
