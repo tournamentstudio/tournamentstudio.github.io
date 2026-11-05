@@ -248,6 +248,7 @@ export interface KnockoutDrawPreview {
 }
 export type StageConfig = {
   ladder?: LadderPolicy;
+  groupLabelVersion?: 1;
   groupCount: number;
   meetings: number;
   rounds: number;
@@ -507,6 +508,7 @@ export interface FormatDefinition {
   multiEntrant: boolean;
 }
 export const DEFAULT_CONFIG: StageConfig = {
+  groupLabelVersion: 1,
   groupCount: 4,
   meetings: 1,
   rounds: 5,

@@ -6,10 +6,11 @@ I built TournaStudio so a tournament can belong to the people running it. Open t
 
 **[Open TournaStudio](https://tournamentstudio.github.io/)** · [User guide](USER_GUIDE.md) · [Feature status](FEATURES.md)
 
-The October 29, 2026 updates improve English/Persian layout and add original
-game artwork to exported scoreboards and champion posters. The latest review
-separates template arrows from captions, wraps long preview and podium names,
-keeps presentation controls below content and fits export headers above artwork.
+The November 5, 2026 review fixes participant-count editing and round-robin
+settings. Fractional counts cannot silently create fewer entrants, pasted lists
+show their actual count, and large group draws use readable labels after Z.
+Earlier layout updates separate template arrows from captions, wrap long preview
+and podium names, and keep presentation controls and export artwork clear of text.
 Earlier updates fixed placement tables and delayed sharing work, added failed-save recovery and reduced
 initial JavaScript transfer by about 46% in the recorded test. The
 [release handoff](RELEASE_STATUS.md), [performance measurements](PERFORMANCE.md)

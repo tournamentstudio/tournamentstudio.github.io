@@ -1,26 +1,17 @@
 import type { Stage, Tournament } from "../../domain/types";
 import { ladderPolicy } from "../../domain/ladder";
 import { tournamentMatchEvidence } from "../../engine/match-evidence";
+import { sourceGroups as stageSourceGroups } from "../../domain/advancement";
 
 export function sourceGroups(tournament: Tournament, stage?: Stage): string[] {
   if (!stage) return [];
-  const groups = [
-    ...new Set(
-      tournament.matches
-        .filter((match) => match.stageId === stage.id && match.group)
-        .map((match) => match.group!),
-    ),
-  ].sort();
-  if (groups.length) return groups;
-  if (stage.format !== "groups" && stage.format !== "gsl") return [];
-  const configured = Array.isArray(stage.config.groups)
-    ? stage.config.groups.length
-    : stage.format === "gsl"
-      ? Math.ceil(stage.participantIds.length / 4)
-      : stage.config.groupCount;
-  return Array.from({ length: configured }, (_, index) =>
-    String.fromCharCode(65 + index),
-  );
+  if (
+    stage.format !== "groups" &&
+    stage.format !== "gsl" &&
+    !tournament.matches.some((match) => match.stageId === stage.id && match.group)
+  )
+    return [];
+  return stageSourceGroups(tournament, stage);
 }
 
 export function descendantIds(tournament: Tournament, id: string): Set<string> {

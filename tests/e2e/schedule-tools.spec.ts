@@ -5,6 +5,9 @@ import { generateStage, recordResult } from "../../src/engine";
 import { autoSchedule } from "../../src/scheduling";
 import { newRun } from "../../src/timing/model";
 import { generatedMatchLabel } from "../../src/i18n/match-labels";
+
+test.use({ timezoneId: "America/Los_Angeles" });
+
 async function openSchedule(page: Page, withEvidence = false) {
   let t = createTournament(
     "Travel cup",
@@ -13,7 +16,8 @@ async function openSchedule(page: Page, withEvidence = false) {
       location: { latitude: 0, longitude: i },
     })),
   );
-  t.schedule.startAt = "2027-01-01T10:00:00";
+  t.timezone = "America/Los_Angeles";
+  t.schedule.startAt = "2027-01-01T10:00:00-08:00";
   t.schedule.resources = [
     { id: "west", name: "West", location: { latitude: 0, longitude: 0 } },
     { id: "east", name: "East", location: { latitude: 0, longitude: 3 } },

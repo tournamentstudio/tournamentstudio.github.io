@@ -31,6 +31,8 @@ export const diagnosticTranslations: Record<string, string> = {
     "این قالب مسابقات پشتیبانی نمی‌شود.",
   "The stage requires a different format version.":
     "مرحله به نسخه دیگری از قالب نیاز دارد.",
+  "The stage requires a different group label version.":
+    "مرحله به نسخه دیگری از نام‌گذاری گروه‌ها نیاز دارد.",
   "The group count cannot exceed the entrant count.":
     "تعداد گروه‌ها نباید از تعداد شرکت‌کنندگان بیشتر باشد.",
   "GSL uses groups of exactly four entrants. Choose a participant count divisible by four.":

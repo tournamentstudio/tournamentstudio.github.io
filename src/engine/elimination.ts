@@ -1,4 +1,5 @@
 import type { Match, Stage } from "../domain/types";
+import { generatedGroupLabel } from "../domain/group-labels";
 import { entrant, loser, newMatch, winner } from "./formats";
 import { seedPositions } from "./random";
 import { classificationMatches, doubleClassificationMatches } from "./placements";
@@ -172,7 +173,7 @@ export function gauntlet(stage: Stage, ids: string[]): Match[] {
 
 export function gsl(stage: Stage, groups: string[][]): Match[] {
   return groups.flatMap((ids, groupIndex) => {
-    const group = String.fromCharCode(65 + groupIndex);
+    const group = generatedGroupLabel(stage, groupIndex);
     const slots = [ids[0], ids[3], ids[1], ids[2]];
     const first = newMatch(stage, 1, 0, slots.slice(0, 2).map(entrant), {
       group,

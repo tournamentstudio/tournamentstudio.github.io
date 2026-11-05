@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { ArrowUpRight, Clock, Users } from "lucide-react";
 import type { FormatId } from "../domain/types";
-import { Field } from "../components/ui";
+import { Field, Notice } from "../components/ui";
 import { useI18n, formatName } from "../i18n";
 import { advisorPlans, type AdvisorPlan } from "./advisor-plans";
+import { parseParticipantCount } from "./participant-count";
 
 export function FormatAdvisor({
   onCreate,
@@ -11,14 +12,17 @@ export function FormatAdvisor({
   onCreate: (format: FormatId, plan?: AdvisorPlan) => void;
 }) {
   const { t, locale } = useI18n();
-  const [count, setCount] = useState(16);
+  const [countInput, setCountInput] = useState("16");
+  const count = parseParticipantCount(countInput);
+  const countErrorId = useId();
   const [minutes, setMinutes] = useState(15);
   const [hours, setHours] = useState(4);
   const [resources, setResources] = useState(2);
   const [minimum, setMinimum] = useState(2);
   const [preferGroups, setPreferGroups] = useState(false);
   const [preferFinals, setPreferFinals] = useState(false);
-  const options = advisorPlans(count, minutes, resources);
+  const options =
+    count === undefined ? [] : advisorPlans(count, minutes, resources);
   const notes: Record<string, string> = {
     single: t(
       "A decisive finish with the fewest matches. One loss ends an entrant’s run.",
@@ -72,12 +76,11 @@ export function FormatAdvisor({
             type="number"
             min={2}
             max={512}
-            value={count}
-            onChange={(e) =>
-              setCount(
-                Math.max(2, Math.min(512, Math.floor(Number(e.target.value)))),
-              )
-            }
+            step={1}
+            value={countInput}
+            aria-invalid={count === undefined}
+            aria-describedby={count === undefined ? countErrorId : undefined}
+            onChange={(e) => setCountInput(e.target.value)}
           />
         </Field>
         <Field label={t("Match minutes", "دقایق هر دیدار")}>
@@ -125,6 +128,16 @@ export function FormatAdvisor({
           />
         </Field>
       </div>
+      {count === undefined && (
+        <div id={countErrorId}>
+          <Notice danger>
+            {t(
+              "Enter a whole number from 2 to 512 to see format estimates.",
+              "برای دیدن برآورد قالب‌ها، یک عدد صحیح از ۲ تا ۵۱۲ وارد کنید.",
+            )}
+          </Notice>
+        </div>
+      )}
       <div className="button-row">
         <label className="check-row">
           <input

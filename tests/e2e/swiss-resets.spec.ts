@@ -3,6 +3,7 @@ import { createParticipant, createTournament } from "../../src/domain/types";
 import { DEFAULT_SWISS_POLICY } from "../../src/domain/swiss";
 import { generateStage, recordResult } from "../../src/engine";
 import { encodeCode } from "../../src/sharing";
+import { prepareDutchEngine } from "../../src/engine/fide-runtime";
 
 async function section(page: Page, name: string) {
   await page
@@ -67,6 +68,7 @@ for (const named of [false, true]) {
     };
     target.sources = [{ stageId: source.id, count: 4, perGroup: false }];
     doc.stages.push(target);
+    if (named) await prepareDutchEngine();
     doc = generateStage(doc, target.id);
     await page.goto(`/#/open/${encodeURIComponent(await encodeCode(doc))}`);
     await page

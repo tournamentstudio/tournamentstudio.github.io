@@ -114,6 +114,7 @@ function publicStageConfig(
     if (value !== undefined && schema.safeParse(value).success)
       config[key] = structuredClone(value);
   }
+  if (stage.config.groupLabelVersion === 1) config.groupLabelVersion = 1;
   if (stage.config.draw !== undefined)
     config.draw = groupDrawSchema.parse(stage.config.draw);
   if (

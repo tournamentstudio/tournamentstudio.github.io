@@ -1,4 +1,5 @@
 import type { Advancement, Stage, Tournament } from "./types";
+import { generatedGroupLabel, sortGroupLabels } from "./group-labels";
 
 export function sourceGroups(tournament: Tournament, stage: Stage): string[] {
   const groups = [
@@ -8,7 +9,7 @@ export function sourceGroups(tournament: Tournament, stage: Stage): string[] {
         .map((match) => match.group!),
     ),
   ];
-  if (groups.length) return groups.sort();
+  if (groups.length) return sortGroupLabels(stage, groups);
   const count = Array.isArray(stage.config.groups)
     ? stage.config.groups.length
     : stage.format === "groups"
@@ -17,7 +18,7 @@ export function sourceGroups(tournament: Tournament, stage: Stage): string[] {
         ? Math.ceil(stage.participantIds.length / 4)
         : 0;
   return Array.from({ length: count }, (_, index) =>
-    String.fromCharCode(65 + index),
+    generatedGroupLabel(stage, index),
   );
 }
 

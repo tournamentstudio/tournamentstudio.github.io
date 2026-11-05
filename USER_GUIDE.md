@@ -22,6 +22,12 @@ Enable **Show advanced configuration** in the first step to choose a
 reproducible random draw and its seed. Numbered entrants are suitable while you
 are planning; rename them in Participants before play.
 
+Participant counts must be whole numbers. You can clear the input while editing;
+invalid or out-of-range values cannot continue to creation. A pasted list shows
+its actual count, and clearing the list restores the count you entered. Count
+limits follow the selected format. After reducing the field, review group and
+Swiss round settings before continuing.
+
 Format Advisor compares single elimination, double elimination, round robin
 and Swiss using your time and playing-resource estimates. Its finish times are
 lower bounds. Rest, availability, unresolved results and qualification dependencies
@@ -84,6 +90,16 @@ The normal creation range is 2 to 512 entrants. Standalone round robin supports
 up to 128. GSL needs a multiple of four. More entrants and more repeated meetings
 can reach the 20,000-match document limit. These are capacity limits, not a
 promise of the same rendering speed on every device.
+
+**Round robin** makes one table in which every pair plays. To divide entrants
+into separate round-robin tables, choose **Groups & pools**. Both support 1 to 12
+meetings per pair, subject to the total match limit. Group standings only count
+that group's matches. A singleton group has an automatic BYE with no played win
+or points. GSL derives its group count from groups of exactly four.
+
+Manual group composition fixes the number of groups. Use **Restore automatic
+group composition** before editing that count. New group labels continue from
+Z to AA, AB and onward; saved identifiers in older tournaments are preserved.
 
 ## Review Swiss rounds, challenges and timed runs
 

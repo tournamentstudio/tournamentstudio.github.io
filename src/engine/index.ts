@@ -42,6 +42,8 @@ import {
 } from "../domain/ladder";
 import { hillRound, ladderOrder, refreshLadderState } from "./ladder-state";
 import { DRAW_ALGORITHM, shuffle } from "./random";
+import { generatedGroupLabel } from "../domain/group-labels";
+import { prepareGroupLabels } from "./group-labels";
 
 export { formats, getStandings, previewAdvancement };
 export { previewGroupDraw };
@@ -97,6 +99,11 @@ function validateConfig(stage: Stage, count: number): void {
   if (!format) throw new Error("This competition format is not supported.");
   if (stage.formatVersion !== 1)
     throw new Error("The stage requires a different format version.");
+  if (
+    stage.config.groupLabelVersion !== undefined &&
+    stage.config.groupLabelVersion !== 1
+  )
+    throw new Error("The stage requires a different group label version.");
   if (
     stage.config.fullPlacement &&
     !["single-elimination", "double-elimination"].includes(stage.format)
@@ -177,6 +184,19 @@ export function generateStage(input: Tournament, stageId: string): Tournament {
   );
   if (ids.length !== stage.participantIds.length) stage.participantIds = ids;
   validateConfig(stage, ids.length);
+  prepareGroupLabels(
+    tournament,
+    stage,
+    stage.format === "groups"
+      ? Array.isArray(stage.config.groups)
+        ? stage.config.groups.length
+        : stage.config.groupCount
+      : stage.format === "gsl"
+        ? ids.length / 4
+        : stage.format === "free-for-all"
+          ? Math.ceil(ids.length / stage.config.capacity)
+          : 0,
+  );
   const seeds = new Map(
     tournament.participants.map((participant) => [
       participant.id,
@@ -247,7 +267,7 @@ export function generateStage(input: Tournament, stageId: string): Tournament {
       stage.format === "gsl"
         ? gsl(stage, groups)
         : groups.flatMap((group, index) => {
-            const name = String.fromCharCode(65 + index);
+            const name = generatedGroupLabel(stage, index);
             return group.length === 1
               ? [
                   newMatch(stage, 1, 0, [entrant(group[0]), entrant()], {
@@ -293,7 +313,7 @@ export function generateStage(input: Tournament, stageId: string): Tournament {
         matches.push(
           newMatch(stage, round, index, group.map(entrant), {
             group:
-              groups.length > 1 ? String.fromCharCode(65 + index) : undefined,
+              groups.length > 1 ? generatedGroupLabel(stage, index) : undefined,
           }),
         ),
       );

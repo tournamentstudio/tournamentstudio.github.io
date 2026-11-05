@@ -24,8 +24,8 @@ succeeded.
 | Irregular knockout sizes | Implemented | Tested with 3, 7, 13, 24, 31, 127 and other sizes through 512. |
 | Double elimination | Implemented | Connected winners and losers brackets, correct winner-bracket drops, grand final and optional reset when the lower-bracket finalist wins. |
 | Three-loss elimination | Implemented | Named `progressive-three-loss-v1` policy. Dynamic rounds pair by losses and seed; a third loss eliminates an entrant. This is not a claim of one universal triple-elimination bracket convention. |
-| Round robin | Implemented | Circle-method pairings for odd and even counts, repeated meetings, alternating slot order for home/away. Standalone format is capped at 128 entrants. |
-| Groups and pools | Implemented | Balanced snake distribution, uneven groups, round robin within each group, group standings, configurable qualifiers per group. |
+| Round robin | Implemented | One table using circle-method pairings for odd and even counts, 1 to 12 meetings per pair, alternating slot order for home/away. Standalone format is capped at 128 entrants; use Groups & pools for separate tables. |
+| Groups and pools | Implemented | Balanced snake distribution, uneven groups, round robin within each group, isolated group standings and configurable qualifiers per group. New group labels continue from Z to AA; older saved identifiers remain readable. Manual composition fixes the group count until automatic composition is restored. |
 | GSL groups | Implemented | Groups of exactly four with openers, winners match, elimination match and qualification decider. Field size must be divisible by four. |
 | Swiss | Implemented | Score-ordered deterministic pairing, no rematches, fresh BYEs, side preferences, optional standalone late entries with explicit missed-round credits, and a validated editor for the latest unplayed round. Pairing failures are reported. |
 | Swiss acceleration | Implemented | Named fixed-group-v1 policy assigns virtual pairing points to an explicit starting group for opening rounds. The group and bonus lock after drawing; official points, tie-breaks and bye order stay unchanged. Recipes remap group identities. |
@@ -98,7 +98,7 @@ chosen scoring model does not require them.
 
 | Capability | Status | Actual behavior |
 | --- | --- | --- |
-| Account-free creation | Implemented | Three-step flow with title, sport, entrants, format and theme; generates an editable draw. |
+| Account-free creation | Implemented | Three-step flow with title, sport, entrants, format and theme; generates an editable draw. Whole-number counts and format limits are checked before continuing. Pasted lists display their effective count; blank or invalid drafts remain editable without silent rounding. |
 | Advanced builder | Implemented | Stage connections and policies, groups, seed pots, restrictions, protected slots, scoring, qualification, scheduling, privacy and presentation have workspace editors. Supported policies and bounds are listed by capability below. |
 | Format Advisor | Implemented | Compares six format structures against time, resources, entrant count and minimum games. Group/Swiss playoff recommendations prefill count, rounds, groups, qualifier count, match duration and resources in the builder. Estimates state their assumptions. |
 | Participant entry | Implemented | Manual editing and bulk name paste, duplicate detection, Unicode names, seeds, organizations and participation status. |

@@ -56,7 +56,7 @@ export function advisorPlans(
   );
   const groupQualifiers = Math.min(2, Math.min(...groups));
   const largestGroup = Math.max(...groups);
-  return [
+  const options: AdvisorOption[] = [
     {
       id: "single",
       plan: { ...base, format: "single-elimination" },
@@ -110,4 +110,5 @@ export function advisorPlans(
       rounds: rounds + Math.ceil(Math.log2(qualifierCount)),
     },
   ];
+  return options.filter((option) => option.id !== "league" || count <= 128);
 }

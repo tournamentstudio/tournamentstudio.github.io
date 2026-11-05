@@ -3,6 +3,9 @@ import AxeBuilder from "@axe-core/playwright";
 import { createParticipant, createTournament } from "../../src/domain/types";
 import { generateStage } from "../../src/engine";
 import { autoSchedule } from "../../src/scheduling";
+
+test.use({ timezoneId: "America/Los_Angeles" });
+
 test("reviews each leg booking, persists changes and fits Persian mobile", async ({
   page,
 }, info) => {
@@ -11,7 +14,8 @@ test("reviews each leg booking, persists changes and fits Persian mobile", async
     createParticipant("آسمان B", 2),
   ]);
   t.stages[0].config.aggregate = { version: 1, legs: 2, tieBreak: "manual" };
-  t.schedule.startAt = "2027-01-01T10:00:00";
+  t.timezone = "America/Los_Angeles";
+  t.schedule.startAt = "2027-01-01T10:00:00-08:00";
   t = autoSchedule(generateStage(t, t.stages[0].id));
   await page.goto("/");
   await page

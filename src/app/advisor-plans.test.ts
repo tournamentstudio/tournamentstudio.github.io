@@ -3,6 +3,19 @@ import fc from "fast-check";
 import { advisorPlans } from "./advisor-plans";
 
 describe("builder-ready format advice", () => {
+  it("only offers standalone round robin within its participant limit", () => {
+    expect(
+      advisorPlans(128, 15, 2).some((option) => option.id === "league"),
+    ).toBe(true);
+    for (const count of [129, 256, 512]) {
+      const options = advisorPlans(count, 15, 2);
+      expect(options.some((option) => option.id === "league")).toBe(false);
+      expect(options.some((option) => option.id === "groups-finals")).toBe(
+        true,
+      );
+      expect(options.every((option) => option.plan.count === count)).toBe(true);
+    }
+  });
   it("prefills 18 entrants in four uneven groups with eight playoff qualifiers", () => {
     const option = advisorPlans(18, 20, 3).find(
       (item) => item.id === "groups-finals",

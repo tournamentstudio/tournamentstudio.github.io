@@ -4,6 +4,17 @@ TournaStudio stores and transfers versioned JSON documents. The domain contract 
 
 ## Tournament document
 
+New stage configurations set `groupLabelVersion: 1`. Generated groups and heats
+use A through Z, then AA, AB and onward. The marker is retained in public
+snapshots and recipes. An absent marker preserves the original single-character
+scheme and existing references. If generating an unplayed legacy stage would
+produce invalid match identifiers, generation upgrades that copy and remaps
+dependent exact-position and wildcard group references by index. Existing played
+and dependent-draw guards run first. Outgoing match-result connections, including
+references to future matches, must be removed before this upgrade. This never
+rewrites a saved played draw.
+Unknown group-label versions are rejected without changing the input.
+
 The first public schema is version `1`. A document has a stable `id`, integer `revision`, `revisionHash`, creation and modification timestamps, locale, timezone, sport, status, participants, stages, matches, scoring rules, theme, presentation, schedule, metadata, and audit history.
 
 Entrants can be individuals or teams with rosters. Match slots contain an entrant ID, a winner or loser reference to an earlier match, or an empty place awaiting qualification. A match can contain more than two entrants. Results contain scores, winner IDs, an outcome, a timestamp, and optional sets, placements, metric evidence, fair-play sanctions and aggregate legs. Optional `liveScores` publish current totals without disclosing the private hand log; their length must match the slot count.

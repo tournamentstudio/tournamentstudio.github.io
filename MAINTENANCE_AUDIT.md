@@ -194,3 +194,54 @@ words. The other 114 cases passed. All 36 affected export and long-text cases
 then passed across Chromium, Firefox and WebKit, including an added horizontal
 overflow check on the presentation's inner scroll region. Corrected home card,
 theme preview, podium and poster screenshots were inspected.
+
+## Participant count and round-robin review, November 5, 2026
+
+The reported count issue was reproduced: entering 2.5 showed that fractional
+count in the creation review, then saved two entrants because array creation
+truncated it. Clearing the count also replaced the editable blank with zero,
+and a pasted list left the disabled count field showing an unrelated earlier
+value. Creator and advisor drafts now preserve input while editing, require
+whole counts before continuing, and show the actual pasted-list count. The
+creator checks the selected format's limit, and the advisor no longer offers
+standalone round robin above its 128-entrant cap.
+
+Reducing the entrant count adjusts group and Swiss defaults after editing.
+Switching from Swiss to Groups or GSL discards the hidden rounds draft for
+generation, so an earlier invalid rounds value cannot block the new format.
+
+Ordinary round-robin pairing and per-group standings did not reproduce a math
+defect. The unchanged baseline passed browser checks for seven entrants in
+three groups and eighteen in four, including scoring and reload. Added engine
+checks cover repeated pairings, round occupancy, singleton BYEs and standings
+isolation. Three settings defects were reproduced: the generic Groups input
+had no effect in standalone round robin or GSL, and remained editable while
+manual composition overrode it. The inspector now describes those policies and
+offers group-count editing only where it takes effect.
+
+The editor and engine supported 11 or 12 meetings, but the saved-document schema
+rejected them above ten. Four baseline save/import cases failed before the
+schema limit was aligned to twelve; invalid counts remain rejected.
+
+Labels after the 26th group used single character codes. They became punctuation
+and later control characters, preventing large valid draws from being saved.
+New stages use versioned alphabetic labels, including AA and DX. Stored legacy
+identifiers and qualification references retain their meaning. An unsafe legacy
+draft can upgrade during generation, with exact-position and wildcard references
+remapped by group index. Played draws, generated descendants and outgoing
+match-result connections prevent that upgrade. The last guard includes references
+to future matches; its regression first reproduced a stale-reference defect.
+The release handoff records the final test runs and publication checks.
+
+The full browser run also found six older scheduling cases whose fixtures used
+timestamps without offsets. Import correctly stopped for the backup timezone
+review, so those tests never reached their scheduling assertions. The fixtures
+now declare their Los Angeles timezone and UTC offset; the browser timezone is
+pinned to match their wall-clock expectations. The separate legacy-backup tests
+continue to exercise the explicit import review.
+
+The Dutch Swiss reset fixture also called the synchronous pairing engine before
+loading it. It now awaits the existing engine loader before creating its input.
+All eighteen scheduling runs and six Swiss reset runs passed across Chromium,
+Firefox and WebKit after these fixture corrections; no app behavior was changed
+to bypass either requirement.

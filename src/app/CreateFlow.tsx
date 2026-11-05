@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -30,6 +30,7 @@ import "./game-experience.css";
 import { Field, ErrorText, Notice } from "../components/ui";
 import { useI18n, formatName } from "../i18n";
 import type { AdvisorPlan } from "./advisor-plans";
+import { parseParticipantCount } from "./participant-count";
 
 export function CreateFlow({
   template,
@@ -63,9 +64,16 @@ export function CreateFlow({
           ? "groups"
           : "single-elimination"),
   );
-  const [count, setCount] = useState(
-    initialPlan?.count ?? (template === "football" ? 16 : 8),
+  const [countInput, setCountInput] = useState(
+    String(initialPlan?.count ?? (template === "football" ? 16 : 8)),
   );
+  const countErrorId = useId(),
+    groupErrorId = useId(),
+    roundsErrorId = useId();
+  const countField = useRef<HTMLInputElement>(null);
+  const namesField = useRef<HTMLTextAreaElement>(null);
+  const groupField = useRef<HTMLInputElement>(null);
+  const roundsField = useRef<HTMLInputElement>(null);
   const [playoffs, setPlayoffs] = useState(
     initialPlan?.playoffs ??
       (template === "football" || template === "gol-ya-pooch"),
@@ -75,9 +83,10 @@ export function CreateFlow({
     () =>
       sports.find((preset) => preset.id === template)?.theme ?? "minimal-light",
   );
-  const [groups, setGroups] = useState(
-    initialPlan?.groupCount ?? (template === "gol-ya-pooch" ? 2 : 4),
+  const [groupInput, setGroupInput] = useState(
+    String(initialPlan?.groupCount ?? (template === "gol-ya-pooch" ? 2 : 4)),
   );
+  const groups = Number(groupInput);
   const [rounds, setRounds] = useState(initialPlan?.rounds ?? 5);
   const [advanced, setAdvanced] = useState(false);
   const [seed, setSeed] = useState("tournastudio-2026");
@@ -105,7 +114,65 @@ export function CreateFlow({
     .split(/\r?\n/)
     .map((x) => x.trim())
     .filter(Boolean);
-  const actualCount = participantNames.length || count;
+  const actualCount = parseParticipantCount(
+    participantNames.length ? String(participantNames.length) : countInput,
+  );
+  const formatLimit = formats.find(
+    (entry) => entry.id === format,
+  )!.maxParticipants;
+  const maxGroups = actualCount ? Math.min(128, actualCount) : 1;
+  const maxRounds =
+    format === "swiss" && actualCount
+      ? Math.min(30, actualCount - (actualCount % 2 === 0 ? 1 : 0))
+      : 30;
+  const countError =
+    actualCount === undefined
+      ? t(
+          "Enter a whole number from 2 to 512, or provide that many participant names.",
+          "یک عدد صحیح از ۲ تا ۵۱۲ وارد کنید یا به همان تعداد نام شرکت‌کننده بنویسید.",
+        )
+      : actualCount > formatLimit
+        ? t(
+            "Round robin supports at most 128 participants. Choose groups and pools for a larger field.",
+            "قالب دوره‌ای حداکثر ۱۲۸ شرکت‌کننده دارد. برای تعداد بیشتر، قالب گروه‌ها را انتخاب کنید.",
+          )
+        : format === "gsl" && actualCount % 4 !== 0
+          ? t(
+              "GSL uses groups of four. Enter a participant count divisible by four.",
+              "گروه‌های GSL چهارنفره هستند. تعداد شرکت‌کنندگان باید مضرب چهار باشد.",
+            )
+          : undefined;
+  const groupError =
+    format === "groups" &&
+    actualCount !== undefined &&
+    (!Number.isInteger(groups) || groups < 1 || groups > maxGroups)
+      ? t(
+          `Enter a whole number from 1 to ${maxGroups} for groups.`,
+          `تعداد گروه‌ها باید عدد صحیح از ۱ تا ${maxGroups.toLocaleString("fa-IR")} باشد.`,
+        )
+      : undefined;
+  const roundsError =
+    !["groups", "gsl"].includes(format) &&
+    (!Number.isInteger(rounds) || rounds < 1 || rounds > maxRounds)
+      ? t(
+          `Enter a whole number from 1 to ${maxRounds} for rounds.`,
+          `تعداد دورها باید عدد صحیح از ۱ تا ${maxRounds.toLocaleString("fa-IR")} باشد.`,
+        )
+      : undefined;
+  const configurationError = countError ?? groupError ?? roundsError;
+  function adjustDefaults(nextCount: number | undefined, nextFormat = format) {
+    if (nextCount === undefined) return;
+    setGroupInput((current) =>
+      Number(current) > Math.min(128, nextCount)
+        ? String(Math.min(128, Math.floor(nextCount / 2)))
+        : current,
+    );
+    if (nextFormat === "swiss") {
+      setRounds((current) =>
+        Math.min(current, nextCount - (nextCount % 2 === 0 ? 1 : 0)),
+      );
+    }
+  }
   const relatedThemes = getThemesForSport(sport);
   async function submit() {
     setError(undefined);
@@ -115,13 +182,8 @@ export function CreateFlow({
         throw new Error(
           t("Give your tournament a title.", "عنوان مسابقات را وارد کنید."),
         );
-      if (actualCount < 2 || actualCount > 512)
-        throw new Error(
-          t(
-            "Choose between 2 and 512 participants.",
-            "تعداد شرکت‌کنندگان باید بین ۲ و ۵۱۲ باشد.",
-          ),
-        );
+      if (configurationError || actualCount === undefined)
+        throw new Error(configurationError);
       if (
         new Set(
           participantNames.map((n) => n.normalize("NFKC").toLocaleLowerCase()),
@@ -144,7 +206,7 @@ export function CreateFlow({
         participantNames.length
           ? participantNames
           : Array.from(
-              { length: count },
+              { length: actualCount },
               (_, i) => `${t("Team", "تیم")} ${i + 1}`,
             )
       ).map((name, i) => createParticipant(name, i + 1));
@@ -171,8 +233,16 @@ export function CreateFlow({
       doc.stages[0].name = t("Main stage", "مرحله اصلی");
       doc.stages[0].config = {
         ...doc.stages[0].config,
-        groupCount: groups,
-        rounds,
+        groupCount:
+          format === "groups"
+            ? groups
+            : format === "gsl"
+              ? actualCount / 4
+              : DEFAULT_CONFIG.groupCount,
+        rounds:
+          format === "groups" || format === "gsl"
+            ? DEFAULT_CONFIG.rounds
+            : rounds,
         seed,
         seeding: random ? "random" : "ranked",
       };
@@ -387,7 +457,11 @@ export function CreateFlow({
               <Field label={t("Competition format", "قالب مسابقات")}>
                 <select
                   value={format}
-                  onChange={(e) => setFormat(e.target.value as FormatId)}
+                  onChange={(e) => {
+                    const next = e.target.value as FormatId;
+                    setFormat(next);
+                    adjustDefaults(actualCount, next);
+                  }}
                 >
                   {formats.map((f) => (
                     <option key={f.id} value={f.id}>
@@ -410,27 +484,49 @@ export function CreateFlow({
                 </label>
               )}
               <div className="two-columns">
-                <Field label={t("Participant count", "تعداد شرکت‌کنندگان")}>
+                <Field
+                  label={t("Participant count", "تعداد شرکت‌کنندگان")}
+                  hint={
+                    participantNames.length
+                      ? t(
+                          "Calculated from the names below. Clear the list to use a numbered count again.",
+                          "از نام‌های زیر محاسبه می‌شود. برای استفاده دوباره از تعداد عددی، فهرست را پاک کنید.",
+                        )
+                      : undefined
+                  }
+                >
                   <input
+                    ref={countField}
                     type="number"
                     min={2}
-                    max={512}
-                    value={count}
-                    onChange={(e) => setCount(Number(e.target.value))}
+                    max={formatLimit}
+                    step={1}
+                    value={
+                      participantNames.length
+                        ? String(participantNames.length)
+                        : countInput
+                    }
+                    aria-invalid={!!countError}
+                    aria-describedby={countError ? countErrorId : undefined}
+                    onChange={(e) => setCountInput(e.target.value)}
+                    onBlur={() => adjustDefaults(actualCount)}
                     disabled={!!participantNames.length}
                   />
                 </Field>
-                {format === "groups" || format === "gsl" ? (
+                {format === "groups" ? (
                   <Field label={t("Number of groups", "تعداد گروه‌ها")}>
                     <input
+                      ref={groupField}
                       type="number"
                       min={1}
-                      max={Math.floor(actualCount / 2)}
-                      value={groups}
-                      onChange={(e) => setGroups(Number(e.target.value))}
+                      max={maxGroups}
+                      value={groupInput}
+                      aria-invalid={!!groupError}
+                      aria-describedby={groupError ? groupErrorId : undefined}
+                      onChange={(e) => setGroupInput(e.target.value)}
                     />
                   </Field>
-                ) : (
+                ) : format !== "gsl" ? (
                   <Field
                     label={t(
                       "Rounds for Swiss / circuits",
@@ -438,15 +534,40 @@ export function CreateFlow({
                     )}
                   >
                     <input
+                      ref={roundsField}
                       type="number"
                       min={1}
-                      max={30}
+                      max={maxRounds}
                       value={rounds}
+                      aria-invalid={!!roundsError}
+                      aria-describedby={roundsError ? roundsErrorId : undefined}
                       onChange={(e) => setRounds(Number(e.target.value))}
                     />
                   </Field>
+                ) : (
+                  <Notice>
+                    {t(
+                      "GSL creates one group for every four entrants.",
+                      "در GSL به ازای هر چهار شرکت‌کننده یک گروه ساخته می‌شود.",
+                    )}
+                  </Notice>
                 )}
               </div>
+              {countError && (
+                <div id={countErrorId}>
+                  <Notice danger>{countError}</Notice>
+                </div>
+              )}
+              {groupError && (
+                <div id={groupErrorId}>
+                  <Notice danger>{groupError}</Notice>
+                </div>
+              )}
+              {roundsError && (
+                <div id={roundsErrorId}>
+                  <Notice danger>{roundsError}</Notice>
+                </div>
+              )}
               <Field
                 label={t(
                   "Or paste names, one per line",
@@ -458,6 +579,7 @@ export function CreateFlow({
                 )}
               >
                 <textarea
+                  ref={namesField}
                   dir="auto"
                   rows={5}
                   placeholder={t(
@@ -465,7 +587,14 @@ export function CreateFlow({
                     "ستاره شمال\nاتحاد اطلس\nخورشید",
                   )}
                   value={names}
+                  aria-invalid={!!participantNames.length && !!countError}
+                  aria-describedby={
+                    participantNames.length && countError
+                      ? countErrorId
+                      : undefined
+                  }
                   onChange={(e) => setNames(e.target.value)}
+                  onBlur={() => adjustDefaults(actualCount)}
                 />
               </Field>
               {advanced && (
@@ -491,8 +620,17 @@ export function CreateFlow({
               )}
               <div className="inline-metric">
                 <Users size={18} />
-                <b>{actualCount}</b>
-                {t("participants in your draw", "شرکت‌کننده در قرعه شما")}
+                {actualCount === undefined ? (
+                  t(
+                    "Enter a valid participant count.",
+                    "تعداد معتبر شرکت‌کنندگان را وارد کنید.",
+                  )
+                ) : (
+                  <>
+                    <b>{actualCount}</b>
+                    {t("participants in your draw", "شرکت‌کننده در قرعه شما")}
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -624,7 +762,19 @@ export function CreateFlow({
               <button
                 className="button primary"
                 disabled={step === 0 && !title.trim()}
-                onClick={() => setStep(step + 1)}
+                onClick={() => {
+                  if (step === 1 && configurationError) {
+                    if (countError)
+                      (participantNames.length
+                        ? namesField
+                        : countField
+                      ).current?.focus();
+                    else if (groupError) groupField.current?.focus();
+                    else roundsField.current?.focus();
+                    return;
+                  }
+                  setStep(step + 1);
+                }}
               >
                 {t("Continue", "ادامه")}
                 <ArrowRight size={17} />

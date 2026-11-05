@@ -157,6 +157,22 @@ export function StageSettings({
           ))}
         </select>
       </Field>
+      {stage.format === "round-robin" && (
+        <p className="muted">
+          {t(
+            "Round robin uses one field of entrants. Every pair meets the configured number of times. Choose Groups & pools for separate round-robin groups.",
+            "در قالب دوره‌ای، همه شرکت‌کنندگان در یک جدول هستند و هر دو شرکت‌کننده به تعداد تعیین‌شده روبه‌رو می‌شوند. برای برگزاری دوره‌ای در گروه‌های جدا، قالب گروه‌ها را انتخاب کنید.",
+          )}
+        </p>
+      )}
+      {stage.format === "gsl" && (
+        <p className="muted">
+          {t(
+            "GSL uses groups of exactly four entrants. The entrant count determines the number of groups.",
+            "هر گروه GSL دقیقاً چهار شرکت‌کننده دارد. تعداد گروه‌ها از تعداد شرکت‌کنندگان به دست می‌آید.",
+          )}
+        </p>
+      )}
       {!!stage.config.draw && (
         <p className="muted">
           {t(
@@ -207,23 +223,41 @@ export function StageSettings({
             ["rounds", t("Rounds", "دورها"), 1, 100],
             ["capacity", t("Match capacity", "ظرفیت دیدار"), 2, 512],
           ] as const
-        ).map(([key, label, min, max]) => (
-          <Field key={key} label={label}>
-            <input
-              type="number"
-              disabled={locked || hasDraft}
-              min={min}
-              max={max}
-              value={stage.config[key]}
-              onChange={(event) => {
-                const value = Number(event.target.value);
-                if (Number.isInteger(value) && value >= min && value <= max)
-                  onEdit({ config: { ...stage.config, [key]: value } });
-              }}
-            />
-          </Field>
-        ))}
+        )
+          .filter(([key]) => key !== "groupCount" || stage.format === "groups")
+          .map(([key, label, min, max]) => (
+            <Field key={key} label={label}>
+              <input
+                type="number"
+                disabled={
+                  locked ||
+                  hasDraft ||
+                  (key === "groupCount" && Array.isArray(stage.config.groups))
+                }
+                min={min}
+                max={max}
+                value={
+                  key === "groupCount" && Array.isArray(stage.config.groups)
+                    ? stage.config.groups.length
+                    : stage.config[key]
+                }
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  if (Number.isInteger(value) && value >= min && value <= max)
+                    onEdit({ config: { ...stage.config, [key]: value } });
+                }}
+              />
+            </Field>
+          ))}
       </div>
+      {stage.format === "groups" && Array.isArray(stage.config.groups) && (
+        <p className="muted">
+          {t(
+            "Manual group composition fixes the group count. Restore automatic group composition before changing this count.",
+            "در چیدمان دستی، تعداد گروه‌ها از گروه‌های تعیین‌شده به دست می‌آید. برای تغییر این تعداد، ابتدا چیدمان خودکار گروه‌ها را بازگردانید.",
+          )}
+        </p>
+      )}
       <Field label={t("Draw seed", "بذر قرعه")}>
         <input
           disabled={locked || hasDraft}

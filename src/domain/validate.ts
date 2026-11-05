@@ -158,8 +158,9 @@ export const participantSchema = z
 
 export const stageConfigSchema = z
   .object({
+    groupLabelVersion: z.literal(1).optional(),
     groupCount: positive.max(512),
-    meetings: positive.max(10),
+    meetings: positive.max(12),
     rounds: positive.max(1000),
     advanceCount: positive.max(512),
     capacity: positive.max(512),

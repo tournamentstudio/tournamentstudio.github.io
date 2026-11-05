@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { generatedGroupLabel } from "../../domain/group-labels";
 import { Check, Eye, Layers, Plus, RotateCcw } from "lucide-react";
 import {
   type GroupDrawConfig,
@@ -331,11 +332,11 @@ export function GroupDrawEditor({
               <section
                 className="draw-preview-group"
                 key={index}
-                aria-label={`${t("Group", "گروه")} ${String.fromCharCode(65 + index)}`}
+                aria-label={`${t("Group", "گروه")} ${generatedGroupLabel(stage, index)}`}
               >
                 <h5>
                   {t("Group", "گروه")}{" "}
-                  <bdi>{String.fromCharCode(65 + index)}</bdi>
+                  <bdi>{generatedGroupLabel(stage, index)}</bdi>
                   <span>{group.length.toLocaleString(locale)}</span>
                 </h5>
                 <ol>
