@@ -20,6 +20,8 @@ import { AdvancedSceneContent, type AdvancedScene } from "./advanced-scenes";
 import { BroadcastOverlay } from "./BroadcastOverlay";
 import { generatedMatchLabel } from "../i18n/match-labels";
 import { GameIcon } from "../themes/GameIcon";
+import { GameScene } from "../themes/GameScene";
+import "./competition-moments.css";
 
 export const sceneTypes: { id: SceneType; en: string; fa: string }[] = [
   {
@@ -123,7 +125,10 @@ function Scoreboard({
     match.result?.scores[index] ??
     0;
   return (
-    <div className="live-scoreboard" data-testid="presentation-scoreboard">
+    <div
+      className="live-scoreboard competition-scorecard"
+      data-testid="presentation-scoreboard"
+    >
       <p className="sr-only" role="status" aria-atomic="true">
         {t("Scoreboard", "تابلو امتیاز")}: {t("Round", "دور")}{" "}
         {match.round.toLocaleString(locale)}.{" "}
@@ -160,7 +165,7 @@ function Scoreboard({
               <h2>
                 <bdi>{names[i]}</bdi>
               </h2>
-              <strong>
+              <strong className="scorecard-value">
                 {tournament.presentation.showScores
                   ? visibleScore(i).toLocaleString(locale)
                   : "·"}
@@ -257,34 +262,40 @@ function SceneContent({
   switch (scene.type) {
     case "title":
       return (
-        <div className="presentation-title-scene">
-          {tournament.theme.logo ? (
-            <img
-              className="presentation-event-logo"
-              src={tournament.theme.logo}
-              alt=""
-            />
-          ) : (
-            <GameIcon
-              sport={tournament.sport}
-              size={128}
-              className="presentation-game-icon"
-            />
-          )}
-          <p className="presentation-kicker">
-            {scene.title || t("THE COMPETITION BEGINS", "آغاز رقابت")}
-          </p>
-          <h1>{tournament.title}</h1>
-          <p className="presentation-subtitle">
-            {scene.text || tournament.subtitle}
-          </p>
-          <span className="presentation-divider" />
-          <p>
-            {tournament.participants.length.toLocaleString(locale)}{" "}
-            {t("participants", "شرکت‌کننده")} ·{" "}
-            {tournament.stages.length.toLocaleString(locale)}{" "}
-            {t("stages", "مرحله")}
-          </p>
+        <div className="presentation-title-scene presentation-program">
+          <div className="presentation-program-copy">
+            {tournament.theme.logo && (
+              <img
+                className="presentation-event-logo"
+                src={tournament.theme.logo}
+                alt=""
+              />
+            )}
+            <p className="presentation-kicker">
+              {scene.title && scene.title.trim() !== tournament.title.trim()
+                ? scene.title
+                : t("THE COMPETITION BEGINS", "آغاز رقابت")}
+            </p>
+            <h1>
+              <bdi>{tournament.title}</bdi>
+            </h1>
+            <p className="presentation-subtitle">
+              {scene.text || tournament.subtitle}
+            </p>
+            <dl className="presentation-program-facts">
+              <div>
+                <dt>{t("Participants", "شرکت‌کنندگان")}</dt>
+                <dd>{tournament.participants.length.toLocaleString(locale)}</dd>
+              </div>
+              <div>
+                <dt>{t("Stages", "مرحله‌ها")}</dt>
+                <dd>{tournament.stages.length.toLocaleString(locale)}</dd>
+              </div>
+            </dl>
+          </div>
+          <div className="presentation-program-art" aria-hidden="true">
+            <GameScene sport={tournament.sport} />
+          </div>
         </div>
       );
     case "participants":
@@ -333,20 +344,41 @@ function SceneContent({
       );
     case "results":
       return (
-        <div className="presentation-result-list">
+        <div className="competition-results">
           {completed.length ? (
             completed
               .slice(-6)
               .reverse()
               .map((m) => (
-                <div key={m.id}>
-                  <span>{matchNames(tournament, m, locale).join(" / ")}</span>
-                  <strong>
-                    {m.result?.scores
-                      .map((s) => s.toLocaleString(locale))
-                      .join(" : ")}
-                  </strong>
-                </div>
+                <article className="competition-result" key={m.id}>
+                  <p className="competition-result-label">
+                    {generatedMatchLabel(m, locale)}
+                  </p>
+                  <div className="competition-result-entrants">
+                    {matchNames(tournament, m, locale).map((name, index) => (
+                      <div
+                        key={index}
+                        className={
+                          m.result?.winnerIds.includes(
+                            m.slots[index]?.participantId ?? "",
+                          )
+                            ? "competition-result-winner"
+                            : ""
+                        }
+                      >
+                        <span>
+                          <bdi>{name}</bdi>
+                        </span>
+                        {tournament.presentation.showScores && (
+                          <strong>
+                            {m.result?.scores[index]?.toLocaleString(locale) ??
+                              "·"}
+                          </strong>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </article>
               ))
           ) : (
             <p>
@@ -466,20 +498,36 @@ function SceneContent({
       const first = podiumPlaces(tournament).find((p) => p.rank === 1);
       const champion = first && !first.tied ? first.participantId : undefined;
       return (
-        <div className="presentation-title-scene">
-          <div className="champion-mark" aria-hidden="true">
-            {(1).toLocaleString(locale)}
-          </div>
-          <p className="presentation-kicker">{t("CHAMPION", "قهرمان")}</p>
-          <h1>
-            {champion
-              ? names.get(champion)
-              : t(
+        <div
+          className={`presentation-title-scene presentation-program competition-champion ${champion ? "is-decided" : "is-pending"}`}
+        >
+          <div className="presentation-program-copy">
+            <p className="presentation-kicker">{t("CHAMPION", "قهرمان")}</p>
+            <h1>
+              {champion ? (
+                <bdi>{names.get(champion)}</bdi>
+              ) : (
+                t(
                   "A champion is yet to be crowned",
                   "قهرمان هنوز مشخص نشده است",
-                )}
-          </h1>
-          <p>{scene.text}</p>
+                )
+              )}
+            </h1>
+            <p className="competition-champion-event">
+              <bdi>{tournament.title}</bdi>
+            </p>
+            {scene.text && (
+              <p className="presentation-subtitle">{scene.text}</p>
+            )}
+          </div>
+          <div className="presentation-program-art" aria-hidden="true">
+            <GameScene sport={tournament.sport} />
+            {champion && (
+              <span className="competition-champion-place">
+                {(1).toLocaleString(locale)}
+              </span>
+            )}
+          </div>
         </div>
       );
     }
@@ -672,7 +720,13 @@ export function Presentation({
         }
       }}
       className={`presentation-shell themed ${safe.presentation.overlay?.enabled ? "broadcast-shell" : ""} ${safe.theme.reducedMotion ? "motion-reduced" : ""}`}
-      style={themeStyle(safe.theme)}
+      style={{
+        ...themeStyle(safe.theme),
+        ...(["title", "champion"].includes(scene.type) &&
+        !safe.presentation.overlay?.enabled
+          ? { "--theme-art": "none" }
+          : {}),
+      }}
       data-pattern={getTheme(safe.theme.preset).pattern}
       dir={locale === "fa" ? "rtl" : "ltr"}
     >

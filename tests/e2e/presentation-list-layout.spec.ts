@@ -99,24 +99,22 @@ for (const locale of ["en", "fa"] as const)
       );
       for (const [index, selector] of [
         ".presentation-team-list",
-        ".presentation-result-list",
+        ".competition-results",
         ".presentation-result-list",
       ].entries()) {
         const list = display.locator(selector);
         await expect(list).toBeVisible();
         for (const name of names) await expect(list).toContainText(name);
         if (index === 0) await expect(list.locator("bdi")).toHaveText(names);
-        if (index === 1)
-          await expect(list.locator("strong")).toHaveText(
-            doc.matches
-              .slice()
-              .reverse()
-              .map((match) =>
-                match
-                  .result!.scores.map((score) => score.toLocaleString(active))
-                  .join(" : "),
-              ),
-          );
+        if (index === 1) {
+          const results = list.locator(".competition-result");
+          const matches = doc.matches.slice().reverse();
+          await expect(results).toHaveCount(matches.length);
+          for (const [resultIndex, match] of matches.entries())
+            await expect(results.nth(resultIndex).locator("strong")).toHaveText(
+              match.result!.scores.map((score) => score.toLocaleString(active)),
+            );
+        }
         if (index === 2)
           await expect(list.locator("small")).toHaveText(
             doc.matches.map(() => doc.schedule.resources[0].name),
@@ -124,6 +122,22 @@ for (const locale of ["en", "fa"] as const)
         await page.evaluate(() => document.fonts.ready);
         for (const width of [320, 1280]) {
           await page.setViewportSize({ width, height: 900 });
+          if (index === 1) {
+            const wrappedScores = await list
+              .locator("strong")
+              .evaluateAll((scores) =>
+                scores
+                  .filter(
+                    (score) =>
+                      score.getBoundingClientRect().height >
+                      parseFloat(getComputedStyle(score).lineHeight) + 1,
+                  )
+                  .map((score) => score.textContent),
+              );
+            expect(wrappedScores, "Nine-digit scores stay on one line").toEqual(
+              [],
+            );
+          }
           const overflow = await list.evaluate((list) => {
             const failures: string[] = [];
             const listBox = list.getBoundingClientRect();
@@ -140,6 +154,21 @@ for (const locale of ["en", "fa"] as const)
                   failures.push(
                     `Card ${index} content extends beyond the card: ${child.tagName}`,
                   );
+              }
+              for (const row of card.querySelectorAll(
+                ".competition-result-entrants > div",
+              )) {
+                const rowBox = row.getBoundingClientRect();
+                for (const child of row.children) {
+                  const content = child.getBoundingClientRect();
+                  if (
+                    content.left < rowBox.left - 1 ||
+                    content.right > rowBox.right + 1
+                  )
+                    failures.push(
+                      `Card ${index} entrant content extends beyond its row: ${child.tagName}`,
+                    );
+                }
               }
             }
             return failures;

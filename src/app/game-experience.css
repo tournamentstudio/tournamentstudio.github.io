@@ -29,8 +29,13 @@
 }
 .game-workspace .game-overview {
   border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
-  border-radius: var(--theme-radius);
+  border-radius: 0;
+  border-inline: 0;
+  border-top: 2px solid var(--theme-accent);
   min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px;
+  gap: 24px;
   align-items: center;
   padding: 20px 24px;
   background-image: none;
@@ -47,18 +52,20 @@
 .game-overview .overview-emblem {
   background: none;
   color: var(--theme-accent);
-  width: 72px;
-  min-width: 72px;
+  width: 190px;
+  min-width: 0;
+  --scene-paper: var(--theme-bg);
 }
 .game-overview .overview-emblem svg {
   width: 100%;
   height: auto;
+  max-height: 100px;
 }
 .game-workspace .match-tile {
   background: var(--theme-card);
   color: var(--theme-fg);
   border-color: color-mix(in srgb, var(--theme-fg) 22%, transparent);
-  border-radius: var(--theme-radius);
+  border-radius: min(var(--theme-radius), 6px);
   font-family: var(--theme-font);
   box-shadow: none;
 }
@@ -202,9 +209,29 @@
 @media (max-width: 600px) {
   .game-workspace .game-overview {
     padding: 18px;
+    grid-template-columns: minmax(0, 1fr);
   }
   .game-overview .overview-emblem {
     display: none;
+  }
+  .game-workspace .champion-report {
+    gap: 8px;
+  }
+  .champion-report .overview-emblem {
+    display: flex;
+    order: -1;
+    width: 100%;
+  }
+  .champion-report .overview-emblem svg {
+    width: 112px;
+    max-height: 68px;
+  }
+  .champion-report .overview-welcome {
+    text-align: center;
+  }
+  .champion-report .overview-welcome .text-button {
+    justify-content: center;
+    margin-inline: auto;
   }
   .game-match-banner {
     padding: 14px;

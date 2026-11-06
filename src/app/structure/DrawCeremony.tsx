@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { Tournament } from "../../domain/types";
 import { Field, Modal } from "../../components/ui";
 import { useI18n } from "../../i18n";
 import { getTheme, themeStyle } from "../../themes";
 import { drawReveals } from "./draw-ceremony";
+import { GameScene } from "../../themes/GameScene";
 import "./draw-ceremony.css";
 
 export function DrawCeremony({
@@ -96,7 +97,12 @@ function Ceremony({
     <section
       ref={panel}
       className="draw-ceremony themed"
-      style={themeStyle(tournament.theme)}
+      style={
+        {
+          ...themeStyle(tournament.theme),
+          "--theme-art": "none",
+        } as CSSProperties
+      }
       data-pattern={getTheme(tournament.theme.preset).pattern}
       tabIndex={0}
       aria-label={t("Draw reveal controls", "کنترل آشکارسازی قرعه")}
@@ -116,40 +122,53 @@ function Ceremony({
         }
       }}
     >
-      <header>
-        <span className="eyebrow">{t("THE DRAW", "قرعه رقابت")}</span>
-        <h2>
-          <bdi>{tournament.title}</bdi>
-        </h2>
-        <span>
+      <header className="draw-ceremony-header">
+        <div>
+          <span className="eyebrow">{t("THE DRAW", "قرعه رقابت")}</span>
+          <h2>
+            <bdi>{tournament.title}</bdi>
+          </h2>
+        </div>
+        <span className="draw-ceremony-count" dir="ltr">
           {number(revealed)} / {number(entries.length)}
         </span>
       </header>
-      <div
-        className="draw-reveal-card"
-        style={
-          tournament.theme.reducedMotion ? { animation: "none" } : undefined
-        }
-        key={revealed}
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        {current ? (
-          <>
-            <span>
-              {mode === "group"
-                ? t("Group", "گروه")
-                : t("Opening match", "دیدار آغازین")}{" "}
-              {number(current.destination)} · {t("Slot", "جایگاه")}{" "}
-              {number(current.slot)}
-            </span>
-            <strong>
-              <bdi>{name}</bdi>
-            </strong>
-          </>
-        ) : (
-          <strong>{t("Ready for the reveal", "آماده آشکارسازی قرعه")}</strong>
-        )}
+      <progress
+        className="draw-ceremony-progress"
+        value={revealed}
+        max={Math.max(1, entries.length)}
+        aria-label={t("Revealed slots", "جایگاه‌های آشکارشده")}
+      />
+      <div className="draw-ceremony-stage">
+        <div className="draw-ceremony-art" aria-hidden="true">
+          <GameScene sport={tournament.sport} />
+        </div>
+        <div
+          className="draw-reveal-card"
+          style={
+            tournament.theme.reducedMotion ? { animation: "none" } : undefined
+          }
+          key={revealed}
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {current ? (
+            <>
+              <span className="draw-reveal-destination">
+                {mode === "group"
+                  ? t("Group", "گروه")
+                  : t("Opening match", "دیدار آغازین")}{" "}
+                {number(current.destination)} · {t("Slot", "جایگاه")}{" "}
+                {number(current.slot)}
+              </span>
+              <strong className="draw-reveal-name">
+                <bdi>{name}</bdi>
+              </strong>
+            </>
+          ) : (
+            <strong>{t("Ready for the reveal", "آماده آشکارسازی قرعه")}</strong>
+          )}
+        </div>
       </div>
       <div className="button-row">
         <button

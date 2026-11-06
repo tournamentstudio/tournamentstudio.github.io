@@ -84,5 +84,53 @@ The final source review found no actionable regression in filter behavior,
 section selection, table names, sponsor drafts or public-data boundaries.
 Twelve new browser cases cover the changed behavior in both languages. Existing
 icon-spacing, mixed-script, accessibility and presentation tests were also run
-during development. Final suite and publication results are recorded in
-[RELEASE_STATUS.md](RELEASE_STATUS.md).
+during development. Results for this initial refinement are in
+[release-2026-11-06.1](https://github.com/tournamentstudio/tournamentstudio.github.io/releases/tag/release-2026-11-06.1).
+
+## Tournament house art direction
+
+The next pass gives the interface a more specific identity. Independent Home,
+workspace and presentation specialists implemented distinct compositions around
+printed competition programs, fixture sheets and scorecards. A separate reviewer
+then checked their combined result. The aim is purposeful variety within the
+existing visual system, rather than the same panel repeated across every task.
+
+- Home uses a factual setup program and game-specific competition covers.
+  Starter formats show related court, board and tabletop artwork. Saved work
+  still appears first for returning users, and protected entries show no activity.
+- The match desk groups existing fixtures by stage and round. Ruled entrant rows
+  align names and scores. Completed tournaments show recorded results and a
+  compact champion composition, including game artwork on phones.
+- Title and champion scenes use a program spread; current matches use one
+  scorecard; recent results use a fixture sheet. Draws have a reveal ticket and
+  a progress track based on actual assignments. Existing theme overrides remain.
+- Fourteen original `GameScene` illustrations extend the existing game icons.
+  Gol Ya Pooch uses closed fists, a separate bead, bell, cards and an arch.
+  Artwork occupies its own area and receives no private match state.
+- Warm paper surfaces and ruled navigation tie the working pages together.
+  Existing fonts, forest green, themes, keyboard controls and local data remain.
+
+The implementation checks found and corrected a tablet list-mode layout problem,
+a Home/presentation CSS class collision, low-contrast bracket zoom text on the
+warmer background, and a status badge that split a word beside long titles.
+The presentation review also found a pre-existing defect: recent results ignored
+the Show scores setting. They now honor it, with English and Persian regressions.
+The long-name regression exposed a further narrow-screen problem: large scores
+could be squeezed into vertical digits. Result rows now reserve the score column
+and give names the remaining width. Tests verify readable nine-digit scores in
+both languages, including a language change while viewing the presentation.
+
+The second visual pass kept compact game artwork on mobile champion reports and
+removed the redundant background emblem from scenes already showing a dedicated
+illustration. The independent reviewer then captured 80 fresh views across Home,
+workspace, presentation and draw ceremony in both languages. No page-wide
+overflow or further actionable design issue was found. Long presentation results
+remained scrollable above their controls at 320 by 640 pixels. Twenty independent
+axe checks passed for the sampled scenes and draw. A separate capture covered all
+sixteen workspace sections at 390, 768 and 1440 pixels in both languages, with no
+page-wide overflow in those 96 views.
+
+Current test and publication details are recorded in
+[RELEASE_STATUS.md](RELEASE_STATUS.md). Before and after renders are retained in
+`.local/art-direction-2026-11-06/`. Physical-device and manual screen-reader
+verification remain outside these browser-based checks.

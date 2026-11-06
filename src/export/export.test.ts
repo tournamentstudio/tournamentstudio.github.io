@@ -89,8 +89,8 @@ describe("public visual and tabular exports", () => {
     const html = renderToStaticMarkup(
       createElement(Presentation, { tournament, onExit: () => undefined }),
     );
-    expect(html).toContain("<strong>5</strong>");
-    expect(html).toContain("<strong>3</strong>");
+    expect(html).toMatch(/<strong\b[^>]*>5<\/strong>/);
+    expect(html).toMatch(/<strong\b[^>]*>3<\/strong>/);
     expect(html).not.toContain("HIDDEN-HAND-POSITION");
     expect(html).not.toContain("CONFIDENTIAL-NOTE");
   });

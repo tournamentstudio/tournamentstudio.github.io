@@ -807,7 +807,7 @@ function Studio({
         </a>
         <div className="studio-label">
           <span className="studio-dot" />
-          {t("PERSONAL WORKSPACE", "فضای شخصی")}
+          {t("Your local workspace", "فضای کاری محلی")}
         </div>
         <nav
           className="main-nav"
@@ -844,7 +844,7 @@ function Studio({
         </button>
         <div className="sidebar-divider" />
         <div className="sidebar-section-label">
-          {t("YOUR STUDIO", "استودیوی شما")}
+          {t("Studio tools", "ابزارهای استودیو")}
         </div>
         <button
           className="sidebar-link"

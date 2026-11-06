@@ -1,0 +1,30 @@
+.game-scene {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-inline-size: 100%;
+  color: inherit;
+  pointer-events: none;
+}
+.game-scene .game-scene-ground {
+  opacity: 0.55;
+}
+.game-scene .game-scene-paper {
+  fill: var(--scene-paper, var(--theme-card, #faf8ef));
+  stroke: none;
+}
+.game-scene .game-scene-solid {
+  fill: currentColor;
+  fill-opacity: 0.08;
+}
+@media (forced-colors: active) {
+  .game-scene {
+    color: CanvasText;
+  }
+  .game-scene .game-scene-paper {
+    fill: Canvas;
+  }
+  .game-scene .game-scene-ground {
+    opacity: 1;
+  }
+}

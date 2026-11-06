@@ -153,8 +153,7 @@ test("keeps Gol identity with a neutral theme and private state out of public ic
     "letter-spacing",
     "normal",
   );
-  await expect(page.locator(".tournament-cover .game-icon")).toHaveAttribute(
-    "data-game-icon",
-    "gol-ya-pooch",
-  );
+  await expect(
+    page.locator(".tournament-cover [data-game-icon]"),
+  ).toHaveAttribute("data-game-icon", "gol-ya-pooch");
 });

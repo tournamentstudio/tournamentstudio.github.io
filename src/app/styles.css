@@ -3,7 +3,7 @@
 :root {
   font-family: "Inter Variable", "Vazirmatn Variable", sans-serif;
   color: #233831;
-  background: #f8f9f5;
+  background: #f8f6ef;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -11,7 +11,7 @@
   font-size: 14px;
   --ink: #233831;
   --muted: #738078;
-  --line: #e3e8df;
+  --line: #e4e3d8;
   --surface: #fff;
   --forest: #173f33;
   --lime: #d7f59a;
@@ -549,8 +549,8 @@ kbd {
   inset-block: 0;
   inset-inline-start: 0;
   width: 224px;
-  background: #f3f5ed;
-  border-inline-end: 1px solid #e0e7d8;
+  background: #f2f1e8;
+  border-inline-end: 1px solid #dcded0;
   padding: 30px 18px 16px;
   display: flex;
   flex-direction: column;
@@ -580,8 +580,8 @@ kbd {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 10px;
-  letter-spacing: 0.14em;
+  font-size: 11px;
+  letter-spacing: 0.02em;
   font-weight: 550;
   color: #5b6454;
   margin: 41px 12px 17px;
@@ -602,7 +602,8 @@ kbd {
   gap: 11px;
   align-items: center;
   padding: 12px 13px;
-  border-radius: 8px;
+  border-inline-start: 3px solid transparent;
+  border-radius: 2px;
   color: #5b6652;
   font-size: 12px;
   min-height: 43px;
@@ -611,9 +612,10 @@ kbd {
   stroke-width: 1.6;
 }
 .main-nav a.active {
-  background: #e2e9d9;
-  color: #354e2e;
-  font-weight: 550;
+  background: #e6e9dc;
+  border-inline-start-color: var(--forest);
+  color: var(--forest);
+  font-weight: 600;
 }
 .main-nav a:hover {
   background: #eaf0e2;
@@ -628,8 +630,8 @@ kbd {
 }
 .sidebar-create {
   background: none;
-  border: 1px dashed #c8d5bb;
-  border-radius: 8px;
+  border: 1px solid #bac8b1;
+  border-radius: 3px;
   margin: 17px 7px 0;
   padding: 11px 10px;
   display: flex;
@@ -648,8 +650,8 @@ kbd {
   margin: 27px 10px 23px;
 }
 .sidebar-section-label {
-  font-size: 10px;
-  letter-spacing: 0.13em;
+  font-size: 11px;
+  letter-spacing: 0.02em;
   color: #5e6856;
   padding: 0 13px;
   margin-bottom: 12px;
@@ -678,17 +680,16 @@ kbd {
   padding-top: 38px;
 }
 .local-note {
-  border: 1px solid #dce6d0;
-  background: #edf2e6;
-  border-radius: 10px;
-  padding: 15px;
+  border-top: 2px solid #b9c2ab;
+  background: transparent;
+  padding: 15px 9px;
   margin: 0 5px 22px;
   position: relative;
 }
 .local-symbol {
   width: 28px;
   height: 28px;
-  background: #e0e9d4;
+  background: transparent;
   color: #58674b;
   display: flex;
   align-items: center;
@@ -701,7 +702,7 @@ kbd {
   font-weight: 600;
 }
 .local-note p {
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.8;
   color: #5c6454;
   margin: 7px 0 12px;
@@ -725,11 +726,12 @@ kbd {
   width: 100%;
 }
 .profile-avatar {
-  background: #dedfc9;
-  color: #5f654a;
+  background: #e8e7d9;
+  border: 1px solid #c9cfba;
+  color: #48533d;
   width: 31px;
   height: 31px;
-  border-radius: 50%;
+  border-radius: 2px;
   font-size: 10px;
   font-weight: 600;
   display: flex;
@@ -760,7 +762,7 @@ kbd {
   height: 70px;
   padding: 0 36px;
   border-bottom: 1px solid #e5e9df;
-  background: #fbfcf9;
+  background: #fcfbf7;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3291,5 +3293,5 @@ kbd {
 .bracket-controls output {
   min-width: 36px;
   text-align: center;
-  color: #657757;
+  color: #4c6143;
 }

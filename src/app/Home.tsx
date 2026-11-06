@@ -4,7 +4,6 @@ import {
   Plus,
   Upload,
   MoreHorizontal,
-  Trophy,
   Users,
   ArrowUpRight,
   LockKeyhole,
@@ -20,7 +19,7 @@ import { useI18n, statusName, formatName } from "../i18n";
 import { sports } from "../sports";
 import type { LibraryEntry } from "../persistence";
 import { Empty } from "../components/ui";
-import { GameIcon } from "../themes/GameIcon";
+import { GameScene } from "../themes/GameScene";
 import "./home.css";
 
 interface Props {
@@ -135,8 +134,8 @@ export function Home({
             </h2>
             <p>
               {t(
-                "Choose a format, add participants and record results. Start from scratch or use one of the formats below.",
-                "قالب را انتخاب کنید، شرکت‌کنندگان را اضافه کنید و نتایج را ثبت کنید. از ابتدا بسازید یا یکی از قالب‌های زیر را انتخاب کنید.",
+                "Choose a format below or build your own competition. Keep the draw, matches and results together.",
+                "یکی از قالب‌های زیر را انتخاب کنید یا مسابقات خود را بسازید. قرعه‌کشی، دیدارها و نتایج را یکجا نگه دارید.",
               )}
             </p>
             <p className="hero-note">
@@ -146,50 +145,42 @@ export function Home({
               )}
             </p>
           </div>
-          <div className="hero-art" aria-hidden="true">
-            <div className="art-bracket">
-              <div className="art-round">
-                <div className="art-match">
-                  <span>
-                    <b className="team-dot mint" />
-                    North Stars <strong>3</strong>
+          <div className="competition-program">
+            <h3>
+              {t("Your competition, in order", "مسابقات شما، قدم به قدم")}
+            </h3>
+            <ol>
+              {[
+                [
+                  "Entrants",
+                  "شرکت‌کنندگان",
+                  "Names, teams and seeds",
+                  "نام‌ها، تیم‌ها و سیدبندی",
+                ],
+                [
+                  "Draw",
+                  "قرعه‌کشی",
+                  "Groups, pairings and progression",
+                  "گروه‌ها، دیدارها و صعود",
+                ],
+                [
+                  "Results",
+                  "نتایج",
+                  "Scores, standings and the final",
+                  "امتیازها، رده‌بندی و فینال",
+                ],
+              ].map(([en, fa, detailEn, detailFa], index) => (
+                <li key={en}>
+                  <span className="program-step" aria-hidden="true">
+                    {number(index + 1)}
                   </span>
-                  <span>
-                    <b className="team-dot orange" />
-                    Solar Club <strong>1</strong>
-                  </span>
-                </div>
-                <div className="art-match">
-                  <span>
-                    <b className="team-dot lilac" />
-                    Atlas United <strong>2</strong>
-                  </span>
-                  <span>
-                    <b className="team-dot blue" />
-                    The Mavericks <strong>0</strong>
-                  </span>
-                </div>
-              </div>
-              <div className="art-connector" />
-              <div className="art-final">
-                <div className="art-trophy">
-                  <Trophy size={30} />
-                </div>
-                <div className="art-match">
-                  <span>
-                    <b className="team-dot mint" />
-                    North Stars
-                  </span>
-                  <span>
-                    <b className="team-dot lilac" />
-                    Atlas United
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="art-tag">
-              {t("Illustrative bracket", "نمونه نمایشی جدول")}
-            </div>
+                  <div>
+                    <strong>{t(en, fa)}</strong>
+                    <span>{t(detailEn, detailFa)}</span>
+                  </div>
+                </li>
+              ))}
+            </ol>
           </div>
         </section>
       )}
@@ -304,17 +295,18 @@ export function Home({
           <div
             className={list ? "tournament-grid list-view" : "tournament-grid"}
           >
-            {visible.map((entry, i) => (
+            {visible.map((entry) => (
               <article className="tournament-card" key={entry.id}>
                 <button
-                  className={`tournament-cover cover-${i % 4}`}
+                  className="tournament-cover"
+                  data-sport={entry.protected ? undefined : entry.sport}
+                  data-protected={entry.protected || undefined}
                   onClick={() => onOpen(entry.id)}
                   aria-label={t(
                     `Open ${entry.title}`,
                     `باز کردن ${entry.title}`,
                   )}
                 >
-                  <div className="cover-lines" />
                   <span className={`badge status-${entry.status}`}>
                     {entry.protected ? (
                       <>
@@ -324,27 +316,37 @@ export function Home({
                       statusName(entry.status, locale)
                     )}
                   </span>
-                  <span className="cover-monogram">
+                  <span className="cover-art" aria-hidden="true">
                     {entry.protected ? (
                       <LockKeyhole size={36} />
                     ) : (
-                      <GameIcon sport={entry.sport} size={48} />
+                      <GameScene sport={entry.sport} />
                     )}
                   </span>
-                  <span className="cover-sport">
-                    {entry.protected
-                      ? t("LOCAL VAULT", "گاوصندوق محلی")
-                      : locale === "fa"
-                        ? (sports.find((sport) => sport.id === entry.sport)
-                            ?.fa ?? entry.sport)
-                        : (sports.find((sport) => sport.id === entry.sport)
-                            ?.name ?? entry.sport)}
+                  <span className="cover-caption">
+                    <span className="cover-sport">
+                      {entry.protected
+                        ? t("LOCAL VAULT", "گاوصندوق محلی")
+                        : locale === "fa"
+                          ? (sports.find((sport) => sport.id === entry.sport)
+                              ?.fa ?? entry.sport)
+                          : (sports.find((sport) => sport.id === entry.sport)
+                              ?.name ?? entry.sport)}
+                    </span>
+                    {!entry.protected && !!entry.formats?.length && (
+                      <span className="cover-format">
+                        {[...new Set(entry.formats)]
+                          .map((format) => formatName(format, locale))
+                          .join(t(" · ", " · "))}
+                      </span>
+                    )}
                   </span>
                 </button>
                 <div className="tournament-card-body">
                   <div className="card-title-line">
                     <button
                       className="title-button"
+                      dir="auto"
                       onClick={() => onOpen(entry.id)}
                     >
                       {entry.title}
@@ -501,8 +503,8 @@ function StarterFormats({ onCreate }: Pick<Props, "onCreate">) {
             key={template.id}
             onClick={() => onCreate(template.id)}
           >
-            <div className="template-top">
-              <GameIcon sport={template.id} size={40} />
+            <div className="template-top" aria-hidden="true">
+              <GameScene sport={template.id} />
             </div>
             <h3>{template.title[locale === "fa" ? 1 : 0]}</h3>
             <p>{template.caption[locale === "fa" ? 1 : 0]}</p>

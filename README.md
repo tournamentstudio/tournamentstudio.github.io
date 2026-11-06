@@ -6,11 +6,12 @@ I built TournaStudio so a tournament can belong to the people running it. Open t
 
 **[Open TournaStudio](https://tournamentstudio.github.io/)** · [User guide](USER_GUIDE.md) · [Feature status](FEATURES.md)
 
-The November 6, 2026 interface review puts saved tournaments and ready matches
-first. It fixes narrow search and presentation fields, clarifies setup in both
-languages, and keeps game artwork without the repeated promotional panels.
-The [interface audit](UI_REVIEW.md) records the five specialist reviews and the
-second visual pass. Earlier participant-count, group-draw and data-recovery fixes
+The November 6, 2026 design pass takes its cues from competition programs and
+scorecards. Saved tournaments have illustrated game covers, the match desk groups
+fixtures by round, and draws and champion screens have their own compositions.
+English and Persian layouts keep artwork separate from names and controls.
+The [interface audit](UI_REVIEW.md) records the reviews and corrections. Earlier
+participant-count, group-draw and data-recovery fixes
 remain covered by the tests. The [release handoff](RELEASE_STATUS.md),
 [performance measurements](PERFORMANCE.md) and [maintenance review](MAINTENANCE_AUDIT.md)
 record the checks and their limits.
@@ -52,6 +53,11 @@ English and Persian labels, local Inter and Vazirmatn fonts, and RTL layouts are
 Named personal designs complement 50 theme presets with game collections for all 14 activities. Original court diagrams, paddles, chess pieces, Persian geometry and other vector artwork sit on paper, wood, felt, tile and other material treatments. Theme Studio recommends related choices and lets you search the full catalog. The selected identity appears in creation, the workspace, match cards and scorekeeping.
 
 Fourteen separate activity icons keep each game recognizable across theme changes, library covers and presentation screens. Gol Ya Pooch uses closed fists and a bead, with bell and card symbols in its referee controls. [Design references](DESIGN_REFERENCES.md) explain the Persian sources and original artwork.
+
+Fourteen original SVG scenes extend those icons into courts, boards and tabletop
+compositions for library covers, the match desk, draws and presentation. They are
+local artwork with no access to referee information. Protected library entries
+keep their activity hidden.
 
 ![TournaStudio's fourteen activity icons](docs/screenshots/activity-icons.png)
 

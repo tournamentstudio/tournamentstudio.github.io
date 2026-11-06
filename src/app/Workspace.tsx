@@ -48,7 +48,7 @@ import { History } from "./History";
 import { Settings } from "./StorageHealth";
 import { themeStyle } from "../themes";
 import { GameIdentity } from "../themes/ThemeMotif";
-import { GameIcon } from "../themes/GameIcon";
+import { GameScene } from "../themes/GameScene";
 import "./game-experience.css";
 import "./workspace.css";
 import { requiresCompetitionWorker } from "../workers/competition-task";
@@ -169,6 +169,23 @@ export function Workspace({
   );
   const { visible: visibleMatches, pagination: matchPagination } =
     usePagination(filtered, JSON.stringify([doc.id, filter, search]));
+  const fixtureRounds = useMemo(() => {
+    const rounds = new Map<
+      string,
+      { stageId: string; round: number; matches: Match[] }
+    >();
+    for (const match of visibleMatches) {
+      const key = `${match.stageId}:${match.round}`;
+      const round = rounds.get(key) ?? {
+        stageId: match.stageId,
+        round: match.round,
+        matches: [],
+      };
+      round.matches.push(match);
+      rounds.set(key, round);
+    }
+    return [...rounds.entries()];
+  }, [visibleMatches]);
   function present() {
     window.open(
       `${location.pathname}#/present/${doc.id}`,
@@ -203,10 +220,17 @@ export function Workspace({
         }
       >
         <div className="match-tile-meta">
-          <span>
-            {m.group
-              ? groupLabel(m.group, locale)
-              : generatedMatchLabel(m, locale)}
+          <span className="match-tile-heading">
+            <span className="match-reference">
+              {generatedMatchLabel(m, locale)}
+            </span>
+            {m.group && (
+              <span>
+                {/^[A-Z]+$/.test(m.group)
+                  ? `${t("Group", "گروه")} ${m.group}`
+                  : groupLabel(m.group, locale)}
+              </span>
+            )}
           </span>
           <span className="badge">
             {m.status === "completed"
@@ -241,7 +265,7 @@ export function Workspace({
         })}
         <div className="match-tile-foot">
           <span>
-            {t("Round", "دور")} {m.round}
+            {t("Round", "دور")} {number(m.round)}
           </span>
           {m.resourceId && (
             <span>
@@ -368,19 +392,23 @@ export function Workspace({
         >
           {tab === "overview" && (
             <div className="panel-content">
-              <div className="overview-top game-overview themed">
+              <div
+                className={`overview-top game-overview themed ${champion ? "champion-report" : ""}`}
+              >
                 <div className="overview-welcome">
                   {champion && (
                     <span className="eyebrow">{t("Champion", "قهرمان")}</span>
                   )}
                   <h2>
-                    {champion
-                      ? champion.name
-                      : ready.length
-                        ? t("Match desk", "میز دیدارها")
-                        : doc.matches.length
-                          ? t("Review stage progression", "بررسی پیشروی مراحل")
-                          : t("Set up the draw", "قرعه را آماده کنید")}
+                    {champion ? (
+                      <bdi>{champion.name}</bdi>
+                    ) : ready.length ? (
+                      t("Match desk", "میز دیدارها")
+                    ) : doc.matches.length ? (
+                      t("Review stage progression", "بررسی پیشروی مراحل")
+                    ) : (
+                      t("Set up the draw", "قرعه را آماده کنید")
+                    )}
                   </h2>
                   <p>
                     {champion
@@ -423,8 +451,8 @@ export function Workspace({
                     <ArrowRight size={17} />
                   </button>
                 </div>
-                <div className="overview-emblem">
-                  <GameIcon sport={doc.sport} size={160} />
+                <div className="overview-emblem" aria-hidden="true">
+                  <GameScene sport={doc.sport} />
                 </div>
               </div>
               <div className="stat-grid workspace-metrics">
@@ -461,16 +489,27 @@ export function Workspace({
                 })}
               </div>
               <div className="section-heading">
-                <h2>{t("Up next", "دیدارهای بعدی")}</h2>
+                <h2>
+                  {champion
+                    ? t("Final results", "نتایج نهایی")
+                    : t("Up next", "دیدارهای بعدی")}
+                </h2>
                 <button
                   className="text-button"
-                  onClick={() => setTab("matches")}
+                  onClick={() => {
+                    if (champion) setFilter("completed");
+                    setTab("matches");
+                  }}
                 >
                   {t("All matches", "همه دیدارها")}
                   <ArrowRight size={16} />
                 </button>
               </div>
-              {ready.length ? (
+              {champion && played.length ? (
+                <div className="match-grid">
+                  {played.slice(-3).reverse().map(matchCard)}
+                </div>
+              ) : ready.length ? (
                 <div className="match-grid">
                   {ready.slice(0, 3).map(matchCard)}
                 </div>
@@ -502,7 +541,11 @@ export function Workspace({
               )}
               <section className="panel overview-bracket">
                 <div className="section-heading">
-                  <h3>{t("The road ahead", "مسیر پیش رو")}</h3>
+                  <h3>
+                    {champion
+                      ? t("Completed bracket", "جدول نهایی مسابقات")
+                      : t("The road ahead", "مسیر پیش رو")}
+                  </h3>
                   <button
                     className="text-button"
                     onClick={() => setTab("bracket")}
@@ -528,14 +571,14 @@ export function Workspace({
             <Structure tournament={doc} onChange={onChange} />
           )}
           {tab === "matches" && (
-            <div className="panel-content">
-              <div className="section-heading">
+            <div className="panel-content match-desk">
+              <div className="section-heading match-desk-heading">
                 <div>
                   <h2>{t("Match desk", "میز دیدارها")}</h2>
                   <p>
                     {t(
-                      "Fast results, clear decisions, and a record of every change.",
-                      "ثبت نتیجه و تصمیم روشن با تاریخچه تغییرات.",
+                      "Open a scorecard to record or review a result.",
+                      "برای ثبت یا بررسی نتیجه، برگه دیدار را باز کنید.",
                     )}
                   </p>
                 </div>
@@ -586,6 +629,7 @@ export function Workspace({
                     <button
                       key={id}
                       className={filter === id ? "selected" : ""}
+                      aria-pressed={filter === id}
                       onClick={() => {
                         setFilter(id);
                       }}
@@ -609,11 +653,29 @@ export function Workspace({
                 </div>
               </div>
               {filtered.length ? (
-                <>
-                  <div className="match-grid">
-                    {visibleMatches.map(matchCard)}
-                  </div>
-                </>
+                <div className="fixture-board">
+                  {fixtureRounds.map(([key, round]) => (
+                    <section className="fixture-round" key={key}>
+                      <div className="fixture-round-heading">
+                        <h3>
+                          {t("Round", "دور")} {number(round.round)}
+                        </h3>
+                        <span>
+                          <bdi>
+                            {
+                              doc.stages.find(
+                                (stage) => stage.id === round.stageId,
+                              )?.name
+                            }
+                          </bdi>
+                        </span>
+                      </div>
+                      <div className="match-grid">
+                        {round.matches.map(matchCard)}
+                      </div>
+                    </section>
+                  ))}
+                </div>
               ) : (
                 <Empty
                   title={t("No matches in this view", "دیداری در این نما نیست")}

@@ -1,0 +1,252 @@
+.presentation-shell .presentation-program {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: clamp(28px, 5vw, 80px);
+  align-items: center;
+  text-align: var(--theme-align, start);
+  min-height: min(64vh, 760px);
+  padding-block: clamp(24px, 4vw, 64px);
+}
+.presentation-program-copy,
+.presentation-program-art {
+  min-width: 0;
+}
+.presentation-program-copy .presentation-event-logo {
+  width: 76px;
+  height: 76px;
+  margin-block-end: 20px;
+}
+.presentation-program .presentation-kicker {
+  margin-block: 0 24px;
+  font-size: calc(13px * var(--theme-scale, 1));
+  line-height: 1.7;
+  letter-spacing: 0.12em;
+}
+.presentation-program h1 {
+  font-size: calc(clamp(36px, 5.3vw, 84px) * var(--theme-scale, 1));
+  line-height: 1.1;
+  letter-spacing: -0.045em;
+  margin-block: 0 24px;
+  text-wrap: balance;
+}
+.presentation-program .presentation-subtitle {
+  font-size: calc(clamp(17px, 1.8vw, 26px) * var(--theme-scale, 1));
+  margin-block: 0 28px;
+}
+.presentation-program-art {
+  color: var(--theme-accent);
+  --scene-paper: var(--theme-bg);
+  padding-block: 20px;
+  border-block: 1px solid
+    color-mix(in srgb, var(--theme-accent) 35%, transparent);
+}
+.presentation-program-art .game-scene {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 380px;
+}
+.presentation-program-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px 48px;
+  padding-block-start: 24px;
+  margin-block: 32px 0;
+  border-block-start: 1px solid
+    color-mix(in srgb, var(--theme-fg) 25%, transparent);
+}
+.presentation-program-facts > div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.presentation-program-facts dt {
+  color: var(--theme-muted);
+  font-size: calc(13px * var(--theme-scale, 1));
+  overflow-wrap: anywhere;
+}
+.presentation-program-facts dd {
+  margin: 0;
+  font-size: calc(32px * var(--theme-scale, 1));
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+}
+.competition-champion-event {
+  color: var(--theme-muted);
+  font-size: calc(clamp(18px, 2vw, 28px) * var(--theme-scale, 1));
+  overflow-wrap: anywhere;
+  padding-block-start: 24px;
+  border-block-start: 1px solid
+    color-mix(in srgb, var(--theme-fg) 25%, transparent);
+}
+.competition-champion-place {
+  display: block;
+  width: fit-content;
+  margin: 16px auto 0;
+  padding-inline: 24px;
+  border-inline: 2px solid var(--theme-accent);
+  font-size: calc(52px * var(--theme-scale, 1));
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.competition-scorecard {
+  border-block: 2px solid var(--theme-accent);
+  padding-block: 20px;
+}
+.competition-scorecard .scoreboard-eyebrow {
+  margin: 0 0 20px;
+  font-size: calc(13px * var(--theme-scale, 1));
+  letter-spacing: 0.12em;
+  line-height: 1.7;
+}
+.competition-scorecard .scoreboard-entrants {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: 0;
+}
+.competition-scorecard .scoreboard-entrant {
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span 3;
+  align-content: start;
+  justify-items: center;
+  flex: 1 1 180px;
+  min-width: 0;
+  max-width: none;
+  padding: 24px clamp(16px, 3vw, 48px);
+  border: 0;
+  border-radius: 0;
+  background: var(--theme-card-fill, transparent);
+  box-shadow: var(--theme-card-shadow, none);
+}
+.competition-scorecard .scoreboard-entrant + .scoreboard-entrant {
+  border-inline-start: 1px solid
+    color-mix(in srgb, var(--theme-accent) 35%, transparent);
+}
+.competition-scorecard .scoreboard-monogram {
+  width: 54px;
+  height: 54px;
+  border: 0;
+}
+.competition-scorecard .scoreboard-monogram .game-icon {
+  width: 48px;
+  height: 48px;
+}
+.competition-scorecard .scoreboard-logo {
+  width: 54px;
+  height: 54px;
+}
+.competition-scorecard .scoreboard-entrant h2 {
+  font-size: calc(clamp(22px, 2.7vw, 42px) * var(--theme-scale, 1));
+  line-height: 1.3;
+  margin-block: 18px 24px;
+  text-wrap: balance;
+  max-width: 100%;
+}
+.competition-scorecard .scorecard-value {
+  font-size: calc(clamp(64px, 10vw, 150px) * var(--theme-scale, 1));
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-weight: 500;
+}
+.competition-scorecard .scoreboard-footnote {
+  margin-block: 20px 0;
+  padding-block-start: 20px;
+  border-block-start: 1px solid
+    color-mix(in srgb, var(--theme-fg) 18%, transparent);
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.competition-results {
+  border-block-start: 2px solid var(--theme-accent);
+}
+.competition-result {
+  display: grid;
+  grid-template-columns: minmax(100px, 0.4fr) minmax(0, 1.6fr);
+  gap: 24px;
+  padding-block: 20px;
+  border-block-end: 1px solid
+    color-mix(in srgb, var(--theme-fg) 22%, transparent);
+}
+.competition-result-label {
+  color: var(--theme-muted);
+  font-size: calc(13px * var(--theme-scale, 1));
+  line-height: 1.7;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.competition-result-entrants {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.competition-result-entrants > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 24px;
+  font-size: calc(clamp(18px, 2vw, 28px) * var(--theme-scale, 1));
+  line-height: 1.5;
+}
+.competition-result-entrants span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.competition-result-entrants strong {
+  flex-shrink: 0;
+  color: var(--theme-accent);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+  max-width: 45%;
+}
+.competition-result-winner span {
+  font-weight: 700;
+  text-decoration: var(--theme-winner-decoration, none);
+  filter: var(--theme-winner-filter, none);
+}
+.presentation-shell[dir="rtl"] .competition-scorecard .scoreboard-eyebrow {
+  letter-spacing: normal;
+}
+.presentation-scene[style*="9/16"] .presentation-program {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+}
+.presentation-scene[style*="9/16"] .presentation-program-art {
+  width: min(100%, 400px);
+  justify-self: center;
+}
+@media (max-width: 650px) {
+  .presentation-shell .presentation-program {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+    min-height: 0;
+    padding-block: 16px;
+  }
+  .presentation-program h1 {
+    font-size: calc(clamp(32px, 8vw, 48px) * var(--theme-scale, 1));
+  }
+  .presentation-program-art {
+    width: min(100%, 360px);
+    justify-self: center;
+    padding-block: 12px;
+  }
+  .presentation-program-facts {
+    margin-block-start: 24px;
+    padding-block-start: 16px;
+  }
+  .competition-scorecard .scoreboard-entrant {
+    flex-basis: 120px;
+    padding: 16px 10px;
+  }
+  .competition-scorecard .scoreboard-entrants {
+    grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr));
+  }
+  .competition-scorecard .scoreboard-entrant h2 {
+    font-size: calc(20px * var(--theme-scale, 1));
+  }
+  .competition-result {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+}

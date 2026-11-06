@@ -13,26 +13,80 @@
   gap: 1rem;
   flex-wrap: wrap;
 }
+.draw-ceremony-header > div {
+  flex: 1 1 180px;
+  min-width: 0;
+}
 .draw-ceremony h2 {
-  font-size: clamp(1.25rem, 3vw, 2rem);
+  font-size: calc(clamp(1.25rem, 3vw, 2rem) * var(--theme-scale, 1));
   overflow-wrap: anywhere;
+  margin-block: 8px 0;
+}
+.draw-ceremony-count {
+  font-size: calc(18px * var(--theme-scale, 1));
+  font-variant-numeric: tabular-nums;
+}
+.draw-ceremony-progress {
+  display: block;
+  width: 100%;
+  height: 4px;
+  margin-block: 22px;
+  accent-color: var(--theme-accent);
+  border: 0;
+  background: color-mix(in srgb, var(--theme-accent) 18%, transparent);
+}
+.draw-ceremony-progress::-webkit-progress-bar {
+  background: color-mix(in srgb, var(--theme-accent) 18%, transparent);
+}
+.draw-ceremony-progress::-webkit-progress-value {
+  background: var(--theme-accent);
+}
+.draw-ceremony-progress::-moz-progress-bar {
+  background: var(--theme-accent);
+}
+.draw-ceremony-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+  align-items: center;
+  gap: 24px;
+  margin-block: 24px;
+}
+.draw-ceremony-art {
+  color: var(--theme-accent);
+  --scene-paper: var(--theme-bg);
+  min-width: 0;
+}
+.draw-ceremony-art .game-scene {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 .draw-reveal-card {
   display: grid;
-  place-content: center;
+  align-content: center;
   gap: 1rem;
-  text-align: center;
+  text-align: var(--theme-align, start);
   min-height: 15rem;
-  margin-block: 1.5rem;
-  border: 2px solid var(--theme-accent);
-  border-radius: var(--theme-radius, 18px);
-  padding: 2rem;
-  background: var(--theme-card);
-  animation: draw-reveal-enter 0.45s ease-out;
+  min-width: 0;
+  border-block: 2px solid var(--theme-accent);
+  padding: clamp(16px, 3vw, 32px);
+  background: var(--theme-card-fill, var(--theme-card));
+  box-shadow: var(--theme-card-shadow, none);
+  animation: draw-reveal-enter var(--theme-animation, 0.35s) ease-out;
 }
 .draw-reveal-card strong {
-  font-size: clamp(1.5rem, 5vw, 3.5rem);
+  font-size: calc(clamp(1.5rem, 3.5vw, 3rem) * var(--theme-scale, 1));
+  line-height: 1.35;
   overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+.draw-reveal-destination {
+  font-size: calc(13px * var(--theme-scale, 1));
+  line-height: 1.8;
+  color: var(--theme-muted);
+}
+[dir="rtl"] .draw-reveal-card strong {
+  line-height: 1.7;
 }
 .draw-ceremony .field {
   max-width: 20rem;
@@ -53,12 +107,25 @@
 }
 @keyframes draw-reveal-enter {
   from {
-    opacity: 0.25;
-    transform: translateY(12px) scale(0.98);
+    opacity: 0;
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
     transform: none;
+  }
+}
+@media (max-width: 650px) {
+  .draw-ceremony-stage {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .draw-ceremony-art {
+    width: min(100%, 170px);
+    justify-self: center;
+  }
+  .draw-reveal-card {
+    min-height: 12rem;
   }
 }
 @media (prefers-reduced-motion: reduce) {

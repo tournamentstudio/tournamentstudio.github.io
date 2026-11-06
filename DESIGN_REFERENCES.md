@@ -45,3 +45,23 @@ Each activity has related geometry: a court, table, circuit, board or book.
 Gol Ya Pooch places the closed hands above a table with a bell and cards inside
 an arch. The export renderer receives public tournament data only. Scene
 geometry is static and cannot respond to a concealed position or private log.
+
+## Tournament house interface
+
+I used printed competition programs, fixture sheets and scorecards as references
+for the working interface. Paper-colored surfaces, ruled rows, game-specific
+covers and aligned score columns give each task an appropriate composition.
+The existing forest green, local fonts and tournament themes remain.
+
+`GameScene.tsx` extends the activity icons into fourteen original SVG scenes for
+library covers, the match desk, draws and presentation. Courts, boards and
+equipment make the activity recognizable. The Gol Ya Pooch scene uses the same
+closed fists, a separate bead, tabletop bell, cards and arch as the established
+artwork. The scene takes only an activity identifier and a CSS class; it cannot
+read scores, names or concealed positions. Protected library entries show a lock
+instead of an activity scene. All artwork ships locally with the application.
+
+Art occupies its own layout area. Text never depends on reading through a
+decorative background. The new compositions keep the existing scene transitions
+and draw reveals, including the browser's reduced-motion preference. Numbers in programs and reveal tracks
+represent actual workflow steps and draw progress, not invented event metadata.
