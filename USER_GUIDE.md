@@ -12,15 +12,20 @@ losing a device can remove local access.
    it does not limit the whole competition to that sport.
 3. Choose a format. Enter a participant count, or paste one name per line.
    A pasted list takes precedence over the count. Duplicate names need
-   correction before creation.
+   correction in this step before continuing.
 4. Choose a theme. If you want encrypted local storage, enable the protected
    vault and enter a secret you can keep.
 5. Choose **Create tournament**. The draw appears in the workspace and is
    saved to this browser.
 
-Enable **Show advanced configuration** in the first step to choose a
+Enable **Show draw options** in the first step to choose a
 reproducible random draw and its seed. Numbered entrants are suitable while you
 are planning; rename them in Participants before play.
+
+By default, participant order determines seeding. The format step explains the
+selected format and shows only settings that apply to it. The review step shows
+who qualifies when playoffs are included. To change seed order after creation,
+edit Participants and regenerate the unplayed draw in Structure.
 
 Participant counts must be whole numbers. You can clear the input while editing;
 invalid or out-of-range values cannot continue to creation. A pasted list shows
@@ -544,18 +549,19 @@ Open a match from **Matches** or select its bracket card. Enter one score for
 every entrant. Choose a result type; use an explicit winner for a forfeit,
 walkover, no-show or other manual ruling.
 
-For a best-of match, open **Sets, referee, and private notes** and enter one set
-per line, such as `21:18`. Set scores must produce the required number of set
+For set-based scoring, enter one set per line in the visible **Set scores**
+field, such as `21:18`. Set scores must produce the required number of set
 wins. Extra sets after the match was won are rejected. For a time-based result,
 use the same unit for every entrant.
 
-Choose **Confirm result**. The engine validates the result, updates dependent
+Choose **Save result**, or **Save changes** when editing a recorded result.
+The engine validates the result, updates dependent
 slots and recalculates standings. Check the saved indicator before closing
 the browser or changing devices.
 
 To correct a completed match, open it again and edit the scores. If later played
 or live matches depend on it, review the listed consequences. You can keep the
-current result or explicitly confirm the correction and reset those dependents.
+current result or choose **Save correction and clear later matches**.
 The previous saved revision remains in **History**. Corrections can also return
 derived stages to draft or remove later dynamically paired rounds.
 
@@ -635,7 +641,7 @@ play is blocked. Presets exclude entrant names, results and uploaded artwork.
    when an agreed card applies. Select the actual card user; role and use limits
    are checked for that team and period.
 7. Correct a hand with **Undo** before the official result is confirmed.
-   Finish with **Confirm result** to advance the winner.
+   Finish with **Save result** to advance the winner.
 
 The referee clock survives closing the dialog and reloading. Pause it explicitly
 when play pauses; closing the browser does not stop its running timestamp. It
@@ -840,13 +846,19 @@ and remember which one you used.
 
 ## Share across browsers or devices
 
-1. Open **Share Center** and keep **Public spectator view** selected for viewers.
-2. Choose plain sharing or **Encrypt with a separate secret**.
-3. Choose **Generate link & code**.
-4. Copy the link, copy the `TS1` code, or save its text file.
-5. The recipient opens the link or uses **Import** to paste the code.
+1. Open **Share Center** and choose **Current tournament and results**.
+2. Keep **For spectators: results and schedule** selected for viewers.
+3. Choose **Create share link**, **Create share code** or **Download tournament
+   file**, depending on the suggested transfer size.
+4. Copy the generated link or code, or send the downloaded file.
+5. The recipient opens the link or uses **Import tournament** to paste the code.
 6. They inspect the read-only preview and choose **Save local copy** or
-   **Fork with new identity**.
+   **Save as new tournament**.
+
+To choose encryption or an output format yourself, open **More sharing options**.
+It contains **Generate link & code**, backup options, exports and signed packets.
+**Public tournament JSON** omits private notes and other organizer details; use
+a private backup to preserve those details.
 
 The link and code contain the actual data. A recipient does not need access to
 your browser. Each saved copy is independent: edits in one browser do not update
@@ -860,8 +872,10 @@ History or multipart QR download stops if you leave its screen or lock the vault
 Downloads already handed to the browser remain outside the app's control.
 
 A saved copy keeps the tournament identity, which is needed for later update
-packets. A fork gets a new identity and cannot accept the organizer's updates.
-Do not fork a spectator copy if you intend to apply those updates.
+packets. **Save as new tournament** creates a separate identity and cannot accept
+the organizer's updates. If that identity is already saved in this browser,
+the preview explains the existing copy and offers separate-copy or replacement
+choices. Replacement still requires confirmation.
 
 If the code is large, use a `.tourney` file. The Share Center warns about long
 links and only generates a single QR when its payload is short enough. Multipart
@@ -876,9 +890,10 @@ also releases its stream if permission arrives later.
 With encryption, send the secret separately. Anyone with both the full payload
 and the secret can read it. Encryption does not prove who sent the package.
 
-## Share a recipe
+## Share a tournament template
 
-**Create recipe** creates a `TSR2` code with all stages, their connections, sport,
+Choose the setup-without-names option in Share Center, then **Create template
+code**. A multi-stage template creates a `TSR2` code with stages, connections, sport,
 rules and appearance defaults. Names, results, private notes, coordinates and
 uploaded images are omitted. Importing it creates numbered entrants and a new
 tournament. Older `TSR1` single-stage recipes still import. A destination stage
@@ -890,7 +905,8 @@ The organizer and recipient must agree on the recipient's exact base revision
 and whether its snapshot was public or private.
 
 1. The organizer keeps the original saved revision in History.
-2. After recording more results, open **Share Center** and set **Recipient base
+2. After recording more results, open **Share Center > More sharing options**
+   and set **Recipient base
    revision** and **Recipient snapshot type**.
 3. Choose **Generate update code** and send the `TSP1` code or its text file.
 4. The recipient opens the matching tournament first, then opens **Import**.

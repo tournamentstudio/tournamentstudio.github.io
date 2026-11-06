@@ -61,6 +61,8 @@ async function section(page: Page, name: string, fa = false) {
     })
     .getByRole("button", { name, exact: true })
     .click();
+  if (name === "Share Center")
+    await page.locator("details.share-advanced > summary").click();
 }
 async function open(page: Page, doc: Tournament = fixture()) {
   await importFile(page, Buffer.from(JSON.stringify(doc)));
@@ -183,11 +185,14 @@ test("first official result retains live observations and a score correction qua
   await record(page);
   await section(page, "Matches");
   await page.locator(".match-tile.ready").click();
-  let dialog = page.getByRole("dialog", { name: "Match control", exact: true });
+  let dialog = page.getByRole("dialog", {
+    name: /^(Enter|Edit) result$/,
+    exact: true,
+  });
   await dialog.getByLabel("Score North", { exact: true }).fill("2");
   await dialog.getByLabel("Score South", { exact: true }).fill("0");
   await dialog
-    .getByRole("button", { name: "Confirm result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await saved(page);
   await section(page, "Statistics");
@@ -197,10 +202,13 @@ test("first official result retains live observations and a score correction qua
   await section(page, "Matches");
   await page.getByRole("button", { name: "Completed", exact: true }).click();
   await page.locator(".match-tile.completed").click();
-  dialog = page.getByRole("dialog", { name: "Match control", exact: true });
+  dialog = page.getByRole("dialog", {
+    name: /^(Enter|Edit) result$/,
+    exact: true,
+  });
   await dialog.getByLabel("Score North", { exact: true }).fill("3");
   await dialog
-    .getByRole("button", { name: "Confirm result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await saved(page);
   await section(page, "Statistics");
@@ -227,7 +235,7 @@ test("private archives reconstruct player history in another profile while publi
   const privateFile = await download,
     privateData = await readFile((await privateFile.path())!);
   download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "JSON", exact: true }).click();
+  await page.getByRole("button", { name: "Public tournament JSON", exact: true }).click();
   const publicFile = await download,
     publicData = await readFile((await publicFile.path())!);
   expect(publicData.toString()).not.toContain("playerStatistics");

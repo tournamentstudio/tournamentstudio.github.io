@@ -249,6 +249,7 @@ test("exports numbered QR images and reconstructs out-of-order parts on a fresh 
     .getByRole("navigation", { name: "Tournament sections" })
     .getByRole("button", { name: "Share Center", exact: true })
     .click();
+  await page.locator("details.share-advanced > summary").click();
   await page
     .getByRole("button", {
       name: "Generate encrypted link with embedded key",

@@ -132,6 +132,7 @@ for (const width of [320, 390, 768, 1280]) {
     });
 
     await section(page, "مرکز اشتراک");
+    await page.locator(".share-advanced > summary").click();
     await page
       .getByRole("combobox", { name: "محافظت", exact: true })
       .selectOption("encrypted");
@@ -182,13 +183,13 @@ for (const width of [320, 390, 768, 1280]) {
       new RegExp("تیم شیران دانشگاه صنعتی امیرکبیر Tehran A"),
     );
     await firstMatch.click();
-    const dialog = page.getByRole("dialog", { name: "کنترل دیدار" });
+    const dialog = page.getByRole("dialog", { name: /^(ثبت|ویرایش) نتیجه$/ });
     await expect(dialog.locator(".score-side > bdi").first()).toHaveText(
       names[0],
     );
     await textFits(dialog);
     const winnerFits = await page
-      .getByRole("combobox", { name: "تعیین برنده", exact: true })
+      .getByRole("combobox", { name: "برنده", exact: true })
       .evaluate((element) => {
         const select = element as HTMLSelectElement;
         const style = getComputedStyle(select);

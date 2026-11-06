@@ -196,8 +196,9 @@ for (const locale of ["en", "fa"] as const) {
   }) => {
     await openBracket(page, locale);
     await section(page, locale, "Share Center", "مرکز اشتراک");
+    await page.locator("details.share-advanced > summary").click();
     const pending = page.waitForEvent("download");
-    await page.getByRole("button", { name: "SVG", exact: true }).click();
+    await page.getByRole("button", { name: text(locale, "Bracket SVG", "جدول SVG"), exact: true }).click();
     const download = await pending;
     const svg = await readFile((await download.path())!, "utf8");
     expect(svg).toContain("data:font/woff2;base64,");
@@ -225,7 +226,7 @@ for (const locale of ["en", "fa"] as const) {
     const popupPromise = page.waitForEvent("popup");
     await page
       .getByRole("button", {
-        name: text(locale, "PDF / Print", "PDF / چاپ"),
+        name: text(locale, "Print / PDF", "چاپ / PDF"),
         exact: true,
       })
       .click();

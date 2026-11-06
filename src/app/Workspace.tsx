@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import type { Tournament, Match } from "../domain/types";
 import { getChampion, advanceStage } from "../engine";
+import { terminal } from "../engine/formats";
 import {
   useI18n,
   formatName,
@@ -132,7 +133,31 @@ export function Workspace({
   const [search, setSearch] = useState("");
   const [error, setError] = useState<unknown>();
   const [stageId, setStageId] = useState(doc.stages[0]?.id ?? "");
-  const computation = useCompetitionTask(doc, `${tab}:${stageId}`);
+  const [matchStageId, setMatchStageId] = useState("");
+  const matchStage = doc.stages.find((stage) => stage.id === matchStageId);
+  const roundStage =
+    matchStage ?? (doc.stages.length === 1 ? doc.stages[0] : undefined);
+  const roundMatches = doc.matches.filter(
+    (match) => match.stageId === roundStage?.id,
+  );
+  const manualRounds = Boolean(
+    roundStage &&
+    ["swiss", "triple-elimination", "ladder"].includes(roundStage.format) &&
+    !(
+      roundStage.format === "ladder" &&
+      ladderPolicy(roundStage).mode === "invitations"
+    ),
+  );
+  const canAdvanceRound = Boolean(
+    manualRounds &&
+    roundStage?.status !== "completed" &&
+    roundMatches.length &&
+    roundMatches.every(terminal),
+  );
+  const computation = useCompetitionTask(
+    doc,
+    `${tab}:${stageId}:${matchStageId}`,
+  );
   const participants = useMemo(
     () =>
       new Map(
@@ -153,6 +178,7 @@ export function Workspace({
     () =>
       doc.matches.filter(
         (m) =>
+          (!matchStage || m.stageId === matchStage.id) &&
           (filter === "all" ||
             (filter === "ready"
               ? m.status === "ready" || m.status === "live"
@@ -165,10 +191,13 @@ export function Workspace({
                 .includes(search.toLocaleLowerCase()),
             )),
       ),
-    [doc.matches, filter, search, participants],
+    [doc.matches, filter, search, participants, matchStage],
   );
   const { visible: visibleMatches, pagination: matchPagination } =
-    usePagination(filtered, JSON.stringify([doc.id, filter, search]));
+    usePagination(
+      filtered,
+      JSON.stringify([doc.id, filter, search, matchStageId]),
+    );
   const fixtureRounds = useMemo(() => {
     const rounds = new Map<
       string,
@@ -194,14 +223,20 @@ export function Workspace({
     );
   }
   async function nextRound() {
-    if (computation.busy) return;
+    if (computation.busy || !roundStage || !canAdvanceRound) return;
     setError(undefined);
     try {
-      const next = requiresCompetitionWorker(doc, stageId)
-        ? await computation.run({ kind: "advance", tournament: doc, stageId })
-        : advanceStage(doc, stageId);
+      const next = requiresCompetitionWorker(doc, roundStage.id)
+        ? await computation.run({
+            kind: "advance",
+            tournament: doc,
+            stageId: roundStage.id,
+          })
+        : advanceStage(doc, roundStage.id);
       if (!next) return;
       onChange(next, t("Advance round", "پیشروی دور"));
+      setFilter("ready");
+      setSearch("");
       setError(undefined);
     } catch (e) {
       setError(e);
@@ -234,7 +269,7 @@ export function Workspace({
           </span>
           <span className="badge">
             {m.status === "completed"
-              ? t("Final", "نهایی")
+              ? t("Completed", "پایان‌یافته")
               : m.status === "live"
                 ? t("Live", "زنده")
                 : m.status === "ready"
@@ -433,20 +468,25 @@ export function Workspace({
                   </p>
                   <button
                     className="text-button"
-                    onClick={() =>
+                    onClick={() => {
+                      if (!champion && ready.length) {
+                        setFilter("ready");
+                        setMatchStageId("");
+                        setSearch("");
+                      }
                       setTab(
                         champion
                           ? "presentation"
                           : ready.length
                             ? "matches"
                             : "structure",
-                      )
-                    }
+                      );
+                    }}
                   >
                     {champion
                       ? t("Open presentation studio", "باز کردن استودیو نمایش")
                       : ready.length
-                        ? t("Go to match control", "رفتن به کنترل دیدار")
+                        ? t("Record results", "ثبت نتایج")
                         : t("Open structure", "باز کردن ساختار")}
                     <ArrowRight size={17} />
                   </button>
@@ -497,7 +537,9 @@ export function Workspace({
                 <button
                   className="text-button"
                   onClick={() => {
-                    if (champion) setFilter("completed");
+                    setFilter("all");
+                    setMatchStageId("");
+                    setSearch("");
                     setTab("matches");
                   }}
                 >
@@ -584,38 +626,50 @@ export function Workspace({
                 </div>
                 <div className="button-row">
                   <select
-                    aria-label={t("Stage", "مرحله")}
-                    value={stageId}
-                    onChange={(e) => setStageId(e.target.value)}
+                    aria-label={t("Filter by stage", "فیلتر بر اساس مرحله")}
+                    value={matchStage?.id ?? ""}
+                    onChange={(e) => setMatchStageId(e.target.value)}
                   >
+                    <option value="">{t("All stages", "همه مراحل")}</option>
                     {doc.stages.map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.name}
                       </option>
                     ))}
                   </select>
-                  <button
-                    className="button secondary"
-                    disabled={doc.stages.some(
-                      (stage) =>
-                        stage.id === stageId &&
-                        stage.format === "ladder" &&
-                        ladderPolicy(stage).mode === "invitations",
+                  {manualRounds &&
+                    roundMatches.length > 0 &&
+                    roundStage?.status !== "completed" && (
+                      <button
+                        className="button secondary"
+                        disabled={!canAdvanceRound || computation.busy}
+                        aria-describedby={
+                          !canAdvanceRound ? "next-round-help" : undefined
+                        }
+                        onClick={nextRound}
+                      >
+                        <Play size={16} />
+                        {t("Generate next round", "ساخت دور بعد")}
+                      </button>
                     )}
-                    onClick={nextRound}
-                  >
-                    <Play size={16} />
-                    {t("Next round", "دور بعد")}
-                  </button>
                 </div>
               </div>
-              {doc.stages.some(
-                (stage) => stage.id === stageId && stage.format === "ladder",
-              ) && (
+              {manualRounds &&
+                roundMatches.length > 0 &&
+                roundStage?.status !== "completed" &&
+                !canAdvanceRound && (
+                  <p className="match-round-help" id="next-round-help">
+                    {t(
+                      "Finish the current round before generating the next one.",
+                      "پیش از ساخت دور بعد، نتایج دور فعلی را ثبت کنید.",
+                    )}
+                  </p>
+                )}
+              {roundStage?.format === "ladder" && (
                 <LadderDesk
-                  key={stageId}
+                  key={roundStage.id}
                   tournament={doc}
-                  stageId={stageId}
+                  stageId={roundStage.id}
                   onChange={onChange}
                 />
               )}
@@ -623,7 +677,7 @@ export function Workspace({
                 <div className="segmented">
                   {[
                     ["ready", "Ready to play", "آماده بازی"],
-                    ["completed", "Completed", "کامل"],
+                    ["completed", "Completed", "پایان‌یافته"],
                     ["all", "All matches", "همه دیدارها"],
                   ].map(([id, en, fa]) => (
                     <button
@@ -679,10 +733,32 @@ export function Workspace({
               ) : (
                 <Empty
                   title={t("No matches in this view", "دیداری در این نما نیست")}
+                  action={
+                    doc.matches.length > 0 &&
+                    (search || filter !== "all" || matchStage) ? (
+                      <button
+                        className="button secondary"
+                        onClick={() => {
+                          setSearch("");
+                          setFilter("all");
+                          setMatchStageId("");
+                        }}
+                      >
+                        {t("Show all matches", "نمایش همه دیدارها")}
+                      </button>
+                    ) : (
+                      <button
+                        className="button secondary"
+                        onClick={() => setTab("structure")}
+                      >
+                        {t("Open structure", "باز کردن ساختار")}
+                      </button>
+                    )
+                  }
                 >
                   {t(
-                    "Switch the filter or advance the competition in Structure.",
-                    "فیلتر را تغییر دهید یا در ساختار رقابت را پیش ببرید.",
+                    "Try another stage or participant name. If matches have not been generated, open Structure.",
+                    "مرحله یا نام شرکت‌کننده را تغییر دهید. اگر هنوز دیداری ساخته نشده، بخش ساختار را باز کنید.",
                   )}
                 </Empty>
               )}

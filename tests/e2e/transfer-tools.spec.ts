@@ -14,6 +14,12 @@ async function section(page: Page, name: string) {
     .getByRole("navigation", { name: "Tournament sections" })
     .getByRole("button", { name, exact: true })
     .click();
+  if (name === "Share Center") {
+    const options = page.locator("details.share-advanced");
+    await expect(options).toBeVisible();
+    if ((await options.getAttribute("open")) === null)
+      await options.locator("summary").first().click();
+  }
 }
 async function fixture(page: Page) {
   let document = createTournament("Transfer tools cup", [
@@ -30,13 +36,11 @@ async function fixture(page: Page) {
     .getByRole("button", { name: "Import & restore", exact: true })
     .click();
   const dialog = page.getByRole("dialog", { name: dialogName });
-  await dialog
-    .locator('input[type="file"]')
-    .setInputFiles({
-      name: "transfer.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(document)),
-    });
+  await dialog.locator('input[type="file"]').setInputFiles({
+    name: "transfer.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(document)),
+  });
   await dialog
     .getByRole("button", { name: "Preview import", exact: true })
     .click();
@@ -114,14 +118,12 @@ test("compares saved revisions and exports an encrypted history backup through t
     .click();
   await saved(page);
   await section(page, "History");
-  const comparison = page
-    .locator("section")
-    .filter({
-      has: page.getByRole("heading", {
-        name: "Compare saved revisions",
-        exact: true,
-      }),
-    });
+  const comparison = page.locator("section").filter({
+    has: page.getByRole("heading", {
+      name: "Compare saved revisions",
+      exact: true,
+    }),
+  });
   await comparison
     .getByRole("button", { name: "Compare revisions", exact: true })
     .click();
@@ -158,7 +160,7 @@ test("compares saved revisions and exports an encrypted history backup through t
     .getByLabel("What do you want to transfer?", { exact: true })
     .selectOption("backup");
   const prepare = page.getByRole("button", {
-    name: "Prepare recommended transfer",
+    name: "Download encrypted backup",
     exact: true,
   });
   await expect(prepare).toBeDisabled();
@@ -179,13 +181,11 @@ test("compares saved revisions and exports an encrypted history backup through t
       .getByRole("button", { name: "Import & restore", exact: true })
       .click();
     const dialog = recipient.getByRole("dialog", { name: dialogName });
-    await dialog
-      .locator('input[type="file"]')
-      .setInputFiles({
-        name: "history.tourney",
-        mimeType: "application/octet-stream",
-        buffer: bytes,
-      });
+    await dialog.locator('input[type="file"]').setInputFiles({
+      name: "history.tourney",
+      mimeType: "application/octet-stream",
+      buffer: bytes,
+    });
     await dialog
       .getByRole("button", { name: "Preview import", exact: true })
       .click();

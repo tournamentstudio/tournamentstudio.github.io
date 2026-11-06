@@ -228,6 +228,26 @@
   font-size: 13px;
   line-height: 1.75;
 }
+.game-workspace .match-round-help {
+  margin-block: 0 18px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.75;
+}
+.game-match-control .primary-set-entry {
+  margin-block-end: 24px;
+}
+.game-match-control .primary-set-entry p {
+  margin-block: 8px 0;
+  font-size: 13px;
+  line-height: 1.75;
+}
+.game-match-control .score-unit {
+  font-size: 12px;
+}
+.game-match-control .game-identity-copy > span {
+  display: none;
+}
 .fixture-round {
   display: grid;
   grid-template-columns: 110px minmax(0, 1fr);

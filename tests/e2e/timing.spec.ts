@@ -18,13 +18,11 @@ async function openRuns(page: Page) {
   const dialog = page.getByRole("dialog", {
     name: "Bring a tournament into your studio",
   });
-  await dialog
-    .locator('input[type="file"]')
-    .setInputFiles({
-      name: "runs.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(doc)),
-    });
+  await dialog.locator('input[type="file"]').setInputFiles({
+    name: "runs.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(doc)),
+  });
   await dialog
     .getByRole("button", { name: "Preview import", exact: true })
     .click();
@@ -41,7 +39,7 @@ async function control(page: Page) {
   await page.getByRole("button", { name: "All matches", exact: true }).click();
   await page.locator(".match-tile.ready").first().click();
   const dialog = page.getByRole("dialog", {
-    name: "Match control",
+    name: /^(Enter|Edit) result$/,
     exact: true,
   });
   await dialog
@@ -113,7 +111,7 @@ test("retains run clocks across reload and records reviewed numeric times", asyn
   await expect(dialog.locator(".score-side input").nth(0)).toHaveValue("20");
   await expect(dialog.locator(".score-side input").nth(1)).toHaveValue("18");
   await dialog
-    .getByRole("button", { name: "Confirm result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await expect(dialog).not.toBeVisible();
   await expect(page.locator(".match-tile.completed")).toHaveCount(1);

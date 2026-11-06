@@ -182,12 +182,14 @@ export function Confirm({
   onConfirm,
   onClose,
   destructive = false,
+  confirmLabel,
 }: {
   title: string;
   message: ReactNode;
   onConfirm: () => void;
   onClose: () => void;
   destructive?: boolean;
+  confirmLabel?: string;
 }) {
   const { t } = useI18n();
   return (
@@ -205,7 +207,7 @@ export function Confirm({
             onClose();
           }}
         >
-          {t("Confirm", "تأیید")}
+          {confirmLabel ?? t("Confirm", "تأیید")}
         </button>
       </div>
     </Modal>

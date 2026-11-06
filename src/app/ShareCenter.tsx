@@ -38,6 +38,7 @@ import { prepareTransfer } from "../sharing/transfer";
 import { TransferAssistant, type TransferRequest } from "./TransferAssistant";
 import { QRTransfer } from "./QRTransfer";
 import { SignatureStudio } from "../sharing/SignatureStudio";
+import "./sharing-ux.css";
 
 export function ShareCenter({
   tournament: doc,
@@ -55,7 +56,9 @@ export function ShareCenter({
   const [storedCode, setCode] = useState("");
   const [link, setLink] = useState("");
   const [qr, setQr] = useState("");
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"code" | "link">();
+  const [downloaded, setDownloaded] = useState("");
+  const outputRef = useRef<HTMLElement>(null);
   const [error, setError] = useState<unknown>();
   const [baseRevision, setBaseRevision] = useState(
     Math.max(1, doc.revision - 1),
@@ -106,6 +109,9 @@ export function ShareCenter({
   const busy = pending === basis;
   const code = outputBasis === basis ? storedCode : "";
   useLayoutEffect(() => {
+    if (code) outputRef.current?.focus();
+  }, [code]);
+  useLayoutEffect(() => {
     activeScreen.current = true;
     return () => {
       activeScreen.current = false;
@@ -119,7 +125,8 @@ export function ShareCenter({
     setCode("");
     setLink("");
     setQr("");
-    setCopied(false);
+    setCopied(undefined);
+    setDownloaded("");
   }
   async function work(fn: (active: () => boolean) => Promise<void> | void) {
     const id = ++operation.current;
@@ -129,6 +136,7 @@ export function ShareCenter({
       latestBasis.current === basis;
     setPending(basis);
     setError(undefined);
+    setDownloaded("");
     try {
       await fn(active);
     } catch (e) {
@@ -156,7 +164,7 @@ export function ShareCenter({
     setOutputLabel(label);
     setOutputPrivate(privateData);
     setOutputProtection(protection);
-    setCopied(false);
+    setCopied(undefined);
     if (url && new TextEncoder().encode(url).length <= 1800) {
       const image = await QRCode.toDataURL(url, {
         errorCorrectionLevel: "M",
@@ -180,9 +188,9 @@ export function ShareCenter({
       embedded
         ? t(
             "Encrypted snapshot with embedded key",
-            "تصویر رمزگذاری‌شده با کلید همراه",
+            "نسخه رمزگذاری‌شده با کلید همراه",
           )
-        : t("Snapshot", "تصویر داده"),
+        : t("Tournament copy", "نسخه مسابقات"),
       true,
       active,
       scope === "private",
@@ -199,14 +207,26 @@ export function ShareCenter({
       );
       if (prepared.backupRevision !== undefined)
         await repository.markBackup(doc.id, prepared.backupRevision);
+      if (active())
+        setDownloaded(
+          prepared.privateData
+            ? t(
+                "Private backup downloaded. Keep the file and its password safe.",
+                "پشتیبان خصوصی دریافت شد. فایل و رمز آن را در جای امن نگه دارید.",
+              )
+            : t(
+                "Tournament file downloaded. Send it to your recipient.",
+                "فایل مسابقات دریافت شد. آن را برای گیرنده بفرستید.",
+              ),
+        );
       return;
     }
     const label =
       prepared.purpose === "recipe"
-        ? t("Structure recipe", "دستور ساخت")
+        ? t("Tournament template", "الگوی مسابقات")
         : prepared.purpose === "update"
           ? t("Update packet", "بسته به‌روزرسانی")
-          : t("Snapshot", "تصویر داده");
+          : t("Tournament copy", "نسخه مسابقات");
     await showCode(
       prepared.code,
       label,
@@ -229,11 +249,18 @@ export function ShareCenter({
     if (!active()) return;
     downloadFile(bytes, `${doc.slug || "tournament"}.tourney`);
     await repository.markBackup(doc.id, doc.revision);
+    if (active())
+      setDownloaded(
+        t(
+          "Backup downloaded. Keep this file for recovery.",
+          "پشتیبان دریافت شد. این فایل را برای بازیابی نگه دارید.",
+        ),
+      );
   }
   async function recipe(active: () => boolean) {
     await showCode(
       await encodeRecipe(doc),
-      t("Structure recipe", "دستور ساخت"),
+      t("Tournament template", "الگوی مسابقات"),
       false,
       active,
     );
@@ -254,208 +281,79 @@ export function ShareCenter({
       encryptPatch ? "separate" : "none",
     );
   }
-  async function copy(value: string, active: () => boolean) {
+  async function copy(
+    value: string,
+    kind: "code" | "link",
+    active: () => boolean,
+  ) {
     await navigator.clipboard.writeText(value);
-    if (active()) setCopied(true);
+    if (active()) setCopied(kind);
   }
   return (
-    <div className="panel-content">
+    <div className="panel-content sharing-workspace">
       <div className="section-heading">
         <div>
           <h2>{t("Share and back up", "اشتراک و پشتیبان‌گیری")}</h2>
           <p>
             {t(
-              "Portable data. No account or server in the middle.",
-              "داده قابل انتقال. بدون حساب یا سرور واسطه.",
+              "Send a copy of the current results, or save a backup. Shared copies do not update automatically.",
+              "نسخه‌ای از نتایج فعلی بفرستید یا پشتیبان بگیرید. نسخه‌های ارسالی خودکار به‌روز نمی‌شوند.",
             )}
           </p>
         </div>
         <button className="button secondary" onClick={() => onImport()}>
           <Download size={16} />
-          {t("Import a package", "ورود بسته")}
+          {t("Import a package", "وارد کردن فایل یا کد")}
         </button>
       </div>
       <ErrorText error={error} />
+      {downloaded && (
+        <p className="share-feedback" role="status">
+          {downloaded}
+        </p>
+      )}
       <TransferAssistant
         tournament={doc}
         busy={busy}
         onSettingsChange={invalidateOutput}
         onTransfer={(request) => work((active) => transfer(request, active))}
       />
-      <div className="share-layout">
-        <section className="panel share-main">
-          <div className="section-icon">
-            <Link2 />
-          </div>
-          <h3>{t("Share a complete snapshot", "اشتراک تصویر کامل داده")}</h3>
-          <p className="muted">
-            {t(
-              "The link or code contains the data itself. Recipients can view it and save their own copy. Later edits do not sync between devices.",
-              "پیوند یا کد، خود داده را در بر دارد. گیرنده می‌تواند آن را ببیند و کپی ذخیره کند. تغییرات بعدی بین دستگاه‌ها همگام نمی‌شوند.",
-            )}
-          </p>
-          <div className="two-columns">
-            <Field label={t("Included information", "اطلاعات موجود")}>
-              <select
-                value={scope}
-                onChange={(e) =>
-                  setScope(e.target.value as "public" | "private")
-                }
-              >
-                <option value="public">
-                  {t("Public spectator view", "نمای عمومی تماشاگر")}
-                </option>
-                <option value="private">
-                  {t("Complete private package", "بسته کامل خصوصی")}
-                </option>
-              </select>
-            </Field>
-            <Field label={t("Protection", "محافظت")}>
-              <select
-                value={encrypt ? "encrypted" : "plain"}
-                onChange={(e) => setEncrypt(e.target.value === "encrypted")}
-              >
-                <option value="plain">
-                  {t("No encryption", "بدون رمزگذاری")}
-                </option>
-                <option value="encrypted">
-                  {t(
-                    "Encrypt with a separate secret",
-                    "رمزگذاری با رمز جداگانه",
-                  )}
-                </option>
-              </select>
-            </Field>
-          </div>
-          {scope === "private" && (
-            <Notice>
-              {t(
-                "Private packages include organizer notes, rosters, entrant and venue coordinates, and referee secrets. Give them only to trusted organizers.",
-                "بسته خصوصی شامل یادداشت‌ها، ترکیب تیم، مختصات شرکت‌کنندگان و محل‌های بازی و اسرار داور است. فقط به برگزارکنندگان مورد اعتماد بدهید.",
-              )}
-            </Notice>
-          )}
-          {encrypt && (
-            <Field
-              label={t(
-                "Separate sharing secret (8+ characters)",
-                "رمز جداگانه اشتراک (حداقل ۸ نویسه)",
-              )}
-            >
-              <input
-                type="password"
-                autoComplete="new-password"
-                value={password}
-                minLength={8}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </Field>
-          )}
-          <button
-            className="button primary"
-            disabled={busy || (encrypt && password.length < 8)}
-            onClick={() => work((active) => snapshot(active))}
-          >
-            <Link2 size={17} />
-            {t("Generate link & code", "ساخت پیوند و کد")}
-          </button>
-          <button
-            className="button secondary"
-            disabled={busy}
-            onClick={() => work((active) => snapshot(active, true))}
-          >
-            <LockKeyhole size={17} />
-            {t(
-              "Generate encrypted link with embedded key",
-              "ساخت پیوند رمزگذاری‌شده با کلید همراه",
-            )}
-          </button>
-          <p className="muted">
-            {t(
-              "An embedded-key link includes its decryption key. Anyone with the complete link can read and copy its contents; no separate secret is needed.",
-              "پیوند دارای کلید همراه، کلید رمزگشایی را در خود دارد. هرکس پیوند کامل را داشته باشد می‌تواند محتوا را بخواند و کپی کند؛ رمز جداگانه لازم نیست.",
-            )}
-          </p>
-          <div className="sharing-facts">
-            <Check size={16} />
-            <span>
-              {t(
-                "Public snapshots exclude private notes, rosters, entrant and venue coordinates, and concealed positions. Saved matches and venue names remain visible. Enter the required coordinates before regenerating or scheduling a venue-restricted draw.",
-                "تصویر عمومی فاقد یادداشت خصوصی، ترکیب تیم، مختصات شرکت‌کنندگان و محل‌های بازی و مکان گل است. دیدارهای ذخیره‌شده و نام محل‌ها قابل مشاهده می‌مانند. پیش از ساخت دوباره یا زمان‌بندی قرعه دارای محدودیت محل بازی، مختصات لازم را وارد کنید.",
-              )}
-            </span>
-          </div>
-        </section>
-        <section className="panel share-side">
-          <FileArchive size={27} />
-          <h3>{t("Tournament backup", "پشتیبان مسابقات")}</h3>
-          <p>
-            {t(
-              "Download a .tourney archive with the complete document, theme, coordinates, and saved revisions. The same secret protects every included revision. Larger competitions travel best as files.",
-              "بایگانی .tourney شامل کل داده، تم، مختصات و نسخه‌های ذخیره‌شده دریافت کنید. یک رمز از همه نسخه‌های موجود محافظت می‌کند. مسابقات بزرگ بهتر است با فایل منتقل شوند.",
-            )}
-          </p>
-          <label className="check-row">
-            <input
-              type="checkbox"
-              checked={includeHistory}
-              onChange={(event) => setIncludeHistory(event.target.checked)}
-            />
-            {t(
-              "Include saved revisions (up to 50)",
-              "شامل نسخه‌های ذخیره‌شده (تا ۵۰ نسخه)",
-            )}
-          </label>
-          {secret && (
-            <span className="badge">
-              <LockKeyhole size={13} />
-              {encrypt
-                ? t(
-                    "Separate sharing secret protects this backup",
-                    "رمز جداگانه اشتراک از این نسخه محافظت می‌کند",
-                  )
-                : t(
-                    "Vault secret protects this backup",
-                    "رمز گاوصندوق از این نسخه محافظت می‌کند",
-                  )}
-            </span>
-          )}
-          <button
-            className="button secondary"
-            disabled={busy || (encrypt && password.length < 8)}
-            onClick={() => work(backup)}
-          >
-            <Download size={16} />
-            {t("Download private backup", "دریافت پشتیبان خصوصی")}
-          </button>
-          <hr />
-          <Code2 size={23} />
-          <h3>{t("Share the format", "اشتراک قالب")}</h3>
-          <p>
-            {t(
-              "A compact recipe recreates settings with numbered entrants. Names and results are left out.",
-              "دستور ساخت فشرده، تنظیمات را با نام‌های شماره‌دار بازسازی می‌کند. نام‌ها و نتایج حذف می‌شوند.",
-            )}
-          </p>
-          <button
-            className="button secondary"
-            disabled={busy}
-            onClick={() => work(recipe)}
-          >
-            {t("Create recipe", "ساخت دستور")}
-          </button>
-        </section>
-      </div>
       {!!code && (
-        <section className="panel output-panel">
+        <section
+          className="panel output-panel"
+          ref={outputRef}
+          tabIndex={-1}
+          aria-label={t("Ready to share", "آماده ارسال")}
+        >
           <div className="section-heading">
             <h3>{outputLabel}</h3>
             <span className="badge">{(code.length / 1024).toFixed(1)} KB</span>
           </div>
+          <p className="share-next-step">
+            {code.startsWith("TSP1:")
+              ? t(
+                  "Send this code to your recipient. They first open their saved tournament, then use Import & restore to review the changes.",
+                  "کد را برای گیرنده بفرستید. او ابتدا مسابقات ذخیره‌شده را باز می‌کند و سپس با «وارد کردن و بازیابی» تغییرات را بررسی می‌کند.",
+                )
+              : link
+                ? t(
+                    "Copy the link and send it to your recipient. It opens a preview; they choose whether to save a copy.",
+                    "پیوند را کپی کنید و برای گیرنده بفرستید. ابتدا پیش‌نمایش باز می‌شود؛ گیرنده می‌تواند نسخه‌ای ذخیره کند.",
+                  )
+                : t(
+                    "Copy the code and send it to your recipient. They can paste it into Import & restore to review it.",
+                    "کد را کپی کنید و برای گیرنده بفرستید. او می‌تواند کد را در «وارد کردن و بازیابی» بچسباند و بررسی کند.",
+                  )}
+          </p>
           <p className="muted">
-            {outputPrivate
-              ? t("Private organizer data", "داده خصوصی برگزارکننده")
-              : t("Public spectator data", "داده عمومی تماشاگر")}
+            {/^TSR[12]:/.test(code)
+              ? t(
+                  "Tournament setup without names or results",
+                  "تنظیمات مسابقات بدون نام و نتیجه",
+                )
+              : outputPrivate
+                ? t("Private organizer data", "داده خصوصی برگزارکننده")
+                : t("Public spectator data", "داده عمومی تماشاگر")}
             {" · "}
             {outputProtection === "embedded"
               ? t("Decryption key included", "کلید رمزگشایی همراه است")
@@ -474,32 +372,36 @@ export function ShareCenter({
             />
           </Field>
           {link && (
-            <Field label={t("Snapshot link", "پیوند تصویر داده")}>
+            <Field label={t("Snapshot link", "پیوند نسخه مسابقات")}>
               <input
                 readOnly
                 value={link}
                 dir="ltr"
-                aria-label={t("Snapshot link", "پیوند تصویر داده")}
+                aria-label={t("Snapshot link", "پیوند نسخه مسابقات")}
               />
             </Field>
           )}
           <div className="button-row">
             <button
-              className="button primary"
+              className={`button ${link ? "secondary" : "primary"}`}
               disabled={busy}
-              onClick={() => work((active) => copy(code, active))}
+              onClick={() => work((active) => copy(code, "code", active))}
             >
-              {copied ? <Check size={16} /> : <Copy size={16} />}{" "}
-              {copied ? t("Copied", "کپی شد") : t("Copy code", "کپی کد")}
+              {copied === "code" ? <Check size={16} /> : <Copy size={16} />}{" "}
+              {copied === "code"
+                ? t("Code copied", "کد کپی شد")
+                : t("Copy code", "کپی کد")}
             </button>
             {link && (
               <button
-                className="button secondary"
+                className="button primary"
                 disabled={busy}
-                onClick={() => work((active) => copy(link, active))}
+                onClick={() => work((active) => copy(link, "link", active))}
               >
-                <Link2 size={16} />
-                {t("Copy link", "کپی پیوند")}
+                {copied === "link" ? <Check size={16} /> : <Link2 size={16} />}
+                {copied === "link"
+                  ? t("Link copied", "پیوند کپی شد")
+                  : t("Copy link", "کپی پیوند")}
               </button>
             )}
             <button
@@ -519,8 +421,8 @@ export function ShareCenter({
           {code.length > 12000 && (
             <Notice>
               {t(
-                "This snapshot is large. Use a .tourney file to avoid link or message length limits.",
-                "این تصویر داده بزرگ است. برای جلوگیری از محدودیت طول پیام یا پیوند از فایل استفاده کنید.",
+                "This copy is large. Use a .tourney file to avoid link or message length limits.",
+                "حجم این نسخه زیاد است. برای جلوگیری از محدودیت طول پیام یا پیوند از فایل استفاده کنید.",
               )}
             </Notice>
           )}
@@ -531,7 +433,10 @@ export function ShareCenter({
                 src={qr}
                 width={200}
                 height={200}
-                alt={t("QR code for this snapshot", "کد QR تصویر داده")}
+                alt={t(
+                  "QR code for this tournament copy",
+                  "کد QR نسخه مسابقات",
+                )}
               />
               <div>
                 <h4>
@@ -541,7 +446,7 @@ export function ShareCenter({
                 <p>
                   {t(
                     "Anyone with the full link can keep a copy. A shared snapshot cannot be remotely revoked.",
-                    "هرکس پیوند کامل را داشته باشد می‌تواند کپی نگه دارد. تصویر اشتراک‌گذاری شده از راه دور قابل پس گرفتن نیست.",
+                    "هرکس پیوند کامل را داشته باشد می‌تواند کپی نگه دارد. نسخه ارسالی از راه دور قابل پس گرفتن نیست.",
                   )}
                 </p>
                 <a
@@ -565,7 +470,183 @@ export function ShareCenter({
           )}
         </section>
       )}
-      <div className="two-columns">
+      <details className="panel share-advanced">
+        <summary>{t("More sharing options", "گزینه‌های بیشتر اشتراک")}</summary>
+        <p className="muted">
+          {t(
+            "Choose encryption, a specific format, backup history or an earlier version for updates.",
+            "رمزگذاری، قالب خروجی، تاریخچه پشتیبان یا نسخه مبنای به‌روزرسانی را انتخاب کنید.",
+          )}
+        </p>
+        <div className="share-layout">
+          <section className="panel share-main">
+            <div className="section-icon">
+              <Link2 />
+            </div>
+            <h3>{t("Choose your sharing settings", "تنظیمات اشتراک")}</h3>
+            <p className="muted">
+              {t(
+                "Links and codes carry a copy of the tournament. Recipients can view or save it. Send another copy or an update when results change.",
+                "پیوند و کد، نسخه‌ای از مسابقات را در خود دارند. گیرنده می‌تواند آن را ببیند یا ذخیره کند. پس از تغییر نتایج، نسخه تازه یا به‌روزرسانی بفرستید.",
+              )}
+            </p>
+            <div className="two-columns">
+              <Field label={t("Included information", "اطلاعات موجود")}>
+                <select
+                  value={scope}
+                  onChange={(e) =>
+                    setScope(e.target.value as "public" | "private")
+                  }
+                >
+                  <option value="public">
+                    {t("Public spectator view", "نمای عمومی تماشاگر")}
+                  </option>
+                  <option value="private">
+                    {t("Complete private package", "بسته کامل خصوصی")}
+                  </option>
+                </select>
+              </Field>
+              <Field label={t("Protection", "محافظت")}>
+                <select
+                  value={encrypt ? "encrypted" : "plain"}
+                  onChange={(e) => setEncrypt(e.target.value === "encrypted")}
+                >
+                  <option value="plain">
+                    {t("No encryption", "بدون رمزگذاری")}
+                  </option>
+                  <option value="encrypted">
+                    {t(
+                      "Encrypt with a separate secret",
+                      "رمزگذاری با رمز جداگانه",
+                    )}
+                  </option>
+                </select>
+              </Field>
+            </div>
+            {scope === "private" && (
+              <Notice>
+                {t(
+                  "Private packages include organizer notes, rosters, entrant and venue coordinates, and referee secrets. Give them only to trusted organizers.",
+                  "بسته خصوصی شامل یادداشت‌ها، ترکیب تیم، مختصات شرکت‌کنندگان و محل‌های بازی و اسرار داور است. فقط به برگزارکنندگان مورد اعتماد بدهید.",
+                )}
+              </Notice>
+            )}
+            {encrypt && (
+              <Field
+                label={t(
+                  "Separate sharing secret (8+ characters)",
+                  "رمز جداگانه اشتراک (حداقل ۸ نویسه)",
+                )}
+              >
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={password}
+                  minLength={8}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </Field>
+            )}
+            <button
+              className="button primary"
+              disabled={busy || (encrypt && password.length < 8)}
+              onClick={() => work((active) => snapshot(active))}
+            >
+              <Link2 size={17} />
+              {t("Generate link & code", "ساخت پیوند و کد")}
+            </button>
+            <button
+              className="button secondary"
+              disabled={busy}
+              onClick={() => work((active) => snapshot(active, true))}
+            >
+              <LockKeyhole size={17} />
+              {t(
+                "Generate encrypted link with embedded key",
+                "ساخت پیوند رمزگذاری‌شده با کلید همراه",
+              )}
+            </button>
+            <p className="muted">
+              {t(
+                "An embedded-key link includes its decryption key. Anyone with the complete link can read and copy its contents; no separate secret is needed.",
+                "پیوند دارای کلید همراه، کلید رمزگشایی را در خود دارد. هرکس پیوند کامل را داشته باشد می‌تواند محتوا را بخواند و کپی کند؛ رمز جداگانه لازم نیست.",
+              )}
+            </p>
+            <div className="sharing-facts">
+              <Check size={16} />
+              <span>
+                {t(
+                  "Spectator copies exclude private notes, rosters, coordinates and referee secrets. Match results and venue names are included. Venue-restricted draws need coordinates added again before they can be regenerated or scheduled.",
+                  "نسخه تماشاگر شامل یادداشت خصوصی، ترکیب تیم، مختصات و اسرار داور نیست. نتایج و نام محل‌ها باقی می‌مانند. برای ساخت دوباره یا زمان‌بندی قرعه دارای محدودیت محل، مختصات را دوباره وارد کنید.",
+                )}
+              </span>
+            </div>
+          </section>
+          <section className="panel share-side">
+            <FileArchive size={27} />
+            <h3>{t("Tournament backup", "پشتیبان مسابقات")}</h3>
+            <p>
+              {t(
+                "A .tourney file keeps all tournament data, including private details. Choose whether to include saved revisions. If encrypted, the same password protects them all.",
+                "فایل .tourney همه اطلاعات مسابقات، از جمله جزئیات خصوصی را نگه می‌دارد. می‌توانید تاریخچه را هم اضافه کنید. در حالت رمزگذاری، همه نسخه‌ها با یک رمز محافظت می‌شوند.",
+              )}
+            </p>
+            <label className="check-row">
+              <input
+                type="checkbox"
+                checked={includeHistory}
+                onChange={(event) => setIncludeHistory(event.target.checked)}
+              />
+              {t(
+                "Include saved revisions (up to 50)",
+                "شامل نسخه‌های ذخیره‌شده (تا ۵۰ نسخه)",
+              )}
+            </label>
+            {secret && (
+              <span className="badge">
+                <LockKeyhole size={13} />
+                {encrypt
+                  ? t(
+                      "Separate sharing secret protects this backup",
+                      "رمز جداگانه اشتراک از این نسخه محافظت می‌کند",
+                    )
+                  : t(
+                      "Vault secret protects this backup",
+                      "رمز گاوصندوق از این نسخه محافظت می‌کند",
+                    )}
+              </span>
+            )}
+            <button
+              className="button secondary"
+              disabled={busy || (encrypt && password.length < 8)}
+              onClick={() => work(backup)}
+            >
+              <Download size={16} />
+              {t("Download private backup", "دریافت پشتیبان خصوصی")}
+            </button>
+            <hr />
+            <Code2 size={23} />
+            <h3>
+              {t(
+                "Reuse this tournament setup",
+                "استفاده دوباره از تنظیمات مسابقات",
+              )}
+            </h3>
+            <p>
+              {t(
+                "A template keeps the stages, rules and theme. Names and results are replaced with numbered entrants.",
+                "الگو، مراحل، قوانین و تم را نگه می‌دارد. نام‌ها و نتایج حذف می‌شوند و شرکت‌کنندگان شماره‌دار جای آن‌ها را می‌گیرند.",
+              )}
+            </p>
+            <button
+              className="button secondary"
+              disabled={busy}
+              onClick={() => work(recipe)}
+            >
+              {t("Create template code", "ساخت کد الگو")}
+            </button>
+          </section>
+        </div>
         <section className="panel">
           <div className="section-icon">
             <RefreshCw />
@@ -587,7 +668,7 @@ export function ShareCenter({
                 onChange={(e) => setBaseRevision(Number(e.target.value))}
               />
             </Field>
-            <Field label={t("Recipient snapshot type", "نوع تصویر گیرنده")}>
+            <Field label={t("Recipient snapshot type", "نوع نسخه گیرنده")}>
               <select
                 value={patchScope}
                 onChange={(e) =>
@@ -595,7 +676,7 @@ export function ShareCenter({
                 }
               >
                 <option value="public">
-                  {t("Public spectator snapshot", "تصویر عمومی تماشاگر")}
+                  {t("Public spectator snapshot", "نسخه عمومی تماشاگر")}
                 </option>
                 <option value="private">
                   {t("Private backup", "پشتیبان خصوصی")}
@@ -649,78 +730,74 @@ export function ShareCenter({
             {t("Generate update code", "ساخت کد به‌روزرسانی")}
           </button>
         </section>
-        <section className="panel">
-          <div className="section-icon">
-            <Image />
-          </div>
-          <h3>{t("Export and print", "خروجی و چاپ")}</h3>
-          <p className="muted">
-            {t(
-              "Export your bracket, print a match sheet, or move the schedule into a calendar. PDF is available through your browser’s print dialog.",
-              "جدول را صادر کنید، برگه دیدار چاپ کنید یا برنامه را به تقویم ببرید. PDF از پنجره چاپ مرورگر در دسترس است.",
-            )}
-          </p>
-          <div className="export-grid">
-            <button
-              className="button secondary"
-              disabled={busy}
-              onClick={() =>
-                work(() => exportBracketSVG(doc, undefined, locale))
-              }
-            >
-              SVG
-            </button>
-            <button
-              className="button secondary"
-              disabled={busy}
-              onClick={() =>
-                work(() => exportBracketPNG(doc, undefined, locale))
-              }
-            >
-              PNG
-            </button>
-            <button
-              className="button secondary"
-              disabled={busy}
-              onClick={() => work(() => printTournament(doc, locale))}
-            >
-              <Printer size={15} />
-              PDF / {t("Print", "چاپ")}
-            </button>
-            <button
-              className="button secondary"
-              onClick={() => exportCSV(doc, "matches", locale)}
-            >
-              CSV
-            </button>
-            <button
-              className="button secondary"
-              onClick={() => exportCalendar(doc, locale)}
-            >
-              Calendar
-            </button>
-            <button
-              className="button secondary"
-              onClick={() =>
-                downloadFile(
-                  JSON.stringify(publicProjection(doc), null, 2),
-                  `${doc.slug}-public.json`,
-                  "application/json",
-                )
-              }
-            >
-              JSON
-            </button>
-          </div>
-        </section>
-      </div>
+        <Notice>
+          {t(
+            "Read-only is a viewing mode, not copy protection. Checksums detect damage. Signed packets can authenticate a previously trusted key; they do not independently establish a person's identity or authority.",
+            "فقط‌خواندنی حالت نمایش است، نه جلوگیری از کپی. چک‌سام خرابی را تشخیص می‌دهد. بسته امضاشده می‌تواند کلیدی را که قبلاً مورد اعتماد قرار گرفته تأیید کند؛ هویت یا اختیار شخص را به‌طور مستقل ثابت نمی‌کند.",
+          )}
+        </Notice>
+      </details>
+      <section className="panel">
+        <div className="section-icon">
+          <Image />
+        </div>
+        <h3>{t("Export and print", "خروجی و چاپ")}</h3>
+        <p className="muted">
+          {t(
+            "Export your bracket, print a match sheet, or move the schedule into a calendar. PDF is available through your browser’s print dialog.",
+            "جدول را صادر کنید، برگه دیدار چاپ کنید یا برنامه را به تقویم ببرید. PDF از پنجره چاپ مرورگر در دسترس است.",
+          )}
+        </p>
+        <div className="export-grid">
+          <button
+            className="button secondary"
+            disabled={busy}
+            onClick={() => work(() => exportBracketSVG(doc, undefined, locale))}
+          >
+            {t("Bracket SVG", "جدول SVG")}
+          </button>
+          <button
+            className="button secondary"
+            disabled={busy}
+            onClick={() => work(() => exportBracketPNG(doc, undefined, locale))}
+          >
+            {t("Bracket PNG", "جدول PNG")}
+          </button>
+          <button
+            className="button secondary"
+            disabled={busy}
+            onClick={() => work(() => printTournament(doc, locale))}
+          >
+            <Printer size={15} />
+            {t("Print / PDF", "چاپ / PDF")}
+          </button>
+          <button
+            className="button secondary"
+            onClick={() => exportCSV(doc, "matches", locale)}
+          >
+            {t("Matches CSV", "دیدارها CSV")}
+          </button>
+          <button
+            className="button secondary"
+            onClick={() => exportCalendar(doc, locale)}
+          >
+            {t("Calendar ICS", "تقویم ICS")}
+          </button>
+          <button
+            className="button secondary"
+            onClick={() =>
+              downloadFile(
+                JSON.stringify(publicProjection(doc), null, 2),
+                `${doc.slug}-public.json`,
+                "application/json",
+              )
+            }
+          >
+            {t("Public tournament JSON", "JSON عمومی مسابقات")}
+          </button>
+        </div>
+      </section>
       <SignatureStudio sourceCode={code} onPreview={onImport} />
-      <Notice>
-        {t(
-          "Read-only is a viewing mode, not copy protection. Checksums detect damage. Signed packets can authenticate a previously trusted key; they do not independently establish a person's identity or authority.",
-          "فقط‌خواندنی حالت نمایش است، نه جلوگیری از کپی. چک‌سام خرابی را تشخیص می‌دهد. بسته امضاشده می‌تواند کلیدی را که قبلاً مورد اعتماد قرار گرفته تأیید کند؛ هویت یا اختیار شخص را به‌طور مستقل ثابت نمی‌کند.",
-        )}
-      </Notice>
     </div>
   );
 }

@@ -59,7 +59,7 @@ test("operator sections and score dialog pass automated AA checks", async ({
     .getByRole("button", { name: "Matches", exact: true })
     .click();
   await page.locator("button.match-tile.ready").first().click();
-  const dialog = page.getByRole("dialog", { name: "Match control" });
+  const dialog = page.getByRole("dialog", { name: /^(Enter|Edit) result$/ });
   await expect(dialog).toBeVisible();
   const result = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])

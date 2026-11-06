@@ -27,13 +27,11 @@ async function setup(page: Page, mode: "invitations" | "king-of-hill") {
   const dialog = page.getByRole("dialog", {
     name: "Bring a tournament into your studio",
   });
-  await dialog
-    .locator('input[type="file"]')
-    .setInputFiles({
-      name: "challenge.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(doc)),
-    });
+  await dialog.locator('input[type="file"]').setInputFiles({
+    name: "challenge.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(doc)),
+  });
   await dialog
     .getByRole("button", { name: "Preview import", exact: true })
     .click();
@@ -68,7 +66,7 @@ async function invite(page: Page, challenger: string, opponent: string) {
 }
 async function result(page: Page, challengerWins: boolean) {
   await page.locator("button.match-tile.ready").first().click();
-  const dialog = page.getByRole("dialog", { name: "Match control" });
+  const dialog = page.getByRole("dialog", { name: /^(Enter|Edit) result$/ });
   await dialog
     .locator('.score-entry input[type="number"]')
     .nth(0)
@@ -78,7 +76,7 @@ async function result(page: Page, challengerWins: boolean) {
     .nth(1)
     .fill(challengerWins ? "2" : "0");
   await dialog
-    .getByRole("button", { name: "Confirm result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await expect(dialog).not.toBeVisible();
   await saved(page);

@@ -100,8 +100,8 @@ async function openMatch(page: Page, doc: Tournament) {
   await page.locator(`.match-tile.${doc.matches[0].status}`).first().click();
   return page.getByRole("dialog", {
     name: doc.stages[0].config.aggregate
-      ? "Aggregate match control"
-      : "Match control",
+      ? /^(Enter|Edit) result$/
+      : /^(Enter|Edit) result$/,
     exact: true,
   });
 }
@@ -126,7 +126,7 @@ test("reset restores all saved fields and preserves live Gol scores", async ({
     .getByLabel("Result type", { exact: true })
     .selectOption("forfeit");
   await dialog
-    .getByLabel("Winner decision", { exact: true })
+    .getByLabel("Winner", { exact: true })
     .selectOption(first.slots[1].participantId!);
   await dialog
     .getByText("Sets, referee, and private notes", { exact: true })
@@ -142,18 +142,18 @@ test("reset restores all saved fields and preserves live Gol scores", async ({
     .getByLabel("Record fair-play penalties", { exact: true })
     .check();
   await dialog
-    .getByRole("button", { name: "Confirm result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await expect(dialog.getByRole("alert")).toContainText("Enter each set");
-  await dialog.getByRole("button", { name: "Reset form", exact: true }).click();
+  await dialog
+    .getByRole("button", { name: "Discard edits", exact: true })
+    .click();
   await expect(scores.first()).toHaveValue("3");
   await expect(scores.nth(1)).toHaveValue("0");
   await expect(dialog.getByLabel("Result type", { exact: true })).toHaveValue(
     "played",
   );
-  await expect(
-    dialog.getByLabel("Winner decision", { exact: true }),
-  ).toHaveValue("");
+  await expect(dialog.getByLabel("Winner", { exact: true })).toHaveValue("");
   await expect(
     dialog.getByLabel("Set scores (one set per line)", { exact: true }),
   ).toHaveValue("");
@@ -178,10 +178,10 @@ test("edited scores require a new correction preview before reopening dependents
   const score = dialog.locator(".score-entry input").first();
   await score.fill("4");
   await dialog
-    .getByRole("button", { name: "Confirm result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   const confirm = dialog.getByRole("button", {
-    name: "Confirm correction and reset dependents",
+    name: "Save correction and clear later matches",
     exact: true,
   });
   await expect(confirm).toBeVisible();
@@ -189,7 +189,7 @@ test("edited scores require a new correction preview before reopening dependents
   await expect(confirm).toHaveCount(0);
   expect((await saved(page, doc.id)).matches[0].result?.scores).toEqual([3, 1]);
   await dialog
-    .getByRole("button", { name: "Confirm result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await confirm.click();
   await expect(dialog).not.toBeVisible();
@@ -206,11 +206,11 @@ test("removing aggregate legs invalidates a pending correction", async ({
   const dialog = await openMatch(page, doc);
   await dialog.getByRole("spinbutton").first().fill("4");
   const submit = dialog.getByRole("button", {
-    name: "Confirm aggregate result",
+    name: /^Save (result|changes)$/,
     exact: true,
   });
   const confirm = dialog.getByRole("button", {
-    name: "Confirm correction and reset dependents",
+    name: "Save correction and clear later matches",
     exact: true,
   });
   await submit.click();

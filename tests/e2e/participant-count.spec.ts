@@ -257,7 +257,7 @@ test("updates Swiss defaults and validates format-specific participant limits", 
   await count.fill("2");
   await count.press("Tab");
   await expect(
-    page.getByLabel("Rounds for Swiss / circuits", { exact: true }),
+    page.getByLabel("Number of rounds", { exact: true }),
   ).toHaveValue("1");
   const doc = await finish(page);
   expect(doc.participants).toHaveLength(2);
@@ -325,12 +325,10 @@ for (const groupedFormat of ["groups", "gsl"] as const) {
     await playingField(page);
     const format = page.getByLabel("Competition format", { exact: true });
     await format.selectOption("swiss");
-    await page
-      .getByLabel("Rounds for Swiss / circuits", { exact: true })
-      .fill("0");
+    await page.getByLabel("Number of rounds", { exact: true }).fill("0");
     await format.selectOption(groupedFormat);
     await expect(
-      page.getByLabel("Rounds for Swiss / circuits", { exact: true }),
+      page.getByLabel("Number of rounds", { exact: true }),
     ).toHaveCount(0);
     const doc = await finish(page);
     expect(doc.stages[0].format).toBe(groupedFormat);

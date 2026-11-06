@@ -93,7 +93,7 @@ test("keeps Gol identity with a neutral theme and private state out of public ic
     .click();
   await page.locator("button.match-tile.ready").first().click();
   const match = page.getByRole("dialog", {
-    name: "Match control",
+    name: /^(Enter|Edit) result$/,
     exact: true,
   });
   const emblems = match.locator(".score-side .game-icon");
@@ -115,7 +115,7 @@ test("keeps Gol identity with a neutral theme and private state out of public ic
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator("button.match-tile.ready").first().click();
   await expect(
-    page.getByRole("dialog", { name: "کنترل دیدار", exact: true }),
+    page.getByRole("dialog", { name: /^(ثبت|ویرایش) نتیجه$/, exact: true }),
   ).toBeVisible();
   const progressLabel = page.locator(".gol-target-track > span").first();
   await expect(progressLabel).toHaveText("۰ / ۶");

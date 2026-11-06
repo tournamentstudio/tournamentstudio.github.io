@@ -10,7 +10,10 @@ The November 6, 2026 design pass takes its cues from competition programs and
 scorecards. Saved tournaments have illustrated game covers, the match desk groups
 fixtures by round, and draws and champion screens have their own compositions.
 English and Persian layouts keep artwork separate from names and controls.
-The [interface audit](UI_REVIEW.md) records the reviews and corrections. Earlier
+The [interface audit](UI_REVIEW.md) records the reviews and corrections.
+The later [workflow review](UX_REVIEW.md) compares relevant tournament tools and
+improves setup guidance, score-entry commands, sharing choices and Persian wording.
+It also fixes stage filtering, score-edit defaults and mobile dialog handoffs. Earlier
 participant-count, group-draw and data-recovery fixes
 remain covered by the tests. The [release handoff](RELEASE_STATUS.md),
 [performance measurements](PERFORMANCE.md) and [maintenance review](MAINTENANCE_AUDIT.md)

@@ -20,6 +20,12 @@ async function section(page: Page, name: string) {
     .getByRole("navigation", { name: "Tournament sections" })
     .getByRole("button", { name, exact: true })
     .click();
+  if (name === "Share Center") {
+    const options = page.locator("details.share-advanced");
+    await expect(options).toBeVisible();
+    if ((await options.getAttribute("open")) === null)
+      await options.locator("summary").first().click();
+  }
 }
 function fixture() {
   const doc = createTournament(
@@ -54,11 +60,11 @@ async function importDocument(page: Page, doc: Tournament) {
 async function recordFirst(page: Page) {
   await section(page, "Matches");
   await page.locator("button.match-tile.ready").first().click();
-  const dialog = page.getByRole("dialog", { name: "Match control" });
+  const dialog = page.getByRole("dialog", { name: /^(Enter|Edit) result$/ });
   await dialog.locator('.score-entry input[type="number"]').nth(0).fill("3");
   await dialog.locator('.score-entry input[type="number"]').nth(1).fill("1");
   await dialog
-    .getByRole("button", { name: "Confirm result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await expect(dialog).not.toBeVisible();
   await saved(page);
@@ -105,7 +111,7 @@ test("exports and reconstructs a multi-stage recipe on a separate browser profil
   await importDocument(page, source);
   await section(page, "Share Center");
   await page
-    .getByRole("button", { name: "Create recipe", exact: true })
+    .getByRole("button", { name: "Create template code", exact: true })
     .click();
   await expect(page.getByLabel("Portable code", { exact: true })).toHaveValue(
     /^TSR2:/,
@@ -312,7 +318,9 @@ test("requires downstream confirmation during selective result correction", asyn
     dialog.getByRole("button", { name: "Apply selected changes", exact: true }),
   ).toBeDisabled();
   await expect(
-    dialog.getByText(/These matches have recorded activity affected by the selected changes/),
+    dialog.getByText(
+      /These matches have recorded activity affected by the selected changes/,
+    ),
   ).toBeVisible();
   await dialog.getByLabel("Confirm affected match changes").check();
   await dialog

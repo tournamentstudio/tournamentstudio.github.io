@@ -16,6 +16,12 @@ async function section(page: Page, name: string) {
     .getByRole("navigation", { name: "Tournament sections" })
     .getByRole("button", { name, exact: true })
     .click();
+  if (name === "Share Center") {
+    const options = page.locator("details.share-advanced");
+    await expect(options).toBeVisible();
+    if ((await options.getAttribute("open")) === null)
+      await options.locator("summary").first().click();
+  }
 }
 async function open(page: Page, correctPoints = true) {
   const doc = createTournament(
@@ -47,7 +53,7 @@ async function open(page: Page, correctPoints = true) {
 async function exported(page: Page): Promise<Tournament> {
   await section(page, "Share Center");
   const pending = page.waitForEvent("download");
-  await page.getByRole("button", { name: "JSON", exact: true }).click();
+  await page.getByRole("button", { name: "Public tournament JSON", exact: true }).click();
   const stream = await (await pending).createReadStream();
   const chunks: Buffer[] = [];
   for await (const chunk of stream!) chunks.push(Buffer.from(chunk));
@@ -152,16 +158,18 @@ test("Dutch pairing generates the next round offline under the production CSP", 
   await expect(
     panel.getByLabel("Swiss pairing system", { exact: true }),
   ).toBeDisabled();
-  await expect(panel.getByText("Fixed tournament pairing numbers", { exact: true })).toBeVisible();
+  await expect(
+    panel.getByText("Fixed tournament pairing numbers", { exact: true }),
+  ).toBeVisible();
   await saved(page);
   await section(page, "Matches");
   for (let index = 0; index < 2; index++) {
     await page.locator("button.match-tile.ready").first().click();
-    const dialog = page.getByRole("dialog", { name: "Match control" });
+    const dialog = page.getByRole("dialog", { name: /^(Enter|Edit) result$/ });
     await dialog.locator('.score-entry input[type="number"]').nth(0).fill("1");
     await dialog.locator('.score-entry input[type="number"]').nth(1).fill("0");
     await dialog
-      .getByRole("button", { name: "Confirm result", exact: true })
+      .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
       .click();
     await expect(dialog).not.toBeVisible();
     await saved(page);
@@ -179,7 +187,9 @@ test("Dutch pairing generates the next round offline under the production CSP", 
   await page.reload();
   await saved(page);
   await section(page, "Matches");
-  await page.getByRole("button", { name: "Next round", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Generate next round", exact: true })
+    .click();
   await expect(page.locator("button.match-tile.ready")).toHaveCount(2);
   await saved(page);
   const snapshot = await exported(page);

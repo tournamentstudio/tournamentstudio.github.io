@@ -192,11 +192,11 @@ test("requires explicit played-match confirmation and preserves the undone resul
   await fixture(page);
   await section(page, "Matches");
   await page.locator("button.match-tile.ready").first().click();
-  const match = page.getByRole("dialog", { name: "Match control" });
+  const match = page.getByRole("dialog", { name: /^(Enter|Edit) result$/ });
   await match.locator('.score-entry input[type="number"]').nth(0).fill("3");
   await match.locator('.score-entry input[type="number"]').nth(1).fill("1");
   await match
-    .getByRole("button", { name: "Confirm result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await expect(match).not.toBeVisible();
   await saved(page);

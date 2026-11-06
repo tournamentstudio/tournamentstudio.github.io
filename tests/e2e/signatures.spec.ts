@@ -54,6 +54,7 @@ async function openStudio(page: Page, persian = false) {
       exact: true,
     })
     .click();
+  await page.locator("details.share-advanced > summary").click();
   const studio = page.locator(".signature-studio");
   await studio.locator("summary").click();
   return studio;
@@ -185,6 +186,7 @@ test("generates, encrypts, locks and recovers a signing key without persistent p
     .getByRole("navigation", { name: "Tournament sections" })
     .getByRole("button", { name: "Share Center", exact: true })
     .click();
+  await page.locator("details.share-advanced > summary").click();
   await studio.locator("summary").click();
   await expect(
     studio.getByRole("button", { name: "Create signing key", exact: true }),

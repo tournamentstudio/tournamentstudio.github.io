@@ -9,7 +9,9 @@ import { applySport } from "../../src/sports";
 
 async function open(page: Page, tournament: Tournament, persian: boolean) {
   await page.goto("/");
-  await page.getByRole("button", { name: "Import", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Import tournament", exact: true })
+    .click();
   const dialog = page.getByRole("dialog");
   await dialog.locator('input[type="file"]').setInputFiles({
     name: "scorecard-review.json",
@@ -149,7 +151,7 @@ for (const persian of [false, true]) {
     await expect(page.locator("button.match-tile.completed")).toHaveCount(7);
     await expect(
       page.getByRole("button", {
-        name: persian ? "کامل" : "Completed",
+        name: persian ? "همه دیدارها" : "All matches",
         exact: true,
       }),
     ).toHaveAttribute("aria-pressed", "true");

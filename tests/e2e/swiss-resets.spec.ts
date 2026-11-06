@@ -111,7 +111,9 @@ for (const named of [false, true]) {
     await expect(page.getByRole("alert")).toHaveCount(0);
     await expect(page.locator(".save-status")).toHaveText("Saved locally");
     await section(page, "Matches");
-    await page.getByLabel("Stage", { exact: true }).selectOption(target.id);
+    await page
+      .getByLabel("Filter by stage", { exact: true })
+      .selectOption(target.id);
     await expect(page.locator("button.match-tile.ready")).toHaveCount(2);
   });
 }

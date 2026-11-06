@@ -31,7 +31,7 @@ for (const obsoleteValid of [true, false]) {
     const current = make("انتخاب جدید Current");
     await page.goto("/");
     await page
-      .getByRole("button", { name: "Import", exact: true })
+      .getByRole("button", { name: "Import tournament", exact: true })
       .first()
       .click();
     const dialog = page.getByRole("dialog", {

@@ -59,7 +59,7 @@ test("keyboard creates, scores, saves a theme and controls presentation focus", 
   await tabTo(page, match);
   await page.keyboard.press("Enter");
   const dialog = page.getByRole("dialog", {
-    name: "Match control",
+    name: /^(Enter|Edit) result$/,
     exact: true,
   });
   const score = dialog.getByRole("spinbutton").first();
@@ -68,7 +68,10 @@ test("keyboard creates, scores, saves a theme and controls presentation focus", 
   await score.press("2");
   await tabTo(
     page,
-    dialog.getByRole("button", { name: "Confirm result", exact: true }),
+    dialog.getByRole("button", {
+      name: /^Save (result|changes)$/,
+      exact: true,
+    }),
   );
   await page.keyboard.press("Enter");
   await expect(dialog).not.toBeVisible();

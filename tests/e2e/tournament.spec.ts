@@ -12,6 +12,12 @@ async function section(page: Page, name: string) {
     .getByRole("navigation", { name: "Tournament sections" })
     .getByRole("button", { name, exact: true })
     .click();
+  if (name === "Share Center") {
+    const options = page.locator("details.share-advanced");
+    await expect(options).toBeVisible();
+    if ((await options.getAttribute("open")) === null)
+      await options.locator("summary").first().click();
+  }
 }
 
 async function create(
@@ -79,12 +85,12 @@ async function recordFirstReady(page: Page, first = 3, second = 1) {
     .getByRole("button", { name: "Ready to play", exact: true })
     .click();
   await page.locator("button.match-tile.ready").first().click();
-  const dialog = page.getByRole("dialog", { name: "Match control" });
+  const dialog = page.getByRole("dialog", { name: /^(Enter|Edit) result$/ });
   const inputs = dialog.locator('.score-entry input[type="number"]');
   await inputs.nth(0).fill(String(first));
   await inputs.nth(1).fill(String(second));
   await dialog
-    .getByRole("button", { name: "Confirm result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await expect(dialog).not.toBeVisible();
   await saved(page);
@@ -92,7 +98,7 @@ async function recordFirstReady(page: Page, first = 3, second = 1) {
 
 async function recordSeededReady(page: Page) {
   await page.locator("button.match-tile.ready").first().click();
-  const dialog = page.getByRole("dialog", { name: "Match control" });
+  const dialog = page.getByRole("dialog", { name: /^(Enter|Edit) result$/ });
   const names = await dialog.locator(".score-side bdi").allTextContents();
   for (let index = 0; index < names.length; index++) {
     const seed = Number(names[index].match(/\d+$/)?.[0]);
@@ -103,7 +109,7 @@ async function recordSeededReady(page: Page) {
       .fill(String(100 - seed));
   }
   await dialog
-    .getByRole("button", { name: "Confirm result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await expect(dialog).not.toBeVisible();
   await saved(page);
@@ -279,7 +285,7 @@ test("opens GSL and triple elimination draws and completes a five-round Swiss fi
     for (let index = 0; index < 8; index++) await recordSeededReady(page);
     if (round < 5) {
       await page
-        .getByRole("button", { name: "Next round", exact: true })
+        .getByRole("button", { name: "Generate next round", exact: true })
         .click();
       await saved(page);
     }
@@ -462,7 +468,7 @@ test("exports a private archive and imports it into a clean profile", async ({
     const fresh = await freshContext.newPage();
     await fresh.goto("/");
     await fresh
-      .getByRole("button", { name: "Import", exact: true })
+      .getByRole("button", { name: "Import tournament", exact: true })
       .click();
     const dialog = fresh.getByRole("dialog", {
       name: "Bring a tournament into your studio",
@@ -562,7 +568,7 @@ test("recovers an encrypted backup in a clean profile with its separate secret",
     const fresh = await freshContext.newPage();
     await fresh.goto("/");
     await fresh
-      .getByRole("button", { name: "Import", exact: true })
+      .getByRole("button", { name: "Import tournament", exact: true })
       .click();
     const dialog = fresh.getByRole("dialog", {
       name: "Bring a tournament into your studio",
@@ -620,7 +626,7 @@ test("a save finishing after vault lock cannot reopen the unlocked document", as
   const id = url.split("/t/")[1];
   await section(page, "Matches");
   await page.locator("button.match-tile.ready").first().click();
-  const dialog = page.getByRole("dialog", { name: "Match control" });
+  const dialog = page.getByRole("dialog", { name: /^(Enter|Edit) result$/ });
   await dialog.locator('.score-entry input[type="number"]').nth(0).fill("2");
   await dialog.locator('.score-entry input[type="number"]').nth(1).fill("1");
   await page.evaluate(() => {
@@ -633,7 +639,7 @@ test("a save finishing after vault lock cannot reopen the unlocked document", as
     };
   });
   await dialog
-    .getByRole("button", { name: "Confirm result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await expect(page.locator(".save-status")).toHaveText("Saving...");
   await page.getByRole("button", { name: "Lock", exact: true }).click();
@@ -682,24 +688,27 @@ test("requires confirmation before a correction clears a played final", async ({
   for (let index = 0; index < 3; index++) await recordFirstReady(page);
   await page.getByRole("button", { name: "Completed", exact: true }).click();
   await page.locator(".match-tile.completed").first().click();
-  const dialog = page.getByRole("dialog", { name: "Match control" });
+  const dialog = page.getByRole("dialog", { name: /^(Enter|Edit) result$/ });
   await dialog.locator('.score-entry input[type="number"]').nth(0).fill("1");
   await dialog.locator('.score-entry input[type="number"]').nth(1).fill("3");
   await dialog
-    .getByRole("combobox", { name: "Winner decision", exact: true })
+    .getByRole("combobox", { name: "Winner", exact: true })
     .selectOption("");
   await dialog
-    .getByRole("button", { name: "Confirm result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await expect(
-    dialog.getByText("This correction affects played matches.", {
-      exact: true,
-    }),
+    dialog.getByText(
+      "Saving this correction clears the results and live progress listed below. You can restore the previous version from History.",
+      {
+        exact: true,
+      },
+    ),
   ).toBeVisible();
   await expect(dialog.locator(".correction-warning li")).toHaveCount(1);
   await dialog
     .getByRole("button", {
-      name: "Confirm correction and reset dependents",
+      name: "Save correction and clear later matches",
       exact: true,
     })
     .click();
@@ -747,7 +756,7 @@ test("updates a same-profile spectator scoreboard after a confirmed referee hand
   ]);
   await section(page, "Matches");
   await page.locator("button.match-tile.ready").first().click();
-  const dialog = page.getByRole("dialog", { name: "Match control" });
+  const dialog = page.getByRole("dialog", { name: /^(Enter|Edit) result$/ });
   await dialog
     .getByRole("button", { name: "Referee mode", exact: true })
     .click();

@@ -159,12 +159,14 @@ for (const options of [
     await section(page, "Matches", "دیدارها");
     await page.locator("button.match-tile.ready").first().click();
     const dialog = page.getByRole("dialog", {
-      name: /^(Match control|کنترل دیدار)$/,
+      name: /^((Enter|Edit) result|(ثبت|ویرایش) نتیجه)$/,
     });
     await dialog.locator('.score-entry input[type="number"]').nth(0).fill("3");
     await dialog.locator('.score-entry input[type="number"]').nth(1).fill("1");
     await dialog
-      .getByRole("button", { name: /^(Confirm result|تأیید نتیجه)$/ })
+      .getByRole("button", {
+        name: /^(Save (result|changes)|ذخیره (نتیجه|تغییرات))$/,
+      })
       .click();
     await expect(dialog).not.toBeVisible();
     await saved(page);

@@ -30,6 +30,7 @@ import {
   CompetitionTaskNotice,
   useCompetitionTask,
 } from "../workers/use-competition-task";
+import "./sharing-ux.css";
 export function ImportCenter({
   initialCode = "",
   current,
@@ -55,9 +56,14 @@ export function ImportCenter({
   const { t, locale } = useI18n();
   const [text, setText] = useState(initialCode);
   const [file, setFile] = useState<File>();
+  const fileInput = useRef<HTMLInputElement>(null);
   const [secret, setSecret] = useState("");
   const [protect, setProtect] = useState(false);
   const [preview, setPreview] = useState<Tournament>();
+  const [existingCopy, setExistingCopy] = useState<{
+    id: string;
+    exists: boolean;
+  }>();
   const [patch, setPatch] = useState<TournamentPatch>();
   const [revisions, setRevisions] = useState<ArchiveRevision[]>([]);
   const [timezoneChoices, setTimezoneChoices] =
@@ -77,6 +83,29 @@ export function ImportCenter({
   }>();
   const [error, setError] = useState<unknown>();
   const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    if (!preview || patch) return;
+    let active = true;
+    void repository.list().then(
+      (entries) => {
+        if (active)
+          setExistingCopy({
+            id: preview.id,
+            exists: entries.some((entry) => entry.id === preview.id),
+          });
+      },
+      (error: unknown) => {
+        if (active) setError(error);
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [preview, patch]);
+  const existingCopyChecked = Boolean(
+    preview && existingCopy?.id === preview.id,
+  );
+  const alreadySaved = existingCopyChecked && existingCopy?.exists;
   const computationScope = useMemo(
     () => ({ text, file, secret }),
     [text, file, secret],
@@ -181,8 +210,8 @@ export function ImportCenter({
           } catch {
             throw new Error(
               t(
-                "The exact base revision is needed for conflict review. Restore a history backup as a separate copy, or request the sender's full snapshot.",
-                "برای بررسی تعارض به نسخه پایه دقیق نیاز است. پشتیبان تاریخچه را به‌صورت کپی جداگانه بازیابی کنید یا تصویر کامل داده را از فرستنده بخواهید.",
+                "The earlier revision is missing, so the changes cannot be compared safely. Restore a backup with history as a new tournament, or ask the sender for a full tournament copy.",
+                "نسخه قبلی در دسترس نیست و مقایسه امن تغییرات ممکن نیست. پشتیبان دارای تاریخچه را به‌عنوان مسابقات تازه ذخیره کنید یا نسخه کامل مسابقات را از فرستنده بخواهید.",
               ),
             );
           }
@@ -240,6 +269,7 @@ export function ImportCenter({
     if (
       !preview ||
       busy ||
+      (!patch && mode === "save" && (!existingCopyChecked || alreadySaved)) ||
       timezonePending ||
       (correctingTimes && mode === "replace")
     )
@@ -312,6 +342,12 @@ export function ImportCenter({
         />
       ) : !preview ? (
         <>
+          <p className="import-intro">
+            {t(
+              "Choose a tournament file or paste a shared link or code. You can review it before anything is saved.",
+              "فایل مسابقات را انتخاب کنید یا پیوند و کد دریافتی را بچسبانید. پیش از ذخیره می‌توانید آن را بررسی کنید.",
+            )}
+          </p>
           <div
             className="upload-zone"
             onDragOver={(e) => e.preventDefault()}
@@ -331,22 +367,27 @@ export function ImportCenter({
             </h3>
             <p>
               {t(
-                ".tourney, JSON, share code, recipe, or update packet",
-                ".tourney، JSON، کد اشتراک، دستور ساخت یا به‌روزرسانی",
+                ".tourney, JSON or text files, up to 12 MB",
+                "فایل .tourney، JSON یا متن، حداکثر ۱۲ مگابایت",
               )}
             </p>
-            <label className="button secondary">
+            <button
+              className="button secondary"
+              type="button"
+              onClick={() => fileInput.current?.click()}
+            >
               {t("Choose a file", "انتخاب فایل")}
-              <input
-                type="file"
-                hidden
-                accept=".tourney,.json,.txt"
-                onChange={(e) => {
-                  setFile(e.target.files?.[0]);
-                  setText("");
-                }}
-              />
-            </label>
+            </button>
+            <input
+              ref={fileInput}
+              type="file"
+              hidden
+              accept=".tourney,.json,.txt"
+              onChange={(e) => {
+                setFile(e.target.files?.[0]);
+                setText("");
+              }}
+            />
             {file && (
               <button
                 className="text-button"
@@ -358,8 +399,8 @@ export function ImportCenter({
           </div>
           <Field
             label={t(
-              "Or paste a code or snapshot link",
-              "یا کد یا پیوند تصویر داده را بچسبانید",
+              "Or paste a shared link or code",
+              "یا پیوند یا کد دریافتی را بچسبانید",
             )}
           >
             <textarea
@@ -415,7 +456,7 @@ export function ImportCenter({
               <FileCheck2 />
             </span>
             <div>
-              <h3>{preview.title}</h3>
+              <h3 dir="auto">{preview.title}</h3>
               <p>
                 {preview.participants.length} {t("participants", "شرکت‌کننده")}{" "}
                 · {preview.matches.length} {t("matches", "دیدار")} ·{" "}
@@ -426,8 +467,8 @@ export function ImportCenter({
           <Notice>
             {patch
               ? t(
-                  "This update passed the identity, base revision, and checksum checks. Review the new bracket before applying it.",
-                  "این به‌روزرسانی بررسی شناسه، نسخه پایه و چک‌سام را گذراند. پیش از اعمال، جدول را بررسی کنید.",
+                  "This update matches your tournament and saved revision. Review the new bracket before applying the changes.",
+                  "این به‌روزرسانی با مسابقات و نسخه ذخیره‌شده شما مطابقت دارد. پیش از اعمال تغییرات، جدول را بررسی کنید.",
                 )
               : t(
                   "This is a read-only preview. Nothing has been saved to this device yet. A copy will be independent of the sender.",
@@ -437,8 +478,8 @@ export function ImportCenter({
           {!!revisions.length && (
             <Notice>
               {t(
-                `${revisions.length} saved revisions are included. Save or fork restores them. Replace keeps the existing local history instead.`,
-                `این پشتیبان ${revisions.length} نسخه ذخیره‌شده دارد. ذخیره یا کپی، آن‌ها را بازیابی می‌کند. جایگزینی تاریخچه محلی فعلی را حفظ می‌کند.`,
+                `${revisions.length} saved revisions are included. Saving a local copy or a new tournament restores them. Replacing the current copy keeps its local history instead.`,
+                `این پشتیبان ${revisions.length} نسخه ذخیره‌شده دارد. ذخیره کپی محلی یا مسابقات تازه، آن‌ها را بازیابی می‌کند. جایگزینی نسخه فعلی، تاریخچه محلی آن را حفظ می‌کند.`,
               )}
             </Notice>
           )}
@@ -452,8 +493,8 @@ export function ImportCenter({
               {correctingTimes && (
                 <Notice>
                   {t(
-                    "Corrected times will be saved as a new revision. Save or fork retains the original times in History, within the latest 50 revisions. If this tournament already exists here, choose Fork with new identity. Replacement is unavailable for corrected imports so the backup's original revision stays recoverable.",
-                    "زمان‌های اصلاح‌شده در نسخه تازه ذخیره می‌شوند. با ذخیره یا کپی، زمان‌های اصلی در تاریخچه و در میان ۵۰ نسخه آخر باقی می‌مانند. اگر این مسابقات از قبل اینجا وجود دارد، «کپی با شناسه تازه» را انتخاب کنید. برای حفظ نسخه اصلی پشتیبان، جایگزینی پس از اصلاح زمان‌ها در دسترس نیست.",
+                    "Corrected times will be saved as a new revision. The original times remain in History, within the latest 50 revisions. If you already have this tournament, choose Save as new tournament. Replacement is unavailable so the original times stay recoverable.",
+                    "زمان‌های اصلاح‌شده در نسخه تازه ذخیره می‌شوند. زمان‌های اصلی در تاریخچه و در میان ۵۰ نسخه آخر باقی می‌مانند. اگر این مسابقات را دارید، «ذخیره به‌عنوان مسابقات تازه» را انتخاب کنید. برای حفظ امکان بازیابی زمان‌های اصلی، جایگزینی در دسترس نیست.",
                   )}
                 </Notice>
               )}
@@ -491,12 +532,42 @@ export function ImportCenter({
               {current?.id === preview.id && (
                 <Notice>
                   {t(
-                    "Replacing a copy keeps its existing vault settings and unlocking secret. To protect a standard copy, encrypt it first or choose a protected fork.",
+                    "Replacing a copy keeps its existing vault settings and unlocking secret. To add protection, encrypt it first or save as a new protected tournament.",
                     "جایگزینی نسخه، تنظیمات گاوصندوق و رمز فعلی آن را حفظ می‌کند. برای محافظت از نسخه عادی، ابتدا آن را رمزگذاری کنید یا کپی تازه در گاوصندوق بسازید.",
                   )}
                 </Notice>
               )}
             </>
+          )}
+          {!patch && (
+            <div className="import-choice-help">
+              {alreadySaved ? (
+                <p>
+                  {current?.id === preview.id
+                    ? t(
+                        "This tournament is already saved here. Save as a new tournament to keep both copies, or replace the current copy below.",
+                        "این مسابقات از قبل اینجا ذخیره شده است. برای نگه داشتن هر دو نسخه، آن را به‌عنوان مسابقات تازه ذخیره کنید؛ یا نسخه فعلی را با دکمه زیر جایگزین کنید.",
+                      )
+                    : t(
+                        "This tournament is already saved here. Save as a new tournament to keep both copies. To replace it, open the matching tournament and import from there.",
+                        "این مسابقات از قبل اینجا ذخیره شده است. برای نگه داشتن هر دو نسخه، آن را به‌عنوان مسابقات تازه ذخیره کنید. برای جایگزینی، مسابقات همسان را باز کنید و از آنجا وارد کنید.",
+                      )}
+                </p>
+              ) : (
+                <p>
+                  {t(
+                    "Save local copy keeps this tournament's identity so you can import later updates from the sender.",
+                    "ذخیره کپی محلی، شناسه مسابقات را نگه می‌دارد تا بعداً به‌روزرسانی فرستنده را وارد کنید.",
+                  )}
+                </p>
+              )}
+              <p>
+                {t(
+                  "Save as new tournament creates a separate tournament. Updates for the original will not apply to it.",
+                  "ذخیره به‌عنوان مسابقات تازه، مسابقات مستقلی می‌سازد. به‌روزرسانی‌های نسخه اصلی روی آن اعمال نمی‌شوند.",
+                )}
+              </p>
+            </div>
           )}
           <div className="modal-actions">
             <button
@@ -529,12 +600,16 @@ export function ImportCenter({
                   onClick={() => commit("fork")}
                 >
                   <Copy size={16} />
-                  {t("Fork with new identity", "کپی با شناسه تازه")}
+                  {t("Save as new tournament", "ذخیره به‌عنوان مسابقات تازه")}
                 </button>
                 <button
                   className="button primary"
                   disabled={
-                    busy || timezonePending || (protect && secret.length < 8)
+                    busy ||
+                    timezonePending ||
+                    !existingCopyChecked ||
+                    alreadySaved ||
+                    (protect && secret.length < 8)
                   }
                   onClick={() => commit("save")}
                 >

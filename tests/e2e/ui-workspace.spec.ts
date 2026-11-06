@@ -8,7 +8,9 @@ import { generateStage } from "../../src/engine";
 
 async function open(page: Page, tournament: Tournament, persian: boolean) {
   await page.goto("/");
-  await page.getByRole("button", { name: "Import", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Import tournament", exact: true })
+    .click();
   const dialog = page.getByRole("dialog");
   await dialog.locator('input[type="file"]').setInputFiles({
     name: "workspace-review.json",

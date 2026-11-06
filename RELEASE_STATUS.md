@@ -1,9 +1,10 @@
 # TournaStudio release handoff
 
-The second November 6, 2026 design pass gives the interface the character of
-competition programs, fixture sheets and scorecards. English and Persian keep
-the same functions and data. The tournament engine and saved-document formats
-are unchanged.
+The November 6, 2026 workflow review focuses on the words and controls organizers
+use to create tournaments, enter results and share their work. I compared the
+existing app with official public documentation from Bracket HQ, Challonge,
+Tournify and Toornament. The findings, references and second independent review
+are in [UX_REVIEW.md](UX_REVIEW.md).
 
 ## Publication
 
@@ -15,33 +16,32 @@ are unchanged.
 
 ## What changed
 
-Home uses illustrated competition covers and a factual first-use program. The
-library stays first for returning users. Fourteen original SVG scenes extend
-the existing game icons into courts, boards and tabletop compositions. Gol Ya
-Pooch uses closed fists, a separate bead, bell, cards and an arch. Protected
-library entries reveal no sport or format. Artwork receives no match state.
+Creation shows settings that affect the chosen format, explains seeding and
+qualification, and catches duplicate names before the last step. Hidden invalid
+round values no longer block switching to a format that does not use them.
+Tablet layouts give the form enough room.
 
-The match desk groups fixtures by stage and round, with aligned scorecard rows.
-Completed tournaments show recorded final results and a champion report. Title
-and champion presentation scenes use a program spread, current matches use a
-scorecard, and recent results use a fixture sheet. Draw ceremonies have a reveal
-ticket and progress based on actual assignments. Theme overrides still apply.
+Matches now filter by stage. Generate next round appears only for formats that
+need it and explains why it is unavailable while results are outstanding.
+Enter result, Save result and Save changes describe their actual actions.
+Set scoring is visible without opening referee details. Editing ordinary scores
+recalculates the winner; manual decisions and forfeits keep their explicit
+winner. Upstream corrections still require review before clearing later results.
 
-Warm paper surfaces and ruled navigation connect the working pages. Artwork has
-its own space, leaving long English, Persian and mixed-script names readable.
-The README screenshot shows the actual updated app with fictional tournaments.
+Sharing starts with one guided choice and names the output before creating it.
+Advanced controls remain available under More sharing options. Generated output
+receives focus; copy feedback identifies the link or code. Import explains
+independent copies, later updates and existing tournament identities. Its file
+picker is keyboard accessible. Public tournament JSON is distinguished from a
+private recovery backup.
 
-Validation corrected a tablet list-view layout, a Home/presentation CSS class
-collision, bracket zoom contrast, and a status badge splitting a word beside
-long titles. Recent results now respect the Show scores setting; this was a
-pre-existing presentation defect. Regression tests cover both languages.
-Long names also no longer squeeze large result scores into vertical digits on
-narrow screens. The final regression checks nine-digit scores and language
-switching in all three browser engines.
+Help follows five organizer tasks. Mobile Help and Import close the navigation
+drawer before opening. Import also restores focus after its lazy loading dialog
+is replaced, including WebKit. English and Persian describe the same actions.
+The README screenshot shows the actual app with fictional tournaments.
 
-The prioritized audit and second independent review are in
-[UI_REVIEW.md](UI_REVIEW.md). No dependency, competition rule or storage schema
-changed in this release.
+No dependency, competition rule, cryptography or stored-data format changed.
+The previous competition artwork and visual identity remain intact.
 
 ## Verification
 
@@ -50,16 +50,16 @@ changed in this release.
 | TypeScript and ESLint | Passed |
 | Unit and integration suite | 1,236 tests passed across 107 files |
 | Release packaging checks | 4 passed |
-| Production build | Passed; 80 precache entries |
-| Initial browser regression run | 276 passed; six failures investigated across 282 cases in 21 files |
-| Final production-bundle correction run | All 36 cases passed across Chromium, Firefox and WebKit |
-| New browser regression cases | 16 bilingual cases for covers, scorecards, completion, draw progress and presentation |
-| Independent visual review | 80 sampled views in both languages at 320, 390, 768 and 1440 pixels, no page-wide overflow |
-| Workspace capture matrix | All 16 sections at 390, 768 and 1440 pixels in both languages, 96 views without page-wide overflow |
-| Independent accessibility scans | 20 axe A/AA scans reported no violations |
-| Presentation specialist checks | 50 captures including 4:3 and portrait; 40 axe and reduced-motion checks passed |
-| Prepared publication | 91 local files verified by SHA-256 |
-| Credentials and authored-text scan | No findings |
+| Production build | Passed; 82 precache entries |
+| Initial broad browser run | 246 passed; seven stale command assertions investigated across 253 Chromium cases |
+| Initial cross-engine workflow run | 54 passed; two WebKit importer focus failures reproduced across 56 cases |
+| Final production-bundle correction run | 26 of 27 passed; the remaining Firefox case passed unchanged in isolation |
+| Firefox diagnostic repeats | Three serial repeats passed; parallel repeats had two passes and one internal browser protocol failure |
+| New workflow regressions | 28 bilingual cases across creation, results, sharing and help |
+| Visual review | Creation, Matches, Share, Import and Help in English and Persian at phone, tablet and desktop widths |
+| Responsive regression | Persian mixed-script workflows checked at 320, 390, 768 and 1280 pixels |
+| Accessibility | Dialog, focus, keyboard and scoped axe checks on the changed workflows |
+| Prepared publication | 93 local files verified by SHA-256 |
 
 Repeat the checks locally:
 
@@ -69,29 +69,32 @@ npm run test:release
 npm run test:e2e
 ```
 
-New regressions live in `tests/e2e/home-program-covers.spec.ts`,
-`tests/e2e/workspace-art-direction.spec.ts` and
-`tests/e2e/competition-moments.spec.ts`.
-Before and after screenshots are retained in the ignored local audit folder.
+New regressions live in `tests/e2e/ux-creation.spec.ts`,
+`tests/e2e/ux-match-controls.spec.ts`, `tests/e2e/ux-sharing.spec.ts` and
+`tests/e2e/ux-help.spec.ts`. Existing browser tests use the new command labels
+and explicitly open the advanced sharing controls when testing those tools.
+Before and after screenshots and logs are retained in the ignored local audit
+folder.
 
-The focused browser run covers the changed screens and existing tournament,
-sharing, vault, offline, accessibility, keyboard and RTL workflows. It is not a
-rerun of every browser test in the repository. The earlier full-suite results
-remain in [release-2026-11-06.1](https://github.com/tournamentstudio/tournamentstudio.github.io/releases/tag/release-2026-11-06.1).
+The initial cross-engine run reproduced a WebKit focus problem when closing a
+freshly loaded importer from mobile navigation. The correction restores the
+navigation trigger after the importer closes. Regression tests exercise both
+Escape and the close button, with cold and warm module loading.
 
-An initial unit assertion expected a score element without its new CSS class.
-Two new draw tests initially imported a generated bracket, which correctly
-locked the draw preview. Two older result-list tests expected the previous
-combined score markup. Their fixtures and semantic assertions were corrected;
-long-name containment assertions were retained and extended to entrant rows.
-The new score-readability assertion also reproduced the narrow-screen score
-problem against the earlier build. Its CSS correction passed a separate six-case
-run across Chromium, Firefox and WebKit before the final production rebuild.
-The rebuilt bundle then passed all 36 presentation and result-list cases, covering
-all six initial failures. Across the initial and corrective runs, all 282 targeted
-cases passed. No skips or retries were added.
+All seven outdated command assertions were updated and passed against the final
+bundle. A Firefox case exceeded the workspace-load deadline once; its asset
+requests succeeded and an unchanged isolated run passed. Repeated parallel checks
+then found a different Firefox automation error while axe closed its temporary
+page, with an internal `Browser.removeBrowserContext` error. These observations
+are retained in the test logs rather than treated as application fixes. No
+timeouts or retry settings were relaxed.
+Three further serial Firefox runs passed the same creation, scoring, keyboard,
+accessibility and reload checks without code changes.
 
-Hosted verification is recorded with the [GitHub releases](https://github.com/tournamentstudio/tournamentstudio.github.io/releases).
+The focused browser runs cover the changed screens and existing tournament,
+sharing, vault, offline, accessibility, keyboard and RTL workflows. They are
+not a rerun of every browser test in the repository. Hosted verification is
+recorded with the [GitHub releases](https://github.com/tournamentstudio/tournamentstudio.github.io/releases).
 
 ## Review boundaries
 
@@ -99,7 +102,9 @@ Passing checks do not establish that every possible input and workflow is free
 of bugs. Visual checks used desktop browser engines with resized viewports.
 Physical Android/iPhone keyboard behavior and spoken Persian with assistive
 technology still need those devices and human reviewers. No independent security
-or accessibility certification is claimed.
+or accessibility certification is claimed. Competitor research used public
+pages and documentation, not account-based trials. Usability sessions with
+tournament organizers remain useful follow-up work.
 
 The earlier participant-count and round-robin corrections remain covered by the
 existing suite. See the November 5 entry in [MAINTENANCE_AUDIT.md](MAINTENANCE_AUDIT.md)

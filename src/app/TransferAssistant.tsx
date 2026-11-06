@@ -50,20 +50,20 @@ export function TransferAssistant({
       "بایگانی خصوصی شامل نسخه‌های ذخیره‌شده برای بازیابی است. رمز را جداگانه نگه دارید.",
     ),
     recipe: t(
-      "A recipe shares every stage and progression rule with numbered entrants, without names or results.",
-      "دستور ساخت، همه مراحل و قوانین صعود را با شرکت‌کنندگان شماره‌دار و بدون نام و نتیجه منتقل می‌کند.",
+      "The template includes stages and advancement rules, with numbered entrants instead of names or results.",
+      "الگو شامل مراحل و قوانین صعود است. نام‌ها و نتایج با شرکت‌کنندگان شماره‌دار جایگزین می‌شوند.",
     ),
     update: t(
-      "An update code needs the recipient's exact base revision or a saved base for conflict review.",
-      "کد به‌روزرسانی به نسخه پایه دقیق گیرنده یا نسخه پایه ذخیره‌شده برای بررسی تعارض نیاز دارد.",
+      "Choose the revision your recipient already has. They review the changes before applying them; conflicting changes need a saved earlier revision.",
+      "نسخه‌ای را انتخاب کنید که گیرنده دارد. او تغییرات را پیش از اعمال بررسی می‌کند؛ برای رفع تعارض، نسخه قبلی ذخیره‌شده لازم است.",
     ),
     small: t(
-      "This public snapshot is small enough for a link. QR availability depends on the final encoded size.",
-      "این تصویر عمومی برای پیوند کوچک است. دسترسی به QR به حجم نهایی کد بستگی دارد.",
+      "Send the link to open a copy of the current results. Later changes are not sent automatically.",
+      "با ارسال پیوند، گیرنده نسخه‌ای از نتایج فعلی را باز می‌کند. تغییرات بعدی خودکار ارسال نمی‌شوند.",
     ),
     medium: t(
-      "A text code avoids a long address while carrying the complete public snapshot.",
-      "کد متنی، تصویر عمومی کامل را بدون نشانی بلند منتقل می‌کند.",
+      "Send this code in a message. The recipient pastes it into Import & restore to open the current results.",
+      "کد را در پیام بفرستید. گیرنده آن را در «وارد کردن و بازیابی» می‌چسباند تا نتایج فعلی را باز کند.",
     ),
     large: t(
       "Use a public file to avoid link and message size limits. Organizer details remain excluded.",
@@ -71,11 +71,11 @@ export function TransferAssistant({
     ),
   };
   return (
-    <section className="panel">
+    <section className="panel transfer-guide">
       <div className="section-heading">
         <h3>
           <ArrowRightLeft size={20} />{" "}
-          {t("Transfer assistant", "دستیار انتقال")}
+          {t("What would you like to send?", "چه چیزی می‌خواهید بفرستید؟")}
         </h3>
       </div>
       <div className="two-columns">
@@ -93,21 +93,24 @@ export function TransferAssistant({
             }}
           >
             <option value="snapshot">
-              {t("Current tournament", "مسابقات فعلی")}
+              {t("Current tournament and results", "مسابقات و نتایج فعلی")}
             </option>
             <option value="recipe">
-              {t("Structure template", "الگوی ساختار")}
+              {t(
+                "Tournament setup without names or results",
+                "تنظیمات مسابقات بدون نام و نتیجه",
+              )}
             </option>
             <option value="update" disabled={tournament.revision < 2}>
               {t("Changes since an earlier revision", "تغییرها از نسخه قبلی")}
             </option>
             <option value="backup">
-              {t("Recovery backup with history", "پشتیبان بازیابی با تاریخچه")}
+              {t("A backup for myself", "پشتیبان برای خودم")}
             </option>
           </select>
         </Field>
         {(purpose === "snapshot" || purpose === "update") && (
-          <Field label={t("Transfer privacy", "حریم خصوصی انتقال")}>
+          <Field label={t("Transfer privacy", "اطلاعات ارسالی")}>
             <select
               value={privateData ? "private" : "public"}
               onChange={(event) => {
@@ -116,16 +119,22 @@ export function TransferAssistant({
               }}
             >
               <option value="public">
-                {t("Public spectator data", "داده عمومی تماشاگر")}
+                {t(
+                  "For spectators: results and schedule",
+                  "برای تماشاگر: نتایج و برنامه",
+                )}
               </option>
               <option value="private">
-                {t("Private organizer data", "داده خصوصی برگزارکننده")}
+                {t(
+                  "For an organizer: all private details",
+                  "برای برگزارکننده: همه جزئیات خصوصی",
+                )}
               </option>
             </select>
           </Field>
         )}
         {purpose === "update" && (
-          <Field label={t("Assistant base revision", "نسخه پایه دستیار")}>
+          <Field label={t("Recipient's current revision", "نسخه فعلی گیرنده")}>
             <input
               type="number"
               min={1}
@@ -140,6 +149,14 @@ export function TransferAssistant({
         )}
       </div>
       <ErrorText error={estimate.error} />
+      {((privateData && purpose !== "recipe") || purpose === "backup") && (
+        <p className="transfer-private-note">
+          {t(
+            "Includes private notes, rosters, coordinates and referee secrets. Share only with a trusted organizer.",
+            "شامل یادداشت خصوصی، ترکیب تیم، مختصات و اسرار داور است. فقط برای برگزارکننده مورد اعتماد بفرستید.",
+          )}
+        </p>
+      )}
       {plan && (
         <>
           <Notice>
@@ -153,8 +170,8 @@ export function TransferAssistant({
             <p>{reasons[plan.reason]}</p>
             <p className="muted">
               {t(
-                `Current snapshot estimate: ${(plan.estimatedBytes / 1024).toFixed(1)} KB. Encryption, history, recipes and update packets can have different sizes.`,
-                `برآورد تصویر فعلی: ${(plan.estimatedBytes / 1024).toFixed(1)} کیلوبایت. حجم رمزگذاری، تاریخچه، دستور ساخت و بسته به‌روزرسانی ممکن است متفاوت باشد.`,
+                `Current tournament: about ${(plan.estimatedBytes / 1024).toFixed(1)} KB before encryption or history. Other export types can differ.`,
+                `حجم تقریبی مسابقات فعلی: ${(plan.estimatedBytes / 1024).toFixed(1)} کیلوبایت، بدون رمزگذاری یا تاریخچه. حجم دیگر خروجی‌ها ممکن است متفاوت باشد.`,
               )}
             </p>
           </Notice>
@@ -198,8 +215,18 @@ export function TransferAssistant({
             }
           >
             {busy
-              ? t("Preparing transfer...", "آماده‌سازی انتقال...")
-              : t("Prepare recommended transfer", "آماده‌سازی انتقال پیشنهادی")}
+              ? t("Preparing...", "در حال آماده‌سازی...")
+              : purpose === "backup"
+                ? t("Download encrypted backup", "دریافت پشتیبان رمزگذاری‌شده")
+                : purpose === "recipe"
+                  ? t("Create template code", "ساخت کد الگو")
+                  : purpose === "update"
+                    ? t("Create update code", "ساخت کد به‌روزرسانی")
+                    : plan.method === "file"
+                      ? t("Download tournament file", "دریافت فایل مسابقات")
+                      : plan.method === "link"
+                        ? t("Create share link", "ساخت پیوند اشتراک")
+                        : t("Create share code", "ساخت کد اشتراک")}
           </button>
         </>
       )}

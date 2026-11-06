@@ -159,14 +159,17 @@ for (const locale of ["en", "fa"] as const) {
       .click();
     await page.locator("button.match-tile.ready").first().click();
     const dialog = page.getByRole("dialog", {
-      name: text(locale, "Match control", "کنترل دیدار"),
+      name: locale === "en" ? /^(Enter|Edit) result$/ : /^(ثبت|ویرایش) نتیجه$/,
       exact: true,
     });
     await dialog.getByRole("spinbutton").first().fill("4");
     await dialog.getByRole("spinbutton").nth(1).fill("2");
     await dialog
       .getByRole("button", {
-        name: text(locale, "Confirm result", "تأیید نتیجه"),
+        name:
+          locale === "en"
+            ? /^Save (result|changes)$/
+            : /^ذخیره (نتیجه|تغییرات)$/,
         exact: true,
       })
       .click();

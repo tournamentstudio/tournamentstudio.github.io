@@ -31,6 +31,12 @@ async function section(page: Page, name: string) {
     .getByRole("navigation", { name: "Tournament sections" })
     .getByRole("button", { name, exact: true })
     .click();
+  if (name === "Share Center") {
+    const options = page.locator("details.share-advanced");
+    await expect(options).toBeVisible();
+    if ((await options.getAttribute("open")) === null)
+      await options.locator("summary").first().click();
+  }
 }
 async function importFixture(page: Page, file: Tournament | string) {
   await page.goto("/");

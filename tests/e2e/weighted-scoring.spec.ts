@@ -82,7 +82,10 @@ test("records weighted judge inputs, preserves them on reload and reports actual
   await openCup(page);
   await section(page, "Matches");
   await page.locator(".match-tile.ready").first().click();
-  let dialog = page.getByRole("dialog", { name: "Match control", exact: true });
+  let dialog = page.getByRole("dialog", {
+    name: /^(Enter|Edit) result$/,
+    exact: true,
+  });
   await dialog
     .getByLabel("Skill: First team", { exact: true })
     .pressSequentially("7,8,9");
@@ -101,7 +104,7 @@ test("records weighted judge inputs, preserves them on reload and reports actual
     dialog.getByLabel("Score First team", { exact: true }),
   ).toHaveAttribute("readonly", "");
   await dialog
-    .getByRole("button", { name: "Confirm result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await expect(dialog).not.toBeVisible();
   await expect(page.locator(".save-status")).toHaveText("Saved locally");
@@ -109,7 +112,10 @@ test("records weighted judge inputs, preserves them on reload and reports actual
   await section(page, "Matches");
   await page.getByRole("button", { name: "All matches", exact: true }).click();
   await page.locator(".match-tile.completed").click();
-  dialog = page.getByRole("dialog", { name: "Match control", exact: true });
+  dialog = page.getByRole("dialog", {
+    name: /^(Enter|Edit) result$/,
+    exact: true,
+  });
   await expect(
     dialog.getByLabel("Skill: First team", { exact: true }),
   ).toHaveValue("7, 8, 9");
@@ -155,11 +161,11 @@ test("builds weighted scoring in Rules and rejects missing measurements", async 
   await section(page, "Matches");
   await page.locator(".match-tile.ready").first().click();
   const dialog = page.getByRole("dialog", {
-    name: "Match control",
+    name: /^(Enter|Edit) result$/,
     exact: true,
   });
   await dialog
-    .getByRole("button", { name: "Confirm result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await expect(dialog.getByRole("alert")).toContainText(
     "Enter Quiz points for every entrant",
@@ -172,7 +178,7 @@ test("builds weighted scoring in Rules and rejects missing measurements", async 
     dialog.getByLabel("Score First team", { exact: true }),
   ).toHaveValue("8");
   await dialog
-    .getByRole("button", { name: "Confirm result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await expect(dialog).not.toBeVisible();
 });
@@ -214,7 +220,7 @@ test("records public fair-play sanctions and shows the configured standings colu
   await section(page, "Matches");
   await page.locator(".match-tile.ready").first().click();
   const dialog = page.getByRole("dialog", {
-    name: "Match control",
+    name: /^(Enter|Edit) result$/,
     exact: true,
   });
   await dialog.getByLabel("Score First team", { exact: true }).fill("2");
@@ -232,7 +238,7 @@ test("records public fair-play sanctions and shows the configured standings colu
     .getByLabel("Fair-play penalties: Second team", { exact: true })
     .fill("1");
   await dialog
-    .getByRole("button", { name: "Confirm result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await expect(dialog).not.toBeVisible();
   await section(page, "Standings");
@@ -272,7 +278,7 @@ test("calculates placement awards from finishing ranks and saves the same public
   await section(page, "Matches");
   await page.locator(".match-tile.ready").first().click();
   const dialog = page.getByRole("dialog", {
-    name: "Match control",
+    name: /^(Enter|Edit) result$/,
     exact: true,
   });
   await dialog
@@ -288,7 +294,7 @@ test("calculates placement awards from finishing ranks and saves the same public
     dialog.getByLabel("Score Second team", { exact: true }),
   ).toHaveValue("10");
   await dialog
-    .getByRole("button", { name: "Confirm result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await expect(dialog).not.toBeVisible();
   await section(page, "Statistics");

@@ -43,6 +43,12 @@ async function section(page: Page, name: string) {
     .getByRole("navigation", { name: "Tournament sections" })
     .getByRole("button", { name, exact: true })
     .click();
+  if (name === "Share Center") {
+    const options = page.locator("details.share-advanced");
+    await expect(options).toBeVisible();
+    if ((await options.getAttribute("open")) === null)
+      await options.locator("summary").first().click();
+  }
 }
 async function importFixture(page: Page, file: Tournament | string) {
   await page.goto("/");
@@ -148,12 +154,12 @@ async function recordReady(page: Page) {
     .getByRole("button", { name: "Ready to play", exact: true })
     .click();
   await page.locator("button.match-tile.ready").first().click();
-  const dialog = page.getByRole("dialog", { name: "Match control" });
+  const dialog = page.getByRole("dialog", { name: /^(Enter|Edit) result$/ });
   const inputs = dialog.locator('.score-entry input[type="number"]');
   await inputs.nth(0).fill("3");
   await inputs.nth(1).fill("1");
   await dialog
-    .getByRole("button", { name: "Confirm result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await expect(dialog).not.toBeVisible();
   await saved(page);

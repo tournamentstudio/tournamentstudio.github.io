@@ -72,7 +72,14 @@ function StandardMatchControl({
   const [outcome, setOutcome] = useState<Outcome>(
     match.result?.outcome ?? "played",
   );
-  const [winner, setWinner] = useState(match.result?.winnerIds[0] ?? "");
+  const savedManualWinner =
+    doc.rules.scoring === "manual" ||
+    ["forfeit", "walkover", "no-show", "disqualified"].includes(
+      match.result?.outcome ?? "",
+    )
+      ? (match.result?.winnerIds[0] ?? "")
+      : "";
+  const [winner, setWinner] = useState(savedManualWinner);
   const [sets, setSets] = useState(
     (match.result?.sets ?? []).map((s) => s.join(":")).join("\n"),
   );
@@ -98,7 +105,24 @@ function StandardMatchControl({
     "disqualified",
   ].includes(outcome);
   const calculated = doc.rules.scoring === "weighted" && !manualOutcome;
+  const setScoring = doc.rules.scoring === "sets" && !manualOutcome;
   let displayScores = scores;
+  if (setScoring) {
+    const enteredSets = sets
+      .trim()
+      .split(/\n/)
+      .map((line) => line.split(":").map(Number));
+    displayScores = entrants.map(
+      (_, index) =>
+        enteredSets.filter(
+          (set) =>
+            set.length === entrants.length &&
+            set.every((value) => Number.isFinite(value) && value >= 0) &&
+            set[index] === Math.max(...set) &&
+            set.filter((value) => value === set[index]).length === 1,
+        ).length,
+    );
+  }
   if (calculated) {
     try {
       displayScores = weightedScores(
@@ -193,8 +217,8 @@ function StandardMatchControl({
       if (winnerIds.length > 1 && !isMulti && outcome !== "draw")
         throw new Error(
           t(
-            "Scores are tied. Select a draw where allowed or choose a winner using the agreed tiebreak rule.",
-            "امتیازها برابر است. در صورت مجاز بودن تساوی را انتخاب کنید یا طبق قانون رفع تساوی برنده را تعیین کنید.",
+            "Scores are tied. Choose Draw if allowed, or enter the scores after the tiebreak.",
+            "امتیازها برابر است. اگر تساوی مجاز است، آن را انتخاب کنید؛ در غیر این صورت امتیازهای پس از رفع تساوی را وارد کنید.",
           ),
         );
       const result: MatchResult = {
@@ -221,7 +245,15 @@ function StandardMatchControl({
     }
   }
   return (
-    <Modal wide title={t("Match control", "کنترل دیدار")} onClose={onClose}>
+    <Modal
+      wide
+      title={
+        match.result
+          ? t("Edit result", "ویرایش نتیجه")
+          : t("Enter result", "ثبت نتیجه")
+      }
+      onClose={onClose}
+    >
       {stale && <MatchEditConflictNotice />}
       <fieldset
         className="match-control-fieldset game-match-control"
@@ -310,15 +342,22 @@ function StandardMatchControl({
                 max={1000000000}
                 step="any"
                 value={displayScores[i] ?? ""}
-                readOnly={calculated}
-                onChange={(e) =>
+                readOnly={calculated || setScoring}
+                onChange={(e) => {
+                  if (!manualOutcome && doc.rules.scoring !== "manual")
+                    setWinner("");
                   setScores(
                     scores.map((s, j) =>
                       j === i ? Number(e.target.value) : s,
                     ),
-                  )
-                }
+                  );
+                }}
               />
+              {setScoring && (
+                <span className="score-unit">
+                  {t("Sets won", "ست‌های برده")}
+                </span>
+              )}
               {doc.sport === "gol-ya-pooch" && (
                 <div className="gol-target-track">
                   <progress
@@ -337,6 +376,34 @@ function StandardMatchControl({
             </div>
           ))}
         </div>
+        {setScoring && (
+          <div className="primary-set-entry">
+            <Field
+              label={t(
+                "Set scores (one set per line)",
+                "امتیاز ست‌ها (هر ست در یک خط)",
+              )}
+            >
+              <textarea
+                rows={3}
+                value={sets}
+                dir="ltr"
+                onChange={(event) => {
+                  setSets(event.target.value);
+                  setWinner("");
+                }}
+                placeholder="21:18"
+                aria-describedby="set-score-help"
+              />
+            </Field>
+            <p className="muted" id="set-score-help">
+              {t(
+                "Use the participant order shown above. For example, 21:18 on one line and 21:16 on the next. Sets won are calculated for you.",
+                "امتیازها را به ترتیب شرکت‌کنندگان بالا بنویسید؛ برای نمونه 21:18 در یک خط و 21:16 در خط بعد. تعداد ست‌های برده خودکار محاسبه می‌شود.",
+              )}
+            </p>
+          </div>
+        )}
         {calculated && (
           <Notice>
             {t(
@@ -360,10 +427,17 @@ function StandardMatchControl({
           <Field label={t("Result type", "نوع نتیجه")}>
             <select
               value={outcome}
-              onChange={(e) => setOutcome(e.target.value as Outcome)}
+              onChange={(e) => {
+                setOutcome(e.target.value as Outcome);
+                if (
+                  doc.rules.scoring !== "manual" &&
+                  ["played", "draw"].includes(e.target.value)
+                )
+                  setWinner("");
+              }}
             >
               {[
-                ["played", "Played", "بازی شده"],
+                ["played", "Played normally", "بازی عادی"],
                 ["draw", "Draw", "تساوی"],
                 ["forfeit", "Forfeit", "انصراف"],
                 ["walkover", "Walkover", "برد بدون بازی"],
@@ -378,10 +452,16 @@ function StandardMatchControl({
                 ))}
             </select>
           </Field>
-          <Field label={t("Winner decision", "تعیین برنده")}>
-            <select value={winner} onChange={(e) => setWinner(e.target.value)}>
+          <Field label={t("Winner", "برنده")}>
+            <select
+              value={winner}
+              disabled={outcome === "draw"}
+              onChange={(e) => setWinner(e.target.value)}
+            >
               <option value="">
-                {t("Calculate from scores", "محاسبه از امتیازها")}
+                {manualOutcome || doc.rules.scoring === "manual"
+                  ? t("Choose winner", "انتخاب برنده")
+                  : t("Calculate from scores", "محاسبه از امتیازها")}
               </option>
               {entrants.filter(Boolean).map((p) => (
                 <option key={p!.id} value={p!.id}>
@@ -393,10 +473,12 @@ function StandardMatchControl({
         </div>
         <details className="details-box">
           <summary>
-            {t(
-              "Sets, referee, and private notes",
-              "ست‌ها، داور و یادداشت خصوصی",
-            )}
+            {setScoring
+              ? t("Referee and private notes", "داور و یادداشت خصوصی")
+              : t(
+                  "Sets, referee, and private notes",
+                  "ست‌ها، داور و یادداشت خصوصی",
+                )}
           </summary>
           <div className="form-stack">
             <label className="check-row">
@@ -440,19 +522,22 @@ function StandardMatchControl({
                 </div>
               </>
             )}
-            <Field
-              label={t(
-                "Set scores (one set per line)",
-                "امتیاز ست‌ها (هر ست در یک خط)",
-              )}
-            >
-              <textarea
-                rows={3}
-                value={sets}
-                onChange={(e) => setSets(e.target.value)}
-                placeholder="21:18"
-              />
-            </Field>
+            {!setScoring && (
+              <Field
+                label={t(
+                  "Set scores (one set per line)",
+                  "امتیاز ست‌ها (هر ست در یک خط)",
+                )}
+              >
+                <textarea
+                  rows={3}
+                  dir="ltr"
+                  value={sets}
+                  onChange={(e) => setSets(e.target.value)}
+                  placeholder="21:18"
+                />
+              </Field>
+            )}
             <Field label={t("Referee", "داور")}>
               <input
                 maxLength={180}
@@ -476,14 +561,14 @@ function StandardMatchControl({
             <Notice danger>
               <b>
                 {t(
-                  "This correction affects played matches.",
-                  "این اصلاح بر دیدارهای انجام شده اثر دارد.",
+                  "Later matches need to be cleared.",
+                  "نتایج دیدارهای بعدی باید پاک شوند.",
                 )}
               </b>
               <p>
                 {t(
-                  "The following results will be cleared. The saved previous revision remains recoverable from History.",
-                  "نتایج زیر پاک می‌شوند. نسخه قبلی ذخیره شده از تاریخچه قابل بازیابی است.",
+                  "Saving this correction clears the results and live progress listed below. You can restore the previous version from History.",
+                  "با ذخیره این اصلاح، نتایج و پیشرفت زنده دیدارهای زیر پاک می‌شود. نسخه قبلی از تاریخچه قابل بازیابی است.",
                 )}
               </p>
               <ul>
@@ -504,8 +589,8 @@ function StandardMatchControl({
                 onClick={() => commit(pending, true)}
               >
                 {t(
-                  "Confirm correction and reset dependents",
-                  "تأیید اصلاح و بازنشانی وابسته‌ها",
+                  "Save correction and clear later matches",
+                  "ذخیره اصلاح و پاک کردن دیدارهای بعدی",
                 )}
               </button>
             </div>
@@ -522,7 +607,7 @@ function StandardMatchControl({
                     match.slots.map(() => 0),
                 );
                 setOutcome(match.result?.outcome ?? "played");
-                setWinner(match.result?.winnerIds[0] ?? "");
+                setWinner(savedManualWinner);
                 setSets(
                   (match.result?.sets ?? [])
                     .map((set) => set.join(":"))
@@ -540,7 +625,7 @@ function StandardMatchControl({
               }}
             >
               <RotateCcw size={16} />
-              {t("Reset form", "بازنشانی فرم")}
+              {t("Discard edits", "لغو ویرایش‌ها")}
             </button>
             <button
               className="button primary"
@@ -552,7 +637,9 @@ function StandardMatchControl({
               onClick={save}
             >
               <Check size={17} />
-              {t("Confirm result", "تأیید نتیجه")}
+              {match.result
+                ? t("Save changes", "ذخیره تغییرات")
+                : t("Save result", "ذخیره نتیجه")}
             </button>
           </div>
         )}

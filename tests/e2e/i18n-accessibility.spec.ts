@@ -41,15 +41,15 @@ test("Persian score errors and match labels survive keyboard control and reload"
   const opener = page.locator("button.match-tile.ready").first();
   await opener.focus();
   await opener.press("Enter");
-  const dialog = page.getByRole("dialog", { name: "کنترل دیدار" });
+  const dialog = page.getByRole("dialog", { name: /^(ثبت|ویرایش) نتیجه$/ });
   await expect(dialog).toHaveAttribute("aria-modal", "true");
   await expect(dialog).toContainText("دور ۱، بازی ۱");
   await dialog.getByRole("spinbutton").first().fill("2");
   await dialog
-    .getByRole("combobox", { name: "تعیین برنده", exact: true })
+    .getByRole("combobox", { name: "برنده", exact: true })
     .selectOption({ index: 2 });
   await dialog
-    .getByRole("button", { name: "تأیید نتیجه", exact: true })
+    .getByRole("button", { name: /^ذخیره (نتیجه|تغییرات)$/, exact: true })
     .click();
   await expect(dialog.getByRole("alert")).toHaveText(
     "برنده انتخاب‌شده با امتیازهای واردشده سازگار نیست.",
@@ -104,7 +104,7 @@ test("Persian import errors keep focus inside the dialog and return to the opene
     .getByRole("button", { name: "Switch to Persian", exact: true })
     .click();
   const opener = page
-    .getByRole("button", { name: "ورود", exact: true })
+    .getByRole("button", { name: "وارد کردن مسابقات", exact: true })
     .first();
   await opener.focus();
   await opener.press("Enter");

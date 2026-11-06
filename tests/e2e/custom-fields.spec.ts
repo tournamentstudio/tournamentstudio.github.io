@@ -173,8 +173,9 @@ test("exports only explicitly public fields and reconstructs them in an independ
     .getByRole("navigation", { name: "Tournament sections" })
     .getByRole("button", { name: "Share Center", exact: true })
     .click();
+  await page.locator("details.share-advanced > summary").click();
   const downloading = page.waitForEvent("download");
-  await page.getByRole("button", { name: "JSON", exact: true }).click();
+  await page.getByRole("button", { name: "Public tournament JSON", exact: true }).click();
   const downloaded = await downloading,
     data = await readFile((await downloaded.path())!),
     json = JSON.parse(data.toString());

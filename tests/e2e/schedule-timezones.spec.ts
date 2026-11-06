@@ -12,6 +12,12 @@ async function section(page: Page, name: string) {
     .getByRole("navigation", { name: "Tournament sections" })
     .getByRole("button", { name, exact: true })
     .click();
+  if (name === "Share Center") {
+    const options = page.locator("details.share-advanced");
+    await expect(options).toBeVisible();
+    if ((await options.getAttribute("open")) === null)
+      await options.locator("summary").first().click();
+  }
 }
 
 async function importSchedule(page: Page, document: Tournament) {
@@ -132,7 +138,7 @@ for (const setting of [
       ).toHaveValue("2026-12-21T10:00");
       await section(page, "Share Center");
       const pending = page.waitForEvent("download");
-      await page.getByRole("button", { name: "JSON", exact: true }).click();
+      await page.getByRole("button", { name: "Public tournament JSON", exact: true }).click();
       const download = await pending;
       const exported = JSON.parse(
         await readFile((await download.path())!, "utf8"),

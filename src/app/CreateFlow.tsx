@@ -31,6 +31,8 @@ import { Field, ErrorText, Notice } from "../components/ui";
 import { useI18n, formatName } from "../i18n";
 import type { AdvisorPlan } from "./advisor-plans";
 import { parseParticipantCount } from "./participant-count";
+import { configurableRounds, creationFormatHelp } from "./creation-guidance";
+import "./create-flow.css";
 
 export function CreateFlow({
   template,
@@ -68,8 +70,10 @@ export function CreateFlow({
     String(initialPlan?.count ?? (template === "football" ? 16 : 8)),
   );
   const countErrorId = useId(),
+    nameErrorId = useId(),
     groupErrorId = useId(),
-    roundsErrorId = useId();
+    roundsErrorId = useId(),
+    nextStepHintId = useId();
   const countField = useRef<HTMLInputElement>(null);
   const namesField = useRef<HTMLTextAreaElement>(null);
   const groupField = useRef<HTMLInputElement>(null);
@@ -117,6 +121,18 @@ export function CreateFlow({
   const actualCount = parseParticipantCount(
     participantNames.length ? String(participantNames.length) : countInput,
   );
+  const usesRounds = configurableRounds.has(format);
+  const nameError =
+    new Set(
+      participantNames.map((name) =>
+        name.normalize("NFKC").toLocaleLowerCase(),
+      ),
+    ).size !== participantNames.length
+      ? t(
+          "The participant list contains duplicate names. Rename or remove duplicates.",
+          "فهرست دارای نام تکراری است. نام‌های تکراری را اصلاح کنید.",
+        )
+      : undefined;
   const formatLimit = formats.find(
     (entry) => entry.id === format,
   )!.maxParticipants;
@@ -152,14 +168,37 @@ export function CreateFlow({
         )
       : undefined;
   const roundsError =
-    !["groups", "gsl"].includes(format) &&
+    usesRounds &&
     (!Number.isInteger(rounds) || rounds < 1 || rounds > maxRounds)
       ? t(
           `Enter a whole number from 1 to ${maxRounds} for rounds.`,
           `تعداد دورها باید عدد صحیح از ۱ تا ${maxRounds.toLocaleString("fa-IR")} باشد.`,
         )
       : undefined;
-  const configurationError = countError ?? groupError ?? roundsError;
+  const configurationError =
+    countError ?? nameError ?? groupError ?? roundsError;
+  const hasPlayoffs =
+    playoffs && ["groups", "swiss", "round-robin"].includes(format);
+  const qualifierCount = actualCount
+    ? format === "groups"
+      ? Math.min(initialPlan?.qualifiers ?? 2, Math.floor(actualCount / groups))
+      : Math.min(
+          initialPlan?.qualifiers ?? 8,
+          2 ** Math.floor(Math.log2(actualCount)),
+        )
+    : 0;
+  const qualificationHelp =
+    hasPlayoffs && !configurationError
+      ? format === "groups"
+        ? t(
+            `The top ${number(qualifierCount)} from each group qualify for knockout playoffs.`,
+            `${number(qualifierCount)} شرکت‌کننده برتر هر گروه به مرحله حذفی صعود می‌کنند.`,
+          )
+        : t(
+            `The top ${number(qualifierCount)} in the standings qualify for knockout playoffs.`,
+            `${number(qualifierCount)} شرکت‌کننده برتر جدول به مرحله حذفی صعود می‌کنند.`,
+          )
+      : undefined;
   function adjustDefaults(nextCount: number | undefined, nextFormat = format) {
     if (nextCount === undefined) return;
     setGroupInput((current) =>
@@ -184,17 +223,6 @@ export function CreateFlow({
         );
       if (configurationError || actualCount === undefined)
         throw new Error(configurationError);
-      if (
-        new Set(
-          participantNames.map((n) => n.normalize("NFKC").toLocaleLowerCase()),
-        ).size !== participantNames.length
-      )
-        throw new Error(
-          t(
-            "The participant list contains duplicate names. Rename or remove duplicates.",
-            "فهرست دارای نام تکراری است. نام‌های تکراری را اصلاح کنید.",
-          ),
-        );
       if (protectedMode && secret.length < 8)
         throw new Error(
           t(
@@ -239,10 +267,7 @@ export function CreateFlow({
             : format === "gsl"
               ? actualCount / 4
               : DEFAULT_CONFIG.groupCount,
-        rounds:
-          format === "groups" || format === "gsl"
-            ? DEFAULT_CONFIG.rounds
-            : rounds,
+        rounds: usesRounds ? rounds : DEFAULT_CONFIG.rounds,
         seed,
         seeding: random ? "random" : "ranked",
       };
@@ -258,10 +283,7 @@ export function CreateFlow({
             }),
           ),
         }));
-      if (
-        playoffs &&
-        (format === "groups" || format === "swiss" || format === "round-robin")
-      ) {
+      if (hasPlayoffs) {
         doc.stages.push({
           id: uid(),
           name: t("Playoffs", "مرحله حذفی"),
@@ -273,16 +295,7 @@ export function CreateFlow({
           sources: [
             {
               stageId: doc.stages[0].id,
-              count:
-                format === "groups"
-                  ? Math.min(
-                      initialPlan?.qualifiers ?? 2,
-                      Math.floor(actualCount / groups),
-                    )
-                  : Math.min(
-                      initialPlan?.qualifiers ?? 8,
-                      2 ** Math.floor(Math.log2(actualCount)),
-                    ),
+              count: qualifierCount,
               perGroup: format === "groups",
             },
           ],
@@ -306,7 +319,9 @@ export function CreateFlow({
       </button>
       <div className="create-layout">
         <aside className="create-intro">
-          <div className="eyebrow">{t("TOURNAMENT SETUP", "تنظیم مسابقات")}</div>
+          <div className="eyebrow">
+            {t("TOURNAMENT SETUP", "تنظیم مسابقات")}
+          </div>
           <h1>{t("Create a tournament", "ساخت مسابقات")}</h1>
           <p>
             {t(
@@ -451,13 +466,16 @@ export function CreateFlow({
                   checked={advanced}
                   onChange={(e) => setAdvanced(e.target.checked)}
                 />
-                {t("Show advanced configuration", "نمایش تنظیمات پیشرفته")}
+                {t("Show draw options", "نمایش گزینه‌های قرعه‌کشی")}
               </label>
             </div>
           )}
           {step === 1 && (
             <div className="form-stack">
-              <Field label={t("Competition format", "قالب مسابقات")}>
+              <Field
+                label={t("Competition format", "قالب مسابقات")}
+                hint={t(...creationFormatHelp[format])}
+              >
                 <select
                   value={format}
                   onChange={(e) => {
@@ -485,6 +503,9 @@ export function CreateFlow({
                     "افزودن مرحله حذفی پایانی",
                   )}
                 </label>
+              )}
+              {qualificationHelp && (
+                <p className="creation-guidance">{qualificationHelp}</p>
               )}
               <div className="two-columns">
                 <Field
@@ -529,13 +550,8 @@ export function CreateFlow({
                       onChange={(e) => setGroupInput(e.target.value)}
                     />
                   </Field>
-                ) : format !== "gsl" ? (
-                  <Field
-                    label={t(
-                      "Rounds for Swiss / circuits",
-                      "دورهای سوئیسی / مجموعه",
-                    )}
-                  >
+                ) : usesRounds ? (
+                  <Field label={t("Number of rounds", "تعداد دورها")}>
                     <input
                       ref={roundsField}
                       type="number"
@@ -547,14 +563,14 @@ export function CreateFlow({
                       onChange={(e) => setRounds(Number(e.target.value))}
                     />
                   </Field>
-                ) : (
+                ) : format === "gsl" ? (
                   <Notice>
                     {t(
                       "GSL creates one group for every four entrants.",
                       "در GSL به ازای هر چهار شرکت‌کننده یک گروه ساخته می‌شود.",
                     )}
                   </Notice>
-                )}
+                ) : null}
               </div>
               {countError && (
                 <div id={countErrorId}>
@@ -590,19 +606,37 @@ export function CreateFlow({
                     "ستاره شمال\nاتحاد اطلس\nخورشید",
                   )}
                   value={names}
-                  aria-invalid={!!participantNames.length && !!countError}
+                  aria-invalid={
+                    !!participantNames.length && (!!countError || !!nameError)
+                  }
                   aria-describedby={
-                    participantNames.length && countError
-                      ? countErrorId
-                      : undefined
+                    [
+                      participantNames.length && countError
+                        ? countErrorId
+                        : undefined,
+                      nameError ? nameErrorId : undefined,
+                    ]
+                      .filter(Boolean)
+                      .join(" ") || undefined
                   }
                   onChange={(e) => setNames(e.target.value)}
                   onBlur={() => adjustDefaults(actualCount)}
                 />
               </Field>
+              {nameError && (
+                <div id={nameErrorId}>
+                  <Notice danger>{nameError}</Notice>
+                </div>
+              )}
               {advanced && (
                 <>
-                  <Field label={t("Draw seed", "بذر قرعه")}>
+                  <Field
+                    label={t("Draw seed", "بذر قرعه")}
+                    hint={t(
+                      "Use the same seed and participant list to repeat a random draw.",
+                      "برای تکرار یک قرعه تصادفی، همین بذر و فهرست شرکت‌کنندگان را به کار ببرید.",
+                    )}
+                  >
                     <input
                       value={seed}
                       onChange={(e) => setSeed(e.target.value)}
@@ -615,11 +649,19 @@ export function CreateFlow({
                       onChange={(e) => setRandom(e.target.checked)}
                     />
                     {t(
-                      "Randomized, reproducible draw",
-                      "قرعه تصادفی و قابل بازتولید",
+                      "Randomize participant order",
+                      "ترتیب شرکت‌کنندگان را تصادفی کن",
                     )}
                   </label>
                 </>
+              )}
+              {!random && (
+                <p className="creation-guidance">
+                  {t(
+                    "List order sets the seeds: first name is seed 1. To change the draw before playing, edit seeds in Participants and regenerate in Structure.",
+                    "ترتیب فهرست، سیدها را مشخص می‌کند؛ نام اول سید ۱ است. برای تغییر قرعه پیش از شروع بازی‌ها، سیدها را در بخش شرکت‌کنندگان ویرایش و قرعه را در بخش ساختار دوباره بسازید.",
+                  )}
+                </p>
               )}
               <div className="inline-metric">
                 <Users size={18} />
@@ -630,7 +672,7 @@ export function CreateFlow({
                   )
                 ) : (
                   <>
-                    <b>{actualCount}</b>
+                    <b>{number(actualCount)}</b>
                     {t("participants in your draw", "شرکت‌کننده در قرعه شما")}
                   </>
                 )}
@@ -704,17 +746,30 @@ export function CreateFlow({
               <div className="creation-summary">
                 <ListChecks size={23} />
                 <div>
-                  <h3>{title}</h3>
+                  <h3 dir="auto">{title}</h3>
                   <p>
-                    {actualCount} {t("participants", "شرکت‌کننده")} ·{" "}
-                    {formatName(format, locale)}
+                    {number(actualCount ?? 0)} {t("participants", "شرکت‌کننده")}{" "}
+                    · {formatName(format, locale)}
                   </p>
                   <small>
                     {t(
-                      "The draw will be generated immediately.",
-                      "قرعه بلافاصله ساخته می‌شود.",
+                      ["swiss", "triple-elimination", "ladder"].includes(format)
+                        ? "Creates the first round and saves your tournament in this browser."
+                        : "Creates the first stage's matches and saves your tournament in this browser.",
+                      ["swiss", "triple-elimination", "ladder"].includes(format)
+                        ? "دور اول ساخته و مسابقات در این مرورگر ذخیره می‌شود."
+                        : "دیدارهای مرحله اول ساخته و مسابقات در این مرورگر ذخیره می‌شود.",
                     )}
                   </small>
+                  {qualificationHelp && (
+                    <small>
+                      {qualificationHelp}{" "}
+                      {t(
+                        "Create playoff matches in Structure once qualifying results are complete.",
+                        "پس از تکمیل نتایج مقدماتی، دیدارهای حذفی را در بخش ساختار بسازید.",
+                      )}
+                    </small>
+                  )}
                 </div>
               </div>
               <label className="check-row">
@@ -749,6 +804,19 @@ export function CreateFlow({
               )}
             </div>
           )}
+          {step < 2 && (
+            <p id={nextStepHintId} className="creation-step-hint">
+              {step === 0
+                ? t(
+                    "Next: choose the format and participants.",
+                    "بعدی: انتخاب قالب و شرکت‌کنندگان.",
+                  )
+                : t(
+                    "Next: choose a theme and review before creating.",
+                    "بعدی: انتخاب تم و بازبینی پیش از ساخت.",
+                  )}
+            </p>
+          )}
           <div className="form-navigation">
             {step > 0 ? (
               <button
@@ -764,6 +832,7 @@ export function CreateFlow({
             {step < 2 ? (
               <button
                 className="button primary"
+                aria-describedby={nextStepHintId}
                 disabled={step === 0 && !title.trim()}
                 onClick={() => {
                   if (step === 1 && configurationError) {
@@ -772,6 +841,7 @@ export function CreateFlow({
                         ? namesField
                         : countField
                       ).current?.focus();
+                    else if (nameError) namesField.current?.focus();
                     else if (groupError) groupField.current?.focus();
                     else roundsField.current?.focus();
                     return;

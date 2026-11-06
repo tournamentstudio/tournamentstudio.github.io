@@ -25,6 +25,12 @@ async function section(page: Page, name: string) {
     .locator(".workspace-tabs")
     .getByRole("button", { name, exact: true })
     .click();
+  if (name === "Share Center") {
+    const options = page.locator("details.share-advanced");
+    await expect(options).toBeVisible();
+    if ((await options.getAttribute("open")) === null)
+      await options.locator("summary").first().click();
+  }
 }
 
 async function createEvent(page: Page) {
@@ -78,7 +84,7 @@ async function stored(page: Page): Promise<Tournament> {
 
 async function finishOpenMatch(page: Page) {
   const dialog = page.getByRole("dialog", {
-    name: "Match control",
+    name: /^(Enter|Edit) result$/,
     exact: true,
   });
   const entrants = await dialog.locator(".score-side > bdi").allTextContents();
@@ -91,7 +97,7 @@ async function finishOpenMatch(page: Page) {
       .fill(String(100 - seed));
   }
   await dialog
-    .getByRole("button", { name: "Confirm result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await expect(dialog).not.toBeVisible();
   await saved(page);
@@ -122,7 +128,10 @@ test("rehearses Gol hands, pauses, offline play, qualification and backup recove
 
   await section(page, "Matches");
   await page.locator("button.match-tile.ready").first().click();
-  let dialog = page.getByRole("dialog", { name: "Match control", exact: true });
+  let dialog = page.getByRole("dialog", {
+    name: /^(Enter|Edit) result$/,
+    exact: true,
+  });
   await dialog
     .getByRole("button", { name: "Referee mode", exact: true })
     .click();
@@ -185,7 +194,10 @@ test("rehearses Gol hands, pauses, offline play, qualification and backup recove
     await saved(page);
     await section(page, "Matches");
     await page.locator("button.match-tile.live").click();
-    dialog = page.getByRole("dialog", { name: "Match control", exact: true });
+    dialog = page.getByRole("dialog", {
+      name: /^(Enter|Edit) result$/,
+      exact: true,
+    });
     await dialog
       .getByRole("button", { name: "Referee mode", exact: true })
       .click();
@@ -249,7 +261,7 @@ test("rehearses Gol hands, pauses, offline play, qualification and backup recove
     const fresh = await recovery.newPage();
     await fresh.goto("/");
     await fresh
-      .getByRole("button", { name: "Import", exact: true })
+      .getByRole("button", { name: "Import tournament", exact: true })
       .click();
     const importer = fresh.getByRole("dialog", {
       name: "Bring a tournament into your studio",
@@ -291,7 +303,7 @@ test("keeps long Persian hand logs usable with touch and keyboard at 320px", asy
     await opener.focus();
     await page.keyboard.press("Enter");
     const dialog = page.getByRole("dialog", {
-      name: "کنترل دیدار",
+      name: /^(ثبت|ویرایش) نتیجه$/,
       exact: true,
     });
     await dialog.getByRole("button", { name: "حالت داور", exact: true }).tap();
@@ -337,7 +349,7 @@ test("keeps long Persian hand logs usable with touch and keyboard at 320px", asy
     await live.focus();
     await page.keyboard.press("Enter");
     const english = page.getByRole("dialog", {
-      name: "Match control",
+      name: /^(Enter|Edit) result$/,
       exact: true,
     });
     await english

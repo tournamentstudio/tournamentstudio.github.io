@@ -30,13 +30,11 @@ async function openGol(page: Page, target = false) {
   const dialog = page.getByRole("dialog", {
     name: "Bring a tournament into your studio",
   });
-  await dialog
-    .locator('input[type="file"]')
-    .setInputFiles({
-      name: "gol.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(t)),
-    });
+  await dialog.locator('input[type="file"]').setInputFiles({
+    name: "gol.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(t)),
+  });
   await dialog
     .getByRole("button", { name: "Preview import", exact: true })
     .click();
@@ -60,7 +58,7 @@ async function referee(page: Page, live = false) {
     .first()
     .click();
   const dialog = page.getByRole("dialog", {
-    name: "Match control",
+    name: /^(Enter|Edit) result$/,
     exact: true,
   });
   await dialog

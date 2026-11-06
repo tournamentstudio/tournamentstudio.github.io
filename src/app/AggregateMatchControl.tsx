@@ -150,7 +150,11 @@ export function AggregateMatchControl({
   return (
     <Modal
       wide
-      title={t("Aggregate match control", "کنترل دیدار رفت و برگشت")}
+      title={
+        match.result
+          ? t("Edit result", "ویرایش نتیجه")
+          : t("Enter result", "ثبت نتیجه")
+      }
       onClose={onClose}
     >
       {stale && <MatchEditConflictNotice />}
@@ -344,8 +348,8 @@ export function AggregateMatchControl({
           <Notice danger>
             <p>
               {t(
-                "Confirm reopening these dependent results. The previous revision remains recoverable.",
-                "بازگشایی نتایج وابسته زیر را تأیید کنید. نسخه قبلی قابل بازیابی می‌ماند.",
+                "Saving this correction clears the results and live progress listed below. You can restore the previous version from History.",
+                "با ذخیره این اصلاح، نتایج و پیشرفت زنده دیدارهای زیر پاک می‌شود. نسخه قبلی از تاریخچه قابل بازیابی است.",
               )}
             </p>
             <ul>
@@ -359,8 +363,8 @@ export function AggregateMatchControl({
                 onClick={() => commit(pending, true)}
               >
                 {t(
-                  "Confirm correction and reset dependents",
-                  "تأیید اصلاح و بازنشانی وابسته‌ها",
+                  "Save correction and clear later matches",
+                  "ذخیره اصلاح و پاک کردن دیدارهای بعدی",
                 )}
               </button>
               <button
@@ -389,7 +393,9 @@ export function AggregateMatchControl({
               }
               onClick={save}
             >
-              {t("Confirm aggregate result", "تأیید نتیجه مجموع")}
+              {match.result
+                ? t("Save changes", "ذخیره تغییرات")
+                : t("Save result", "ذخیره نتیجه")}
             </button>
           </div>
         )}

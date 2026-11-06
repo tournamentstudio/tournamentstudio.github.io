@@ -87,7 +87,7 @@ test("uses equal public emblems and target progress in Gol scorekeeping", async 
   await createGol(page);
   await section(page, "Matches");
   await page.locator("button.match-tile.ready").first().click();
-  const dialog = page.getByRole("dialog", { name: "Match control" });
+  const dialog = page.getByRole("dialog", { name: /^(Enter|Edit) result$/ });
   await expect(dialog.locator(".game-match-banner .game-icon")).toHaveAttribute(
     "data-game-icon",
     "gol-ya-pooch",
@@ -127,7 +127,7 @@ test("uses equal public emblems and target progress in Gol scorekeeping", async 
   await dialog.locator('.score-entry input[type="number"]').nth(0).fill("6");
   await dialog.locator('.score-entry input[type="number"]').nth(1).fill("2");
   await dialog
-    .getByRole("button", { name: "Confirm result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await saved(page);
   await page.reload();

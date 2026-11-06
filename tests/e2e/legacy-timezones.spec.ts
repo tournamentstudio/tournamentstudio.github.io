@@ -50,6 +50,12 @@ async function section(page: Page, name: string) {
     .getByRole("navigation", { name: "Tournament sections" })
     .getByRole("button", { name, exact: true })
     .click();
+  if (name === "Share Center") {
+    const options = page.locator("details.share-advanced");
+    await expect(options).toBeVisible();
+    if ((await options.getAttribute("open")) === null)
+      await options.locator("summary").first().click();
+  }
 }
 
 async function save(page: Page, dialog: Locator, mode = "Save local copy") {
@@ -319,7 +325,7 @@ test("reviews an encrypted history backup and forks without replacing an existin
   await expect(
     dialog.getByRole("button", { name: "Replace current copy", exact: true }),
   ).toBeDisabled();
-  await save(page, dialog, "Fork with new identity");
+  await save(page, dialog, "Save as new tournament");
   expect(page.url()).not.toContain(original.id);
   await section(page, "History");
   await expect(page.locator(".revision-row")).toHaveCount(3);
@@ -358,7 +364,7 @@ for (const width of [320, 390]) {
       .getByRole("button", { name: "Switch to Persian", exact: true })
       .click();
     await page
-      .getByRole("button", { name: "ورود", exact: true })
+      .getByRole("button", { name: "وارد کردن مسابقات", exact: true })
       .first()
       .click();
     const dialog = page.getByRole("dialog", {

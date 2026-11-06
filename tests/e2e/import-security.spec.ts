@@ -64,6 +64,7 @@ async function previewEncryptedBackup(page: Page) {
     .getByRole("navigation", { name: "Tournament sections" })
     .getByRole("button", { name: "Share Center", exact: true })
     .click();
+  await page.locator("details.share-advanced > summary").click();
   await page
     .getByRole("combobox", { name: /^Protection/ })
     .selectOption("encrypted");
@@ -126,7 +127,7 @@ test("rejects a protected replacement into standard storage before writing and p
   expect(unchanged.revision).toBe(before.revision);
   expect(unchanged.protected).toBe(false);
   await dialog
-    .getByRole("button", { name: "Fork with new identity", exact: true })
+    .getByRole("button", { name: "Save as new tournament", exact: true })
     .click();
   await expect(dialog).not.toBeVisible();
   const forkId = page.url().split("/").at(-1)!;

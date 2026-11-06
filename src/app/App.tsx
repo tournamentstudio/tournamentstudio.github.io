@@ -38,8 +38,9 @@ import {
 } from "../sharing";
 import type { MergeSelection } from "./PatchMergeReview";
 import { LocaleContext, useI18n } from "../i18n";
-import { Modal, Field, ErrorText, Confirm, Notice } from "../components/ui";
+import { Modal, Field, ErrorText, Confirm } from "../components/ui";
 import { Home } from "./Home";
+import { HelpDialog } from "./HelpDialog";
 import { ImportLoader } from "./ImportLoader";
 import type { AdvisorPlan } from "./advisor-plans";
 import { resetIdentity } from "../domain/identity";
@@ -120,6 +121,8 @@ function Studio({
   const [importOpen, setImportOpen] = useState(false);
   const [importCode, setImportCode] = useState("");
   const importEpoch = useRef(0);
+  const importFromNavigation = useRef(false);
+  const importReturnFocus = useRef<HTMLButtonElement | null>(null);
   const [template, setTemplate] = useState<string>();
   const [initialFormat, setInitialFormat] = useState<FormatId>();
   const [initialPlan, setInitialPlan] = useState<AdvisorPlan>();
@@ -149,9 +152,27 @@ function Studio({
   }
   function changeImport(code?: string) {
     importEpoch.current++;
+    if (code !== undefined) {
+      importFromNavigation.current = navigation.active;
+      setSidebar(false);
+    }
     setImportCode(code ?? "");
     setImportOpen(code !== undefined);
   }
+  function openHelp() {
+    setSidebar(false);
+    setHelp(true);
+  }
+  useEffect(() => {
+    if (importOpen || !importReturnFocus.current) return;
+    const opener = importReturnFocus.current;
+    importReturnFocus.current = null;
+    // The lazy import screen may replace its loading dialog before closing.
+    queueMicrotask(() => {
+      if (opener.isConnected && !document.querySelector("dialog[open]"))
+        opener.focus({ preventScroll: true });
+    });
+  }, [importOpen]);
   useEffect(() => {
     if (!saving && !unsaved) return;
     const warn = (event: BeforeUnloadEvent) => {
@@ -853,9 +874,9 @@ function Studio({
           }}
         >
           <Upload size={17} />
-          {t("Import & restore", "ورود و بازیابی")}
+          {t("Import & restore", "وارد کردن و بازیابی")}
         </button>
-        <button className="sidebar-link" onClick={() => setHelp(true)}>
+        <button className="sidebar-link" onClick={openHelp}>
           <ShieldCheck size={17} />
           {t("How it works", "روش کار")}
         </button>
@@ -886,11 +907,15 @@ function Studio({
               <ArrowRightSmall />
             </a>
           </div>
-          <button className="profile-chip" onClick={() => setHelp(true)}>
-            <span className="profile-avatar">TS</span>
+          <button className="profile-chip" onClick={openHelp}>
+            <span className="profile-avatar" aria-hidden="true">
+              ?
+            </span>
             <div>
-              <b>{t("Your local studio", "استودیوی محلی شما")}</b>
-              <small>{t("No account needed", "بدون نیاز به حساب")}</small>
+              <b>{t("Help & shortcuts", "راهنما و میانبرها")}</b>
+              <small>
+                {t("Using TournaStudio", "روش استفاده از TournaStudio")}
+              </small>
             </div>
             <ChevronRight size={16} />
           </button>
@@ -1200,7 +1225,11 @@ function Studio({
           current={doc}
           currentSecret={secret}
           onClose={() => {
-            if (renderedImportEpoch === importEpoch.current) changeImport();
+            if (renderedImportEpoch === importEpoch.current) {
+              if (importFromNavigation.current)
+                importReturnFocus.current = navigation.trigger.current;
+              changeImport();
+            }
           }}
           onImport={(value, mode, vaultSecret, revisions) =>
             imported(renderedImportEpoch, value, mode, vaultSecret, revisions)
@@ -1215,6 +1244,7 @@ function Studio({
         <Confirm
           destructive
           title={t("Delete permanently?", "حذف دائمی؟")}
+          confirmLabel={t("Delete permanently", "حذف دائمی")}
           message={t(
             "This removes the tournament and all its local revisions. An exported backup is the only way to restore it.",
             "مسابقات و همه نسخه‌های محلی حذف می‌شوند. تنها راه بازیابی، پشتیبان صادر شده است.",
@@ -1225,69 +1255,7 @@ function Studio({
           }
         />
       )}
-      {help && (
-        <Modal
-          title={t("A studio that stays with you", "استودیویی که همراه شماست")}
-          onClose={() => setHelp(false)}
-        >
-          <div className="help-content">
-            <p>
-              {t(
-                "TournaStudio runs entirely in your browser. Create an event, enter participants, choose a format, and score matches from the workspace.",
-                "TournaStudio کاملاً در مرورگر اجرا می‌شود. رویداد بسازید، شرکت‌کنندگان را وارد کنید، قالب را انتخاب و دیدارها را امتیازدهی کنید.",
-              )}
-            </p>
-            <ol>
-              <li>
-                {t(
-                  "Every confirmed change is saved locally. History keeps the latest 50 revisions.",
-                  "هر تغییر تأیید شده محلی ذخیره می‌شود. تاریخچه ۵۰ نسخه آخر را نگه می‌دارد.",
-                )}
-              </li>
-              <li>
-                {t(
-                  "Share Center creates data-bearing links, codes, and files. Recipients get independent copies.",
-                  "مرکز اشتراک پیوند، کد و فایل حاوی داده می‌سازد. گیرنده کپی مستقل می‌گیرد.",
-                )}
-              </li>
-              <li>
-                {t(
-                  "Presentation windows in the same browser profile update after a confirmed save. Other devices need a new snapshot or update packet.",
-                  "پنجره نمایش در همان پروفایل مرورگر پس از ذخیره تأیید شده به‌روز می‌شود. دستگاه دیگر به تصویر تازه یا بسته به‌روزرسانی نیاز دارد.",
-                )}
-              </li>
-              <li>
-                {t(
-                  "Use a captured browser window for OBS. Its separate browser source may not share this browser’s local database.",
-                  "برای OBS پنجره مرورگر را ضبط کنید. منبع مرورگر جداگانه ممکن است به پایگاه محلی دسترسی نداشته باشد.",
-                )}
-              </li>
-            </ol>
-            <Notice>
-              {t(
-                "Back up your tournaments. Clearing browser data can remove them. A protected vault has no password reset.",
-                "پشتیبان بگیرید. پاک کردن داده مرورگر می‌تواند مسابقات را حذف کند. گاوصندوق بازیابی رمز ندارد.",
-              )}
-            </Notice>
-            <p>
-              <kbd>Ctrl</kbd> + <kbd>S</kbd>{" "}
-              {t(
-                "downloads a tournament backup.",
-                "پشتیبان مسابقات را دریافت می‌کند.",
-              )}
-            </p>
-            <a
-              className="button secondary"
-              href="https://github.com/tournamentstudio/tournamentstudio.github.io/blob/main/USER_GUIDE.md"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {t("Read the user guide", "راهنمای کاربر")}
-              <ArrowUpRight size={16} />
-            </a>
-          </div>
-        </Modal>
-      )}
+      {help && <HelpDialog onClose={() => setHelp(false)} />}
     </div>
   );
 }

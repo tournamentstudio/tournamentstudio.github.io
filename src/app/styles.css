@@ -2185,7 +2185,7 @@ kbd {
 .help-content p,
 .help-content li {
   color: #58694a;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.9;
 }
 .help-content ol {
@@ -2193,6 +2193,16 @@ kbd {
 }
 .help-content li {
   padding: 7px 0;
+}
+.help-workflow strong {
+  display: block;
+  color: #21382e;
+}
+.help-workflow p {
+  margin-block: 3px 0;
+}
+.help-content details {
+  margin-block: 18px;
 }
 .toast {
   pointer-events: none;
@@ -2872,10 +2882,6 @@ kbd {
   .share-main h3,
   .share-side h3 {
     font-size: 18px;
-  }
-  .help-content p,
-  .help-content li {
-    font-size: 11px;
   }
   .toast {
     font-size: 11px;

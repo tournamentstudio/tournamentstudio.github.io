@@ -10,6 +10,12 @@ async function section(page: Page, name: string) {
     .getByRole("navigation", { name: "Tournament sections" })
     .getByRole("button", { name, exact: true })
     .click();
+  if (name === "Share Center") {
+    const options = page.locator("details.share-advanced");
+    await expect(options).toBeVisible();
+    if ((await options.getAttribute("open")) === null)
+      await options.locator("summary").first().click();
+  }
 }
 
 async function createCup(page: Page, protectedMode = false) {
@@ -155,14 +161,16 @@ test("a delayed private snapshot cannot appear after public settings replace its
     "data-export-encryption-pending",
     "true",
   );
-  for (const name of ["SVG", "PNG", "PDF / Print"])
-    await expect(page.getByRole("button", { name, exact: true })).toBeDisabled();
+  for (const name of ["Bracket SVG", "Bracket PNG", "Print / PDF"])
+    await expect(
+      page.getByRole("button", { name, exact: true }),
+    ).toBeDisabled();
   await page
     .getByLabel("Included information", { exact: true })
     .selectOption("public");
   await page.getByLabel("Protection", { exact: true }).selectOption("plain");
   await releaseEncryption(page);
-  for (const name of ["SVG", "PNG", "PDF / Print"])
+  for (const name of ["Bracket SVG", "Bracket PNG", "Print / PDF"])
     await expect(page.getByRole("button", { name, exact: true })).toBeEnabled();
   await expect(page.getByLabel("Portable code", { exact: true })).toHaveCount(
     0,

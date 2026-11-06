@@ -144,13 +144,13 @@ test("plays every classification match and shows unique final places", async ({
   for (let index = 0; index < 4; index++) {
     await page.locator("button.match-tile.ready").first().click();
     const dialog = page.getByRole("dialog", {
-      name: "Match control",
+      name: /^(Enter|Edit) result$/,
       exact: true,
     });
     await dialog.locator('.score-entry input[type="number"]').nth(0).fill("3");
     await dialog.locator('.score-entry input[type="number"]').nth(1).fill("1");
     await dialog
-      .getByRole("button", { name: "Confirm result", exact: true })
+      .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
       .click();
     await expect(dialog).not.toBeVisible();
     await saved(page);
@@ -182,7 +182,7 @@ test("saves aggregate leg progress across reload and advances only the final sum
   await section(page, "Matches");
   await page.locator("button.match-tile.ready").first().click();
   let dialog = page.getByRole("dialog", {
-    name: "Aggregate match control",
+    name: /^(Enter|Edit) result$/,
     exact: true,
   });
   await dialog.getByRole("spinbutton").nth(0).fill("3");
@@ -200,11 +200,11 @@ test("saves aggregate leg progress across reload and advances only the final sum
   await section(page, "Matches");
   await page.locator("button.match-tile.live").click();
   dialog = page.getByRole("dialog", {
-    name: "Aggregate match control",
+    name: /^(Enter|Edit) result$/,
     exact: true,
   });
   await dialog
-    .getByRole("button", { name: "Confirm aggregate result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await expect(dialog.getByRole("alert")).toContainText(
     "every required regulation leg",
@@ -215,7 +215,7 @@ test("saves aggregate leg progress across reload and advances only the final sum
   await dialog.getByRole("spinbutton").nth(2).fill("0");
   await dialog.getByRole("spinbutton").nth(3).fill("4");
   await dialog
-    .getByRole("button", { name: "Confirm aggregate result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await expect(dialog).not.toBeVisible();
   await saved(page);
@@ -247,7 +247,7 @@ test("requires an extra aggregate leg and records an explicit tied final ruling"
   await section(page, "Matches");
   await page.locator("button.match-tile.ready").click();
   const dialog = page.getByRole("dialog", {
-    name: "Aggregate match control",
+    name: /^(Enter|Edit) result$/,
     exact: true,
   });
   await dialog
@@ -257,14 +257,14 @@ test("requires an extra aggregate leg and records an explicit tied final ruling"
     .getByRole("combobox", { name: "Ruling winner", exact: true })
     .selectOption("p1");
   await dialog
-    .getByRole("button", { name: "Confirm aggregate result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await expect(dialog.getByRole("alert")).toContainText("configured extra leg");
   await dialog
     .getByRole("button", { name: "Add next leg", exact: true })
     .click();
   await dialog
-    .getByRole("button", { name: "Confirm aggregate result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await expect(dialog).not.toBeVisible();
   await saved(page);
@@ -287,7 +287,10 @@ test("reviews upstream reopening then postpones and holds an abandoned match for
   await section(page, "Matches");
   await page.getByRole("button", { name: "All matches", exact: true }).click();
   await page.locator("button.match-tile.completed").first().click();
-  let dialog = page.getByRole("dialog", { name: "Match control", exact: true });
+  let dialog = page.getByRole("dialog", {
+    name: /^(Enter|Edit) result$/,
+    exact: true,
+  });
   await dialog
     .getByText("Reopen or change match status", { exact: true })
     .click();
@@ -305,7 +308,10 @@ test("reviews upstream reopening then postpones and holds an abandoned match for
   await saved(page);
   expect((await stored(page)).metadata.correctionRecovery).toBeTruthy();
   await page.locator("button.match-tile.ready").first().click();
-  dialog = page.getByRole("dialog", { name: "Match control", exact: true });
+  dialog = page.getByRole("dialog", {
+    name: /^(Enter|Edit) result$/,
+    exact: true,
+  });
   await dialog
     .getByText("Reopen or change match status", { exact: true })
     .click();
@@ -318,7 +324,10 @@ test("reviews upstream reopening then postpones and holds an abandoned match for
   await expect(dialog).not.toBeVisible();
   await saved(page);
   await page.locator("button.match-tile.postponed").click();
-  dialog = page.getByRole("dialog", { name: "Match control", exact: true });
+  dialog = page.getByRole("dialog", {
+    name: /^(Enter|Edit) result$/,
+    exact: true,
+  });
   await dialog
     .getByText("Reopen or change match status", { exact: true })
     .click();
@@ -354,7 +363,7 @@ test("Persian aggregate controls fit a narrow screen with long mixed-script name
   await page.setViewportSize({ width: 320, height: 760 });
   await page.locator("button.match-tile.ready").click();
   const dialog = page.getByRole("dialog", {
-    name: "کنترل دیدار رفت و برگشت",
+    name: /^(ثبت|ویرایش) نتیجه$/,
     exact: true,
   });
   await dialog
@@ -403,13 +412,13 @@ test("classifies every double-elimination entrant without changing the champions
   for (let index = 0; index < 16; index++) {
     await page.locator("button.match-tile.ready").first().click();
     const dialog = page.getByRole("dialog", {
-      name: "Match control",
+      name: /^(Enter|Edit) result$/,
       exact: true,
     });
     await dialog.locator('.score-entry input[type="number"]').nth(0).fill("3");
     await dialog.locator('.score-entry input[type="number"]').nth(1).fill("1");
     await dialog
-      .getByRole("button", { name: "Confirm result", exact: true })
+      .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
       .click();
     await expect(dialog).not.toBeVisible();
     await saved(page);
@@ -451,7 +460,7 @@ test("optional away-goal policy resolves regulation ties before any extra leg", 
   await section(page, "Matches");
   await page.locator("button.match-tile.ready").click();
   const dialog = page.getByRole("dialog", {
-    name: "Aggregate match control",
+    name: /^(Enter|Edit) result$/,
     exact: true,
   });
   await dialog.getByRole("spinbutton").nth(0).fill("2");
@@ -467,7 +476,7 @@ test("optional away-goal policy resolves regulation ties before any extra leg", 
     dialog.getByRole("button", { name: "Add next leg", exact: true }),
   ).toBeDisabled();
   await dialog
-    .getByRole("button", { name: "Confirm aggregate result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await expect(dialog).not.toBeVisible();
   await saved(page);
@@ -509,16 +518,16 @@ test("warns before upstream correction clears a postponed downstream leg", async
   await page.getByRole("button", { name: "All matches", exact: true }).click();
   await page.locator("button.match-tile.completed").first().click();
   const dialog = page.getByRole("dialog", {
-    name: "Aggregate match control",
+    name: /^(Enter|Edit) result$/,
     exact: true,
   });
   await dialog.getByRole("spinbutton").nth(0).fill("0");
   await dialog.getByRole("spinbutton").nth(1).fill("3");
   await dialog
-    .getByRole("button", { name: "Confirm aggregate result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await expect(dialog).toContainText(
-    "Confirm reopening these dependent results",
+    "Saving this correction clears the results and live progress listed below.",
   );
   await expect(dialog.locator("li")).toContainText(final.label);
   await dialog
@@ -529,11 +538,11 @@ test("warns before upstream correction clears a postponed downstream leg", async
       ?.aggregateProgress,
   ).toEqual([[2, 1]]);
   await dialog
-    .getByRole("button", { name: "Confirm aggregate result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await dialog
     .getByRole("button", {
-      name: "Confirm correction and reset dependents",
+      name: "Save correction and clear later matches",
       exact: true,
     })
     .click();

@@ -134,8 +134,8 @@ export function Home({
             </h2>
             <p>
               {t(
-                "Choose a format below or build your own competition. Keep the draw, matches and results together.",
-                "یکی از قالب‌های زیر را انتخاب کنید یا مسابقات خود را بسازید. قرعه‌کشی، دیدارها و نتایج را یکجا نگه دارید.",
+                "Choose a template below or start with your own settings. Keep the draw, matches and results together.",
+                "یکی از الگوهای زیر را انتخاب کنید یا با تنظیمات خود شروع کنید. قرعه‌کشی، دیدارها و نتایج را یکجا نگه دارید.",
               )}
             </p>
             <p className="hero-note">
@@ -152,7 +152,7 @@ export function Home({
             <ol>
               {[
                 [
-                  "Entrants",
+                  "Participants",
                   "شرکت‌کنندگان",
                   "Names, teams and seeds",
                   "نام‌ها، تیم‌ها و سیدبندی",
@@ -205,7 +205,7 @@ export function Home({
           </div>
           <button className="text-button" onClick={onImport}>
             <Upload size={16} />
-            {t("Import", "ورود")}
+            {t("Import tournament", "وارد کردن مسابقات")}
           </button>
         </div>
         {entries.length > 0 && (
@@ -490,10 +490,13 @@ function StarterFormats({ onCreate }: Pick<Props, "onCreate">) {
     <section className="template-section">
       <div className="section-heading">
         <div>
-          <h2>{t("Start from a format", "شروع با یک قالب")}</h2>
+          <h2>{t("Use a template", "شروع با الگو")}</h2>
         </div>
         <span className="muted">
-          {t("Editable starter formats", "الگوهای قابل ویرایش")}
+          {t(
+            "Review the setup before creating",
+            "پیش از ساخت، تنظیمات را بررسی کنید",
+          )}
         </span>
       </div>
       <div className="template-grid">

@@ -135,7 +135,7 @@ test("a stale score editor cannot overwrite a same-revision replacement", async 
     .click();
   await page.locator("button.match-tile.ready").first().click();
   const dialog = page.getByRole("dialog", {
-    name: "Match control",
+    name: /^(Enter|Edit) result$/,
     exact: true,
   });
   await dialog.getByRole("spinbutton").first().fill("4");
@@ -146,7 +146,7 @@ test("a stale score editor cannot overwrite a same-revision replacement", async 
   });
   await replaceSaved(page, replacement, false);
   await dialog
-    .getByRole("button", { name: "Confirm result", exact: true })
+    .getByRole("button", { name: /^Save (result|changes)$/, exact: true })
     .click();
   await expect(
     page.getByText(/Another tab changed this tournament/),
@@ -173,7 +173,9 @@ for (const variant of ["standard", "aggregate"] as const)
     await page.locator("button.match-tile.ready").first().click();
     const dialog = page.getByRole("dialog", {
       name:
-        variant === "aggregate" ? "Aggregate match control" : "Match control",
+        variant === "aggregate"
+          ? /^(Enter|Edit) result$/
+          : /^(Enter|Edit) result$/,
       exact: true,
     });
     await dialog.getByRole("spinbutton").first().fill("4");
@@ -210,8 +212,8 @@ for (const variant of ["standard", "aggregate"] as const)
       dialog.getByRole("button", {
         name:
           variant === "aggregate"
-            ? "Confirm aggregate result"
-            : "Confirm result",
+            ? /^Save (result|changes)$/
+            : /^Save (result|changes)$/,
         exact: true,
       }),
     ).toBeDisabled();
@@ -239,7 +241,7 @@ test("local referee saves preserve the open hand-entry session", async ({
     .click();
   await page.locator("button.match-tile.ready").first().click();
   const dialog = page.getByRole("dialog", {
-    name: "Match control",
+    name: /^(Enter|Edit) result$/,
     exact: true,
   });
   const referee = dialog.getByRole("button", {
