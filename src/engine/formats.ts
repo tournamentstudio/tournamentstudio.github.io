@@ -74,7 +74,8 @@ export function roundRobin(
       for (let i = 0; i < circle.length / 2; i++) {
         const pair = [rotation[i], rotation[circle.length - 1 - i]];
         if (pair.some((id) => !id)) continue;
-        if ((round + cycle) % 2) pair.reverse();
+        // Alternate the fixed entrant; rotating pairs already balance their sides.
+        if ((cycle + (i === 0 ? round : 0)) % 2) pair.reverse();
         result.push(
           newMatch(stage, cycle * rounds + round + 1, i, pair.map(entrant), {
             group,

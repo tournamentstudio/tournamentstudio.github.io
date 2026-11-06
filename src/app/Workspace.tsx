@@ -35,6 +35,7 @@ import {
 } from "../i18n";
 import { Bracket } from "../components/Bracket";
 import { StandingsTable } from "../components/StandingsTable";
+import { orderFixtures } from "./match-order";
 import { ErrorText, Empty } from "../components/ui";
 import { Pagination, usePagination } from "../components/Pagination";
 import { Participants } from "./Participants";
@@ -176,22 +177,25 @@ export function Workspace({
   const champion = getChampion(doc);
   const filtered = useMemo(
     () =>
-      doc.matches.filter(
-        (m) =>
-          (!matchStage || m.stageId === matchStage.id) &&
-          (filter === "all" ||
-            (filter === "ready"
-              ? m.status === "ready" || m.status === "live"
-              : m.status === filter)) &&
-          (!search ||
-            m.slots.some((s) =>
-              participants
-                .get(s.participantId ?? "")
-                ?.name.toLocaleLowerCase()
-                .includes(search.toLocaleLowerCase()),
-            )),
+      orderFixtures(
+        doc.matches.filter(
+          (m) =>
+            (!matchStage || m.stageId === matchStage.id) &&
+            (filter === "all" ||
+              (filter === "ready"
+                ? m.status === "ready" || m.status === "live"
+                : m.status === filter)) &&
+            (!search ||
+              m.slots.some((s) =>
+                participants
+                  .get(s.participantId ?? "")
+                  ?.name.toLocaleLowerCase()
+                  .includes(search.toLocaleLowerCase()),
+              )),
+        ),
+        doc.stages,
       ),
-    [doc.matches, filter, search, participants, matchStage],
+    [doc.matches, doc.stages, filter, search, participants, matchStage],
   );
   const { visible: visibleMatches, pagination: matchPagination } =
     usePagination(

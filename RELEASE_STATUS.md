@@ -1,5 +1,36 @@
 # TournaStudio release handoff
 
+## Current grouping release
+
+The November 6, 2026 grouping release fixes home/away balance in newly generated
+round robins and round ordering in the match desk. Sorting happens before
+pagination, so early fixtures from other groups stay ahead of later rounds.
+Saved draws, results, qualification references and the data schema are unchanged.
+The audit and its boundaries are recorded in [GROUPING_REVIEW.md](GROUPING_REVIEW.md).
+
+The final `npm run check` passed TypeScript, ESLint, 1,344 unit/integration tests
+across 112 files and the production build. Four release-packaging tests passed.
+The new suites add 105 unit tests and seven browser workflows. The build contains
+81 precache entries and 92 prepared publication files.
+
+The final production-bundle browser runs passed 135 cases: 55 in Chromium,
+40 in Firefox and 40 in WebKit, with no retries. They cover group creation,
+participant limits, manual and pot draws, restrictions, standings, playoff and
+wildcard qualification, result isolation, reload and ordered pagination.
+The broader Chromium run also passed sharing, vault, offline and presentation
+checks. A separate visual capture check passed for all 16 viewport/language views.
+
+Independent visual checks covered English and Persian standings and fixtures at
+320, 390, 768 and 1440 pixels. The review found the round-order defect, then
+verified its correction in a second pass. No additional text overlap, clipping
+or page overflow was found. Narrow tables retain horizontal scrolling.
+
+GitHub Actions remains disabled. Publication uses the locally prepared `main/docs`
+bundle. Hosted verification is recorded with the
+[GitHub releases](https://github.com/tournamentstudio/tournamentstudio.github.io/releases).
+
+## Previous welcome-page release
+
 The November 6, 2026 welcome-page release gives new visitors a working tournament
 example before asking them to create their own. The design and independent
 reviews are recorded in [LANDING_REVIEW.md](LANDING_REVIEW.md). Earlier workflow
