@@ -38,9 +38,15 @@ export function SponsorEditor({
   return (
     <section className="panel sponsor-editor">
       <h3>{t("Sponsor cards", "کارت حامیان")}</h3>
-      <p>{t("Edit the cards, then save them to update displays and exported files.", "کارت‌ها را ویرایش کنید و برای به‌روزرسانی نمایش و فایل خروجی، آن‌ها را ذخیره کنید.")}</p>
+      <p>
+        {t(
+          "Edit the cards, then save them to update displays and exported files.",
+          "کارت‌ها را ویرایش کنید و برای به‌روزرسانی نمایش و فایل خروجی، آن‌ها را ذخیره کنید.",
+        )}
+      </p>
       <button
         type="button"
+        className="button primary"
         disabled={busy}
         onClick={() => onSave({ ...savedSettings, ...draft })}
       >
@@ -131,6 +137,7 @@ export function SponsorEditor({
             {card.logo && (
               <button
                 type="button"
+                className="button secondary"
                 onClick={() => edit(card.id, { logo: undefined })}
               >
                 {t("Remove logo", "حذف نشان")}
@@ -138,6 +145,7 @@ export function SponsorEditor({
             )}
             <button
               type="button"
+              className="button secondary"
               disabled={index === 0}
               onClick={() => {
                 const next = [...cards];
@@ -149,6 +157,7 @@ export function SponsorEditor({
             </button>
             <button
               type="button"
+              className="button secondary"
               onClick={() =>
                 onChange({
                   ...settings,
@@ -163,6 +172,7 @@ export function SponsorEditor({
       ))}
       <button
         type="button"
+        className="button secondary"
         disabled={busy || cards.length >= 24}
         onClick={() =>
           onChange({

@@ -7,16 +7,22 @@
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 30px;
-  background: #e9efe5;
+  padding-block: 4px 20px;
+  border-bottom: 1px solid var(--line);
   color: #214e3c;
-  border-radius: 16px;
 }
 .presentation-studio-intro h2 {
-  font-family: Georgia, "Vazirmatn Variable", serif;
-  font-size: 32px;
-  margin: 12px 0;
-  font-weight: 500;
+  font-size: 23px;
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+.presentation-studio-intro p {
+  margin: 0;
+  max-width: 64ch;
+  color: #58665c;
+}
+.presentation-studio-intro > .button {
+  flex-shrink: 0;
 }
 .presentation-studio[dir="rtl"] .presentation-studio-intro h2 {
   font-family: "Vazirmatn Variable", "Inter Variable", sans-serif;
@@ -76,6 +82,12 @@
 .scene-actions {
   display: flex;
   gap: 6px;
+}
+.scene-actions .button {
+  padding: 8px 10px;
+}
+.sponsor-editor > .button {
+  margin-bottom: 16px;
 }
 .presentation-shell {
   position: fixed;
@@ -508,9 +520,12 @@
   }
   .scene-editor-fields {
     grid-template-columns: 1fr;
+    flex-basis: calc(100% - 48px);
+    min-width: 0;
   }
   .scene-actions {
     margin-inline-start: 48px;
+    flex-wrap: wrap;
   }
   .presentation-studio-intro {
     flex-direction: column;

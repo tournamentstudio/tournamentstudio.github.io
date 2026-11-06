@@ -156,7 +156,7 @@ test("failed saves survive canceled reload and navigation, and export the attemp
   );
   await page.getByRole("link", { name: "Home", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Let the games begin.", exact: true }),
+    page.getByRole("heading", { name: "Your tournament desk", exact: true }),
   ).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });

@@ -357,9 +357,8 @@ for (const width of [320, 390]) {
     await page
       .getByRole("button", { name: "Switch to Persian", exact: true })
       .click();
-    // The mobile drawer contains the global import control.
     await page
-      .getByRole("button", { name: "ورود مسابقات", exact: true })
+      .getByRole("button", { name: "ورود", exact: true })
       .first()
       .click();
     const dialog = page.getByRole("dialog", {

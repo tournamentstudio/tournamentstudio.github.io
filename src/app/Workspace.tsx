@@ -46,10 +46,11 @@ import { LadderDesk } from "./LadderDesk";
 import { ladderPolicy } from "../domain/ladder";
 import { History } from "./History";
 import { Settings } from "./StorageHealth";
-import { getTheme, themeStyle } from "../themes";
+import { themeStyle } from "../themes";
 import { GameIdentity } from "../themes/ThemeMotif";
 import { GameIcon } from "../themes/GameIcon";
 import "./game-experience.css";
+import "./workspace.css";
 import { requiresCompetitionWorker } from "../workers/competition-task";
 import {
   CompetitionTaskNotice,
@@ -123,7 +124,7 @@ export function Workspace({
   undoActions: UndoActions;
   externalRevision: number;
 }) {
-  const { t, locale } = useI18n();
+  const { t, locale, number } = useI18n();
   const [tab, setTab] = useState("overview");
   const activeSection = tabs.find((item) => item.id === tab)!;
   const [matchId, setMatchId] = useState<string>();
@@ -261,12 +262,6 @@ export function Workspace({
     >
       <header className="workspace-heading">
         <div>
-          <GameIdentity
-            sport={doc.sport}
-            preset={doc.theme.preset}
-            locale={locale}
-            compact
-          />
           <div className="workspace-breadcrumb">
             {t("My tournaments", "مسابقات من")}
             <span>/</span>
@@ -282,6 +277,12 @@ export function Workspace({
             {isProtected && <LockKeyhole size={17} />}
           </div>
           {doc.subtitle && <p>{doc.subtitle}</p>}
+          <GameIdentity
+            sport={doc.sport}
+            preset={doc.theme.preset}
+            locale={locale}
+            compact
+          />
         </div>
         <div className="button-row">
           <UndoControls
@@ -306,27 +307,46 @@ export function Workspace({
           </button>
         </div>
       </header>
-      <nav
-        className="workspace-tabs"
-        aria-label={t("Tournament sections", "بخش‌های مسابقات")}
-      >
-        {tabs.map((item) => (
-          <button
-            key={item.id}
-            id={`workspace-tab-${item.id}`}
-            className={tab === item.id ? "active" : ""}
-            aria-current={tab === item.id ? "page" : undefined}
+      <div className="workspace-navigation">
+        <nav
+          className="workspace-tabs"
+          aria-label={t("Tournament sections", "بخش‌های مسابقات")}
+        >
+          {tabs.map((item) => (
+            <button
+              key={item.id}
+              id={`workspace-tab-${item.id}`}
+              className={tab === item.id ? "active" : ""}
+              aria-current={tab === item.id ? "page" : undefined}
+              aria-controls="workspace-section"
+              onClick={() => {
+                setTab(item.id);
+                setError(undefined);
+              }}
+            >
+              <item.icon size={16} />
+              {t(item.en, item.fa)}
+            </button>
+          ))}
+        </nav>
+        <label className="workspace-section-picker">
+          <span>{t("Tournament section", "بخش مسابقات")}</span>
+          <select
+            value={tab}
             aria-controls="workspace-section"
-            onClick={() => {
-              setTab(item.id);
+            onChange={(event) => {
+              setTab(event.target.value);
               setError(undefined);
             }}
           >
-            <item.icon size={16} />
-            {t(item.en, item.fa)}
-          </button>
-        ))}
-      </nav>
+            {tabs.map((item) => (
+              <option value={item.id} key={item.id}>
+                {t(item.en, item.fa)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
       <p className="sr-only" role="status" aria-atomic="true">
         {t("Section", "بخش")}: {t(activeSection.en, activeSection.fa)}
       </p>
@@ -348,41 +368,58 @@ export function Workspace({
         >
           {tab === "overview" && (
             <div className="panel-content">
-              <div
-                className="overview-top game-overview themed"
-                data-pattern={getTheme(doc.theme.preset).pattern}
-              >
+              <div className="overview-top game-overview themed">
                 <div className="overview-welcome">
-                  <span className="eyebrow">
-                    {champion
-                      ? t("THE CHAMPION", "قهرمان")
-                      : t("THE COMPETITION IS YOURS", "رقابت از آن شماست")}
-                  </span>
+                  {champion && (
+                    <span className="eyebrow">{t("Champion", "قهرمان")}</span>
+                  )}
                   <h2>
                     {champion
                       ? champion.name
-                      : t("One match at a time.", "هر بار یک دیدار.")}
+                      : ready.length
+                        ? t("Match desk", "میز دیدارها")
+                        : doc.matches.length
+                          ? t("Review stage progression", "بررسی پیشروی مراحل")
+                          : t("Set up the draw", "قرعه را آماده کنید")}
                   </h2>
                   <p>
                     {champion
                       ? t(
-                          "The final result is in. Make the celebration yours in Presentation Studio.",
-                          "نتیجه نهایی ثبت شد. جشن را در استودیو نمایش بسازید.",
+                          "Show the champion and final results in Presentation.",
+                          "قهرمان و نتایج نهایی را در بخش نمایش نشان دهید.",
                         )
-                      : t(
-                          "Your draw is ready. Set the schedule, welcome your entrants, and let the story unfold.",
-                          "قرعه آماده است. برنامه را تنظیم کنید، شرکت‌کنندگان را بپذیرید و رقابت را آغاز کنید.",
-                        )}
+                      : ready.length
+                        ? t(
+                            "Record results for the matches below, or review the schedule.",
+                            "نتایج دیدارهای زیر را ثبت کنید یا برنامه را بررسی کنید.",
+                          )
+                        : doc.matches.length
+                          ? t(
+                              "No matches are ready or in progress. Review results and advancement in Structure.",
+                              "دیداری آماده یا در حال اجرا نیست. نتایج و صعود را در بخش ساختار بررسی کنید.",
+                            )
+                          : t(
+                              "Review the participants and stage settings, then generate a draw in Structure.",
+                              "شرکت‌کنندگان و تنظیمات مراحل را بررسی کنید، سپس در بخش ساختار قرعه بسازید.",
+                            )}
                   </p>
                   <button
                     className="text-button"
                     onClick={() =>
-                      setTab(champion ? "presentation" : "matches")
+                      setTab(
+                        champion
+                          ? "presentation"
+                          : ready.length
+                            ? "matches"
+                            : "structure",
+                      )
                     }
                   >
                     {champion
                       ? t("Open presentation studio", "باز کردن استودیو نمایش")
-                      : t("Go to match control", "رفتن به کنترل دیدار")}
+                      : ready.length
+                        ? t("Go to match control", "رفتن به کنترل دیدار")
+                        : t("Open structure", "باز کردن ساختار")}
                     <ArrowRight size={17} />
                   </button>
                 </div>
@@ -390,22 +427,26 @@ export function Workspace({
                   <GameIcon sport={doc.sport} size={160} />
                 </div>
               </div>
-              <div className="stat-grid">
+              <div className="stat-grid workspace-metrics">
                 {[
                   [
                     Users,
-                    doc.participants.length,
+                    number(doc.participants.length),
                     t("Participants", "شرکت‌کنندگان"),
                   ],
-                  [Activity, ready.length, t("Ready to play", "آماده بازی")],
+                  [
+                    Activity,
+                    number(ready.length),
+                    t("Ready or live", "آماده یا در حال اجرا"),
+                  ],
                   [
                     CheckCircle2,
-                    played.length,
+                    number(played.length),
                     t("Matches completed", "دیدار کامل"),
                   ],
                   [
                     Trophy,
-                    `${Math.round((played.length / Math.max(1, playable.length)) * 100)}%`,
+                    `${number(Math.round((played.length / Math.max(1, playable.length)) * 100))}${t("%", "٪")}`,
                     t("Progress", "پیشرفت"),
                   ],
                 ].map(([Icon, value, label], i) => {
@@ -448,10 +489,15 @@ export function Workspace({
                     </button>
                   }
                 >
-                  {t(
-                    "Complete the current round or advance to the next stage.",
-                    "دور فعلی را کامل کنید یا به مرحله بعد بروید.",
-                  )}
+                  {doc.matches.length
+                    ? t(
+                        "Review recorded results and the next stage in Structure.",
+                        "نتایج ثبت‌شده و مرحله بعد را در بخش ساختار بررسی کنید.",
+                      )
+                    : t(
+                        "Generate a draw in Structure to add the first matches.",
+                        "برای افزودن دیدارهای نخست، در بخش ساختار قرعه بسازید.",
+                      )}
                 </Empty>
               )}
               <section className="panel overview-bracket">
@@ -627,7 +673,7 @@ export function Workspace({
                       .filter(Boolean),
                   ),
                 ].map((group) => (
-                  <section className="panel" key={group}>
+                  <section className="workspace-group" key={group}>
                     <h3>
                       {t("Group", "گروه")} {group}
                     </h3>
@@ -636,6 +682,7 @@ export function Workspace({
                       stageId={stageId}
                       group={group}
                       locale={locale}
+                      hideCaption
                     />
                   </section>
                 ))

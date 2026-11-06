@@ -916,13 +916,6 @@ function Studio({
                   ? t("Tournament workspace", "فضای مدیریت مسابقات")
                   : t("Your studio", "استودیوی شما")}
             </span>
-            <span className="topbar-slash">/</span>
-            <span className="topbar-caption">
-              {t(
-                "Good competition starts here",
-                "رقابت خوب از اینجا آغاز می‌شود",
-              )}
-            </span>
           </div>
           <div className="topbar-right">
             <span

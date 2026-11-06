@@ -8,7 +8,7 @@
   min-width: 0;
 }
 .game-workspace .workspace-heading .game-identity {
-  margin-bottom: 16px;
+  margin-top: 12px;
 }
 .game-workspace .workspace-heading p,
 .game-workspace .workspace-breadcrumb,
@@ -30,9 +30,10 @@
 .game-workspace .game-overview {
   border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
   border-radius: var(--theme-radius);
-  min-height: 200px;
+  min-height: 0;
   align-items: center;
-  padding: 30px;
+  padding: 20px 24px;
+  background-image: none;
 }
 .game-overview .overview-welcome {
   position: relative;
@@ -46,8 +47,8 @@
 .game-overview .overview-emblem {
   background: none;
   color: var(--theme-accent);
-  width: 200px;
-  min-width: 160px;
+  width: 72px;
+  min-width: 72px;
 }
 .game-overview .overview-emblem svg {
   width: 100%;
@@ -59,7 +60,7 @@
   border-color: color-mix(in srgb, var(--theme-fg) 22%, transparent);
   border-radius: var(--theme-radius);
   font-family: var(--theme-font);
-  box-shadow: var(--theme-shadow);
+  box-shadow: none;
 }
 .game-workspace .match-tile:hover {
   border-color: var(--theme-accent);
@@ -200,17 +201,10 @@
 }
 @media (max-width: 600px) {
   .game-workspace .game-overview {
-    padding: 24px;
-    min-height: 180px;
+    padding: 18px;
   }
   .game-overview .overview-emblem {
-    display: block;
-    position: absolute;
-    width: 140px;
-    min-width: 0;
-    inset-inline-end: -25px;
-    bottom: -30px;
-    opacity: 0.1;
+    display: none;
   }
   .game-match-banner {
     padding: 14px;

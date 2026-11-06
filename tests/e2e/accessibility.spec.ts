@@ -6,7 +6,7 @@ test("home supports keyboard entry and has no detected AA violations", async ({
 }) => {
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "Let the games begin." }),
+    page.getByRole("heading", { name: "Your tournament desk" }),
   ).toBeVisible();
   await page.keyboard.press("Tab");
   await expect(

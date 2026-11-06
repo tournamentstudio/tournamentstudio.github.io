@@ -521,7 +521,7 @@ export function Structure({ tournament: doc, onChange }: EditorProps) {
           <div className="section-heading">
             <div>
               <h2>
-                {t("Design the road to the final", "مسیر فینال را طراحی کنید")}
+                {t("Stages and qualification", "مراحل و صعود")}
               </h2>
               <p>
                 {t(

@@ -462,7 +462,7 @@ test("exports a private archive and imports it into a clean profile", async ({
     const fresh = await freshContext.newPage();
     await fresh.goto("/");
     await fresh
-      .getByRole("button", { name: "Import a tournament", exact: true })
+      .getByRole("button", { name: "Import", exact: true })
       .click();
     const dialog = fresh.getByRole("dialog", {
       name: "Bring a tournament into your studio",
@@ -562,7 +562,7 @@ test("recovers an encrypted backup in a clean profile with its separate secret",
     const fresh = await freshContext.newPage();
     await fresh.goto("/");
     await fresh
-      .getByRole("button", { name: "Import a tournament", exact: true })
+      .getByRole("button", { name: "Import", exact: true })
       .click();
     const dialog = fresh.getByRole("dialog", {
       name: "Bring a tournament into your studio",

@@ -12,7 +12,7 @@ test("home leaves specialist engines and editing screens unloaded", async ({
   });
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "Let the games begin.", exact: true }),
+    page.getByRole("heading", { name: "Your tournament desk", exact: true }),
   ).toBeVisible();
   expect(scripts.join("\n")).not.toMatch(
     /\/(?:dutch|CreateFlow|ImportCenter|Workspace|StorageHealth|ExportStudio)-/,
@@ -42,7 +42,7 @@ test("a failed import module keeps the received code recoverable without crashin
   await expect(failed).toBeVisible();
   await expect(page).toHaveURL(/\/$/);
   await expect(
-    page.getByRole("heading", { name: "Let the games begin.", exact: true }),
+    page.getByRole("heading", { name: "Your tournament desk", exact: true }),
   ).toBeVisible();
   const field = failed.getByLabel("Received share code", { exact: true });
   await expect(field).toHaveValue(code);

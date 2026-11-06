@@ -7,7 +7,6 @@ import {
   Trophy,
   Users,
   ArrowUpRight,
-  ShieldCheck,
   LockKeyhole,
   Search,
   Trash2,
@@ -22,6 +21,7 @@ import { sports } from "../sports";
 import type { LibraryEntry } from "../persistence";
 import { Empty } from "../components/ui";
 import { GameIcon } from "../themes/GameIcon";
+import "./home.css";
 
 interface Props {
   entries: LibraryEntry[];
@@ -38,23 +38,23 @@ const templates = [
   {
     id: "football",
     title: ["Weekend cup", "جام آخر هفته"],
-    caption: ["Groups, then the glory", "از گروه‌ها تا قهرمانی"],
+    caption: ["16 teams · Groups and playoffs", "۱۶ تیم · گروهی و حذفی"],
     color: "green",
-    letter: "01",
   },
   {
     id: "esports",
     title: ["Game night", "شب بازی"],
-    caption: ["Two chances. One champion.", "دو فرصت. یک قهرمان."],
+    caption: ["8 entrants · Double elimination", "۸ شرکت‌کننده · دوحذفی"],
     color: "purple",
-    letter: "02",
   },
   {
     id: "gol-ya-pooch",
     title: ["Gol Ya Pooch", "گل یا پوچ"],
-    caption: ["A little mystery. A lot of rivalry.", "راز کوچک، رقابت بزرگ"],
+    caption: [
+      "8 teams · Two groups and playoffs",
+      "۸ تیم · دو گروه و مرحله حذفی",
+    ],
     color: "terra",
-    letter: "03",
   },
 ];
 export function Home({
@@ -95,6 +95,14 @@ export function Home({
         : b.updatedAt.localeCompare(a.updatedAt),
     );
   const total = entries.filter((e) => !e.trashedAt);
+  const hasFilters =
+    !!query || filter !== "all" || !!sportFilter || !!formatFilter;
+  function clearFilters() {
+    setQuery("");
+    setFilter("all");
+    setSportFilter("");
+    setFormatFilter("");
+  }
   function favorite(id: string) {
     onAction(id, "favorite");
   }
@@ -102,18 +110,15 @@ export function Home({
     <div className="home-page">
       <header className="page-heading">
         <div>
-          <div className="eyebrow">
-            {t("YOUR TOURNAMENT DESK", "میز مسابقات شما")}
-          </div>
           <h1>
             {library
               ? t("My tournaments", "مسابقات من")
-              : t("Let the games begin.", "رقابت آغاز می‌شود.")}
+              : t("Your tournament desk", "میز مسابقات شما")}
           </h1>
           <p>
             {t(
-              "A place for every competition you have in mind.",
-              "جایی برای هر رقابتی که در ذهن دارید.",
+              "Create a competition or open one saved in this browser.",
+              "مسابقات بسازید یا یکی از مسابقات ذخیره‌شده در این مرورگر را باز کنید.",
             )}
           </p>
         </div>
@@ -122,52 +127,26 @@ export function Home({
           {t("Create tournament", "ساخت مسابقات")}
         </button>
       </header>
-      {!library && (
+      {!library && entries.length === 0 && (
         <section className="hero">
           <div className="hero-copy">
-            <div className="hero-kicker">
-              <span />
-              {t(
-                "BIG IDEAS. GREAT COMPETITIONS.",
-                "ایده‌های بزرگ. رقابت‌های دیدنی.",
-              )}
-            </div>
             <h2>
-              {t("Your competition.", "رقابت شما.")}
-              <br />
-              <em>{t("Your rules.", "قوانین شما.")}</em>
+              {t("Set up the next competition.", "رقابت بعدی را آماده کنید.")}
             </h2>
             <p>
               {t(
-                "From the first draw to the final whistle. Bring your people together and make every match count.",
-                "از اولین قرعه تا سوت پایان. شرکت‌کنندگان را گرد هم آورید و هر دیدار را به یک تجربه تبدیل کنید.",
+                "Choose a format, add participants and record results. Start from scratch or use one of the formats below.",
+                "قالب را انتخاب کنید، شرکت‌کنندگان را اضافه کنید و نتایج را ثبت کنید. از ابتدا بسازید یا یکی از قالب‌های زیر را انتخاب کنید.",
               )}
             </p>
-            <div className="hero-actions">
-              <button className="button lime" onClick={() => onCreate()}>
-                {t("Build your tournament", "مسابقات خود را بسازید")}
-                <ArrowUpRight size={18} />
-              </button>
-              <button className="hero-import" onClick={onImport}>
-                <Upload size={16} />
-                {t("Import a tournament", "ورود مسابقات")}
-              </button>
-            </div>
-            <div className="hero-foot">
-              <ShieldCheck size={15} />
+            <p className="hero-note">
               {t(
-                "No account. No subscription. All yours.",
-                "بدون حساب. بدون اشتراک. متعلق به شما.",
+                "No account needed. Export a backup to keep a copy outside this browser.",
+                "نیازی به حساب کاربری نیست. برای نگهداری نسخه‌ای خارج از این مرورگر، پشتیبان بگیرید.",
               )}
-            </div>
+            </p>
           </div>
           <div className="hero-art" aria-hidden="true">
-            <div className="orbit orbit-one" />
-            <div className="orbit orbit-two" />
-            <div className="art-caption">
-              {t("THE ROAD TO THE FINAL", "مسیر فینال")}
-              <span>2026</span>
-            </div>
             <div className="art-bracket">
               <div className="art-round">
                 <div className="art-match">
@@ -206,10 +185,6 @@ export function Home({
                     Atlas United
                   </span>
                 </div>
-                <div className="art-live">
-                  <span />
-                  {t("THE FINAL IS YOURS", "فینال از آن شماست")}
-                </div>
               </div>
             </div>
             <div className="art-tag">
@@ -218,34 +193,8 @@ export function Home({
           </div>
         </section>
       )}
-      {!library && (
-        <div className="summary-strip">
-          <div>
-            <span className="summary-icon">
-              <Layers3 size={19} />
-            </span>
-            <b>{number(total.length)}</b>
-            <span>{t("local tournaments", "مسابقات محلی")}</span>
-          </div>
-          <div>
-            <span className="summary-icon">
-              <Trophy size={19} />
-            </span>
-            <b>
-              {number(total.filter((e) => e.status === "in-progress").length)}
-            </b>
-            <span>{t("in progress", "در حال برگزاری")}</span>
-          </div>
-          <div>
-            <span className="summary-icon">
-              <LockKeyhole size={19} />
-            </span>
-            <span>{t("Saved on this device", "ذخیره در این دستگاه")}</span>
-            <span className="tiny-pill">
-              {t("PRIVATE BY DEFAULT", "محلی و خصوصی")}
-            </span>
-          </div>
-        </div>
+      {!library && entries.length === 0 && (
+        <StarterFormats onCreate={onCreate} />
       )}
       <section className="library-section">
         <div className="section-heading">
@@ -258,8 +207,8 @@ export function Home({
             </h2>
             <p>
               {t(
-                "Pick up where you left off.",
-                "از همان‌جا که مانده بودید ادامه دهید.",
+                "Saved in this browser. Keep a backup for another device.",
+                "ذخیره در این مرورگر. برای دستگاه دیگر، پشتیبان نگه دارید.",
               )}
             </p>
           </div>
@@ -268,80 +217,89 @@ export function Home({
             {t("Import", "ورود")}
           </button>
         </div>
-        <div className="library-toolbar">
-          <div className="segmented">
-            {[
-              ["all", "All tournaments", "همه"],
-              ["active", "In progress", "فعال"],
-              ["favorites", "Favorites", "علاقه‌مندی‌ها"],
-              ["trash", "Trash", "زباله‌دان"],
-            ].map(([value, en, fa]) => (
-              <button
-                key={value}
-                className={filter === value ? "selected" : ""}
-                onClick={() => setFilter(value)}
-              >
-                {t(en, fa)}
-              </button>
-            ))}
-          </div>
-          <div className="toolbar-end">
-            <select
-              aria-label={t("Filter by sport", "فیلتر ورزش")}
-              value={sportFilter}
-              onChange={(event) => setSportFilter(event.target.value)}
-            >
-              <option value="">{t("All sports", "همه ورزش‌ها")}</option>
-              {[...new Set(entries.map((entry) => entry.sport).filter(Boolean))]
-                .sort()
-                .map((id) => (
-                  <option key={id} value={id}>
-                    {locale === "fa"
-                      ? (sports.find((sport) => sport.id === id)?.fa ?? id)
-                      : (sports.find((sport) => sport.id === id)?.name ?? id)}
-                  </option>
-                ))}
-            </select>
-            <select
-              aria-label={t("Filter by format", "فیلتر قالب")}
-              value={formatFilter}
-              onChange={(event) => setFormatFilter(event.target.value)}
-            >
-              <option value="">{t("All formats", "همه قالب‌ها")}</option>
-              {[...new Set(entries.flatMap((entry) => entry.formats ?? []))]
-                .sort()
-                .map((id) => (
-                  <option key={id} value={id}>
-                    {formatName(id, locale)}
-                  </option>
-                ))}
-            </select>
-            <div className="search-field">
-              <Search size={16} />
-              <input
-                aria-label={t("Search tournaments", "جستجوی مسابقات")}
-                placeholder={t("Find a tournament...", "جستجوی مسابقات...")}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
+        {entries.length > 0 && (
+          <div className="library-toolbar">
+            <div className="segmented">
+              {[
+                ["all", "All tournaments", "همه"],
+                ["active", "In progress", "فعال"],
+                ["favorites", "Favorites", "علاقه‌مندی‌ها"],
+                ["trash", "Trash", "زباله‌دان"],
+              ].map(([value, en, fa]) => (
+                <button
+                  key={value}
+                  className={filter === value ? "selected" : ""}
+                  aria-pressed={filter === value}
+                  onClick={() => setFilter(value)}
+                >
+                  {t(en, fa)}
+                </button>
+              ))}
             </div>
-            <select
-              aria-label={t("Sort tournaments", "مرتب‌سازی مسابقات")}
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-            >
-              <option value="recent">{t("Recent first", "تازه‌ترین")}</option>
-              <option value="title">{t("Name", "نام")}</option>
-            </select>
-            <button
-              className="icon-button"
-              title={t("Toggle list view", "تغییر نمایش فهرست")}
-              onClick={() => setList(!list)}
-            >
-              <Layers3 size={18} />
-            </button>
+            <div className="toolbar-end">
+              <div className="search-field">
+                <Search size={16} />
+                <input
+                  aria-label={t("Search tournaments", "جستجوی مسابقات")}
+                  placeholder={t("Find a tournament...", "جستجوی مسابقات...")}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </div>
+              <select
+                aria-label={t("Filter by sport", "فیلتر ورزش")}
+                value={sportFilter}
+                onChange={(event) => setSportFilter(event.target.value)}
+              >
+                <option value="">{t("All sports", "همه ورزش‌ها")}</option>
+                {[
+                  ...new Set(
+                    entries.map((entry) => entry.sport).filter(Boolean),
+                  ),
+                ]
+                  .sort()
+                  .map((id) => (
+                    <option key={id} value={id}>
+                      {locale === "fa"
+                        ? (sports.find((sport) => sport.id === id)?.fa ?? id)
+                        : (sports.find((sport) => sport.id === id)?.name ?? id)}
+                    </option>
+                  ))}
+              </select>
+              <select
+                aria-label={t("Filter by format", "فیلتر قالب")}
+                value={formatFilter}
+                onChange={(event) => setFormatFilter(event.target.value)}
+              >
+                <option value="">{t("All formats", "همه قالب‌ها")}</option>
+                {[...new Set(entries.flatMap((entry) => entry.formats ?? []))]
+                  .sort()
+                  .map((id) => (
+                    <option key={id} value={id}>
+                      {formatName(id, locale)}
+                    </option>
+                  ))}
+              </select>
+
+              <select
+                aria-label={t("Sort tournaments", "مرتب‌سازی مسابقات")}
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+              >
+                <option value="recent">{t("Recent first", "تازه‌ترین")}</option>
+                <option value="title">{t("Name", "نام")}</option>
+              </select>
+              <button
+                className="icon-button"
+                title={t("Toggle list view", "تغییر نمایش فهرست")}
+                aria-pressed={list}
+                onClick={() => setList(!list)}
+              >
+                <Layers3 size={18} />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
         {visible.length ? (
           <div
             className={list ? "tournament-grid list-view" : "tournament-grid"}
@@ -480,15 +438,19 @@ export function Home({
             title={
               filter === "trash"
                 ? t("Your trash is empty", "زباله‌دان خالی است")
-                : query
-                  ? t("No matching tournaments", "مسابقه‌ای پیدا نشد")
-                  : t(
-                      "Your next great competition starts here",
-                      "رقابت بعدی شما از اینجا شروع می‌شود",
+                : hasFilters
+                  ? t(
+                      "No tournaments match these filters",
+                      "مسابقه‌ای با این فیلترها پیدا نشد",
                     )
+                  : t("No tournaments yet", "هنوز مسابقه‌ای ندارید")
             }
             action={
-              !query && filter === "all" ? (
+              hasFilters ? (
+                <button className="button secondary" onClick={clearFilters}>
+                  {t("Clear filters", "پاک کردن فیلترها")}
+                </button>
+              ) : library ? (
                 <button className="button secondary" onClick={() => onCreate()}>
                   <Plus size={16} />
                   {t("Create your first tournament", "اولین مسابقات را بسازید")}
@@ -496,57 +458,60 @@ export function Home({
               ) : undefined
             }
           >
-            {t(
-              "Tournaments stay in this browser. Export a backup to take them with you.",
-              "مسابقات در این مرورگر می‌مانند. برای انتقال، نسخه پشتیبان بگیرید.",
-            )}
+            {hasFilters
+              ? t(
+                  "Try another search or clear the filters to see your tournaments.",
+                  "جستجو را تغییر دهید یا برای دیدن مسابقات، فیلترها را پاک کنید.",
+                )
+              : t(
+                  "Your saved tournaments will appear here.",
+                  "مسابقات ذخیره‌شده شما در اینجا نمایش داده می‌شوند.",
+                )}
           </Empty>
         )}
       </section>
-      {!library && (
-        <section className="template-section">
-          <div className="section-heading">
-            <div>
-              <div className="eyebrow">
-                {t("A LITTLE INSPIRATION", "کمی الهام")}
-              </div>
-              <h2>{t("Skip the blank canvas.", "با یک الگو شروع کنید.")}</h2>
-            </div>
-            <span className="muted">
-              {t("Editable starter formats", "الگوهای قابل ویرایش")}
-            </span>
-          </div>
-          <div className="template-grid">
-            {templates.map((template) => (
-              <button
-                className={`template-card ${template.color}`}
-                key={template.id}
-                onClick={() => onCreate(template.id)}
-              >
-                <div className="template-top">
-                  <GameIcon sport={template.id} size={40} />
-                  <span>{template.letter}</span>
-                </div>
-                <h3>{template.title[locale === "fa" ? 1 : 0]}</h3>
-                <p>{template.caption[locale === "fa" ? 1 : 0]}</p>
-                <span className="template-arrow">
-                  <ArrowUpRight size={19} />
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
+      {!library && entries.length > 0 && <StarterFormats onCreate={onCreate} />}
       <footer className="home-footer">
         <span className="brand-small">TournaStudio</span>
-        <span>
-          {t("Made for the love of competition.", "برای عشق به رقابت.")}
-        </span>
         <span>
           <Users size={14} />
           {t("Open source. Always local.", "متن‌باز. همیشه محلی.")}
         </span>
       </footer>
     </div>
+  );
+}
+
+function StarterFormats({ onCreate }: Pick<Props, "onCreate">) {
+  const { t, locale } = useI18n();
+  return (
+    <section className="template-section">
+      <div className="section-heading">
+        <div>
+          <h2>{t("Start from a format", "شروع با یک قالب")}</h2>
+        </div>
+        <span className="muted">
+          {t("Editable starter formats", "الگوهای قابل ویرایش")}
+        </span>
+      </div>
+      <div className="template-grid">
+        {templates.map((template) => (
+          <button
+            className={`template-card ${template.color}`}
+            key={template.id}
+            onClick={() => onCreate(template.id)}
+          >
+            <div className="template-top">
+              <GameIcon sport={template.id} size={40} />
+            </div>
+            <h3>{template.title[locale === "fa" ? 1 : 0]}</h3>
+            <p>{template.caption[locale === "fa" ? 1 : 0]}</p>
+            <span className="template-arrow">
+              <ArrowUpRight size={19} />
+            </span>
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }

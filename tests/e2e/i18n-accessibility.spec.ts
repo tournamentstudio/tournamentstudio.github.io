@@ -104,7 +104,7 @@ test("Persian import errors keep focus inside the dialog and return to the opene
     .getByRole("button", { name: "Switch to Persian", exact: true })
     .click();
   const opener = page
-    .getByRole("button", { name: "ورود مسابقات", exact: true })
+    .getByRole("button", { name: "ورود", exact: true })
     .first();
   await opener.focus();
   await opener.press("Enter");

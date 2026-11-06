@@ -156,14 +156,14 @@ export function ThemeStudio({
           </span>
           <h3>
             {showAll
-              ? t("Explore every collection", "همه مجموعه‌ها را ببینید")
+              ? t("All theme collections", "همه مجموعه‌های تم")
               : t(game.name, game.fa)}
           </h3>
           <p>
             {showAll
               ? t(
-                  "Choose the setting, material and character of your competition.",
-                  "فضا، جنس و شخصیت رقابت را انتخاب کنید.",
+                  "Browse themes for brackets, standings and presentation screens.",
+                  "تم‌های جدول مسابقات، رتبه‌بندی و صفحه نمایش را ببینید.",
                 )
               : t(
                   "A collection selected for this activity. Every theme can still be used with any game.",
@@ -300,7 +300,7 @@ export function ThemeStudio({
         </div>
       )}
       <div className="theme-custom-heading">
-        <h3>{t("Make the details yours", "جزئیات به سلیقه شما")}</h3>
+        <h3>{t("Customize this theme", "شخصی‌سازی این تم")}</h3>
         <p>
           {t(
             "Tune this preset without changing your tournament rules or results.",

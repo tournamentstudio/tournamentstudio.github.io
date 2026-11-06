@@ -45,7 +45,7 @@ export function CreateFlow({
   onCancel: () => void;
   onCreate: (t: Tournament, secret?: string) => Promise<void>;
 }) {
-  const { t, locale } = useI18n();
+  const { t, locale, number } = useI18n();
   const [step, setStep] = useState(0);
   const stepHeading = useRef<HTMLHeadingElement>(null),
     previousStep = useRef(step);
@@ -306,37 +306,35 @@ export function CreateFlow({
       </button>
       <div className="create-layout">
         <aside className="create-intro">
-          <div className="eyebrow">{t("A NEW CHAPTER", "فصل تازه")}</div>
-          <h1>
-            {t(
-              "Great competition starts with you.",
-              "رقابت خوب از شما آغاز می‌شود.",
-            )}
-          </h1>
+          <div className="eyebrow">{t("TOURNAMENT SETUP", "تنظیم مسابقات")}</div>
+          <h1>{t("Create a tournament", "ساخت مسابقات")}</h1>
           <p>
             {t(
-              "Bring the names. We will make room for the rivalry.",
-              "نام‌ها را بیاورید. ما برای رقابت جا باز می‌کنیم.",
+              "Set the basics now. You can adjust the draw, rules and appearance afterward.",
+              "اطلاعات اولیه را وارد کنید. بعداً می‌توانید قرعه، قوانین و ظاهر را تغییر دهید.",
             )}
           </p>
           <ol className="step-list">
             {[
               [
-                t("The essentials", "اطلاعات اصلی"),
-                t("Give your competition an identity", "به رقابت هویت بدهید"),
+                t("Details", "اطلاعات اولیه"),
+                t(
+                  "Name the tournament and choose an activity",
+                  "نام مسابقات و فعالیت را انتخاب کنید",
+                ),
               ],
               [
-                t("The playing field", "ساختار رقابت"),
+                t("Format and participants", "قالب و شرکت‌کنندگان"),
                 t(
                   "Choose a format and your entrants",
                   "قالب و شرکت‌کنندگان را انتخاب کنید",
                 ),
               ],
               [
-                t("Make it yours", "به سلیقه شما"),
+                t("Theme and privacy", "تم و حریم خصوصی"),
                 t(
-                  "Choose a look and get started",
-                  "ظاهر را انتخاب و شروع کنید",
+                  "Choose a theme and storage protection",
+                  "تم و محافظت از داده‌ها را انتخاب کنید",
                 ),
               ],
             ].map(([label, caption], i) => (
@@ -367,13 +365,18 @@ export function CreateFlow({
             <h2 ref={stepHeading} tabIndex={-1}>
               {
                 [
-                  t("First, the essentials.", "ابتدا اطلاعات اصلی."),
-                  t("Set the playing field.", "ساختار را تنظیم کنید."),
-                  t("Ready for the first whistle.", "آماده شروع رقابت."),
+                  t("Tournament details", "اطلاعات مسابقات"),
+                  t("Format and participants", "قالب و شرکت‌کنندگان"),
+                  t("Theme and privacy", "تم و حریم خصوصی"),
                 ][step]
               }
             </h2>
-            <span className="muted">{step + 1} / 3</span>
+            <span className="muted">
+              {t(
+                `Step ${number(step + 1)} of ${number(3)}`,
+                `مرحله ${number(step + 1)} از ${number(3)}`,
+              )}
+            </span>
           </div>
           <ErrorText error={error} />
           {step === 0 && (

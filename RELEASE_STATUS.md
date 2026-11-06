@@ -1,74 +1,64 @@
 # TournaStudio release handoff
 
-The November 5, 2026 update corrects participant-count editing and round-robin
-settings, and keeps large group draws safe to save and share.
+The November 6, 2026 update refines the organizer interface and corrects narrow
+screen controls in English and Persian. The tournament engine and saved-document
+formats are unchanged.
 
-## Published application
+## Publication
 
 - App: [tournamentstudio.github.io](https://tournamentstudio.github.io/).
 - Repository: [tournamentstudio/tournamentstudio.github.io](https://github.com/tournamentstudio/tournamentstudio.github.io).
-- Release: [Participant count and group draw fixes](https://github.com/tournamentstudio/tournamentstudio.github.io/releases/tag/release-2026-11-05.1).
-- Publication: GitHub Pages serves the prepared files from `main/docs`.
-- GitHub Actions is disabled. There are no repository CI workflows.
+- GitHub Pages serves prepared files from `main/docs`.
+- GitHub Actions remains disabled; there are no repository CI workflows.
 - The hosted app needs no development server running on my computer.
 
 ## What changed
 
-Creation and the format advisor require whole participant counts from 2 to 512.
-An empty field stays editable instead of becoming zero; a fractional count can
-no longer create a silently truncated entrant list. Pasted names determine the
-displayed count. Invalid values receive linked English or Persian messages before
-continuing, and format-specific limits are checked at the same step.
+Home puts saved tournaments first for returning users. New users get a shorter
+introduction and starter formats with actual counts and formats. The bracket
+illustration retains its purpose without the rings, glow or tilted cards.
+Search stays usable on phones, filters wrap on tablets, and empty search or
+favorite lists explain why no tournament matches.
 
-Reducing the count adjusts group and Swiss defaults after editing. Switching to
-Groups or GSL ignores a hidden rounds draft left from another format. Standalone
-round robin has one field, GSL has four entrants per group, and manually assigned
-groups determine their own count. The structure editor now explains these rules
-instead of presenting an ignored group-count setting.
+The workspace gives the tournament title priority over theme metadata. A compact
+status panel and metric strip bring ready matches higher on the page. Larger
+operational text, quieter match cards and one surface per group make results
+more readable. A labeled section picker exposes all sixteen sections, beside the
+tabs on desktop and below them on small screens.
 
-The saved-document schema now accepts the same 1 to 12 meetings supported by the
-editor and engine. New groups use A through Z, then AA onward. Large valid draws
-no longer generate punctuation or control-character identifiers. Existing valid
-legacy identifiers remain unchanged. Unsafe legacy drafts can upgrade only when
-result and dependency guards allow it; group qualification references are mapped
-by index, and match-result connections must be removed before upgrading.
+Presentation puts scene editing before overlay and sponsor tools. Sponsor
+controls use the shared button styles. Mobile scene actions move below fields,
+so title inputs no longer shrink to a few characters. Sponsor drafts survive
+scene changes and both persist after saving.
 
-Ordinary round-robin pairing and isolated group standings were correct in the
-unchanged baseline. The investigation added coverage for uneven groups, singleton
-BYEs, repeated meetings, scoring, reload and language switching without replacing
-that logic. Existing presentation, sharing and layout fixes remain in place.
+Creation and studio headings describe their tasks directly in both languages.
+Empty name placeholders follow the interface direction; entered English or
+Persian names keep automatic direction. The Persian creation counter uses words
+to avoid a reversed fraction. Tournament headings have enough line height for
+Persian glyphs and long mixed-script names. Original game icons, Gol Ya Pooch themes, keyboard
+focus styles and detailed privacy explanations remain.
 
-[FEATURES.md](FEATURES.md), [USER_GUIDE.md](USER_GUIDE.md) and
-[DATA_FORMAT.md](DATA_FORMAT.md) describe the supported behavior.
+The prioritized audit and second independent review are in
+[UI_REVIEW.md](UI_REVIEW.md). No dependency, competition rule or storage schema
+changed in this release.
 
-## Local verification
+## Verification
 
 | Check | Actual result |
 | --- | --- |
-| TypeScript and ESLint | Passed |
+| TypeScript and ESLint | Passed, including the final navigation adjustment |
 | Unit and integration suite | 1,233 tests passed across 106 files |
-| Release packaging checks | 4 tests passed |
+| Release packaging checks | 4 passed |
 | Production build | Passed; 80 precache entries |
-| Full browser run | 922 passed, 7 fixture setup failures corrected, 4 existing skips |
-| New browser regressions | All 60 runs passed across Chromium, Firefox and WebKit |
-| Scheduling fixture rerun | 18 tests passed across Chromium, Firefox and WebKit |
-| Swiss reset fixture rerun | 6 tests passed across Chromium, Firefox and WebKit |
-| Validation layout | English and Persian messages fit at 320 and 1280 pixels in Chromium |
-| Prepared publication | 91 files verified by SHA-256; compiled assets match the browser-tested build |
-| Credentials and authored-text scans | No findings in the changes |
-
-The first browser run exposed older scheduling fixtures that now require the
-explicit legacy-timezone import review, and a Dutch Swiss fixture that omitted
-loading the synchronous pairing engine. Correcting their setup restored the
-intended test paths without bypassing app validation. See the November 5 entry in
-[MAINTENANCE_AUDIT.md](MAINTENANCE_AUDIT.md).
-
-The main run and corrective reruns validate all 929 executed browser cases. Four
-camera-mocking runs are intentionally skipped in Firefox and WebKit by the existing
-suite; their Chromium versions passed. No new skips or retries were added.
-
-The new participant and group coverage adds 45 unit/integration checks and 20
-browser cases. Persian standings and mobile validation screenshots were inspected.
+| Full browser run | 947 passed, 18 failures investigated, 4 existing camera skips |
+| Import and backup corrective run | All 24 checks passed across Chromium, Firefox and WebKit |
+| Final production-bundle regression run | All 48 checks passed across Chromium, Firefox and WebKit |
+| New browser regression cases | 12 bilingual cases added for search, direction, navigation, standings and presentation |
+| Responsive review | 48 sampled views at 320, 390, 768 and 1440 pixels, no page-wide overflow |
+| Workspace capture matrix | All 16 sections at 390, 768 and 1440 pixels in both languages, 96 views without page-wide overflow |
+| Independent accessibility scans | 20 axe A/AA scans reported no violations |
+| Prepared publication | 91 local files verified by SHA-256 |
+| Credentials and authored-text scan | No findings |
 
 Repeat the checks locally:
 
@@ -78,23 +68,32 @@ npm run test:release
 npm run test:e2e
 ```
 
-The two focused browser files are `tests/e2e/participant-count.spec.ts` and
-`tests/e2e/round-robin-groups.spec.ts`. They cover English and Persian, invalid and
-boundary counts, format switching, manual and uneven groups, and saved results.
-The linked GitHub release records the exact published commit and post-publication
-asset and browser verification.
+Focused regressions live in `tests/e2e/home-refinement.spec.ts`,
+`tests/e2e/ui-workspace.spec.ts` and `tests/e2e/presentation-refinement.spec.ts`.
+Before and after screenshots are retained in the ignored local audit folder.
+
+The first full run found six tests still selecting the removed duplicate Import
+button and twelve instances of Persian title glyphs extending beyond the new
+heading line box. The selectors now use the retained Import control; the title
+has more line height. The original text-containment assertion is unchanged.
+All eighteen failed cases passed in corrective runs. Across the full run and
+those reruns, 965 of 969 browser cases passed; four existing camera-mock cases
+remain skipped in Firefox and WebKit. The final 48-case run used the rebuilt
+production bundle and included every new regression and all long-title RTL cases.
+
+Hosted verification is recorded with the [GitHub releases](https://github.com/tournamentstudio/tournamentstudio.github.io/releases).
 
 ## Review boundaries
 
-Passing checks do not establish that every possible input and workflow is free of
-bugs. Physical Android/iPhone keyboard behavior and spoken Persian with assistive
-technology still require those devices and human reviewers. No independent
-security or accessibility certification is claimed.
+Passing checks do not establish that every possible input and workflow is free
+of bugs. Visual checks used desktop browser engines with resized viewports.
+Physical Android/iPhone keyboard behavior and spoken Persian with assistive
+technology still need those devices and human reviewers. No independent security
+or accessibility certification is claimed.
 
-This update changes no dependencies. The October 29 dependency review found zero
-production advisories and four low-severity build-tool entries traced to a
-`deepmerge` advisory at that time. See [MAINTENANCE_AUDIT.md](MAINTENANCE_AUDIT.md)
-and [ACCESSIBILITY.md](ACCESSIBILITY.md) for the recorded findings and limits.
+The earlier participant-count and round-robin corrections remain covered by the
+existing suite. See the November 5 entry in [MAINTENANCE_AUDIT.md](MAINTENANCE_AUDIT.md)
+for that investigation. No new skips or retries were added for this release.
 
 ## Returning to development
 
@@ -112,8 +111,8 @@ prepare the static bundle with `npm run pages:prepare`, commit source and
 prepared files together, push `main`, then verify the actual Pages deployment
 and its assets. Do not enable CI. Documentation-only updates need no new build.
 
-Tournament data belongs to its browser profile. A GitHub commit is not a
-backup of that data. Export `.tourney` files and keep encrypted-backup secrets
-separately. Shared snapshots are independent copies; live updates work only
-between tabs in the same browser profile. Browser storage can be cleared or
-evicted. See [PRIVACY_AND_SECURITY.md](PRIVACY_AND_SECURITY.md).
+Tournament data belongs to its browser profile. A GitHub commit is not a backup
+of that data. Export `.tourney` files and keep encrypted-backup secrets separately.
+Shared snapshots are independent copies; live updates work only between tabs in
+the same browser profile. Browser storage can be cleared or evicted. See
+[PRIVACY_AND_SECURITY.md](PRIVACY_AND_SECURITY.md).

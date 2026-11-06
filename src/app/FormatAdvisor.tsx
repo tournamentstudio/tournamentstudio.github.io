@@ -56,12 +56,7 @@ export function FormatAdvisor({
           <div className="eyebrow">
             {t("FIND YOUR FORMAT", "قالب مناسب شما")}
           </div>
-          <h1>
-            {t(
-              "Make room for a great competition.",
-              "برای یک رقابت خوب برنامه بریزید.",
-            )}
-          </h1>
+          <h1>{t("Find a tournament format", "انتخاب قالب مسابقات")}</h1>
           <p>
             {t(
               "A local estimate based on your time, space, and playing goals.",

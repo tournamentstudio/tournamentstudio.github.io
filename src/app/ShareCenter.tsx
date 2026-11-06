@@ -262,7 +262,7 @@ export function ShareCenter({
     <div className="panel-content">
       <div className="section-heading">
         <div>
-          <h2>{t("Take the tournament with you", "مسابقات را همراه ببرید")}</h2>
+          <h2>{t("Share and back up", "اشتراک و پشتیبان‌گیری")}</h2>
           <p>
             {t(
               "Portable data. No account or server in the middle.",
@@ -388,7 +388,7 @@ export function ShareCenter({
         </section>
         <section className="panel share-side">
           <FileArchive size={27} />
-          <h3>{t("A backup you can keep", "نسخه پشتیبان برای نگهداری")}</h3>
+          <h3>{t("Tournament backup", "پشتیبان مسابقات")}</h3>
           <p>
             {t(
               "Download a .tourney archive with the complete document, theme, coordinates, and saved revisions. The same secret protects every included revision. Larger competitions travel best as files.",
@@ -653,7 +653,7 @@ export function ShareCenter({
           <div className="section-icon">
             <Image />
           </div>
-          <h3>{t("Made for the big picture", "برای نمایش بزرگ")}</h3>
+          <h3>{t("Export and print", "خروجی و چاپ")}</h3>
           <p className="muted">
             {t(
               "Export your bracket, print a match sheet, or move the schedule into a calendar. PDF is available through your browser’s print dialog.",

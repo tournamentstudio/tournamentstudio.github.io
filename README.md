@@ -6,17 +6,18 @@ I built TournaStudio so a tournament can belong to the people running it. Open t
 
 **[Open TournaStudio](https://tournamentstudio.github.io/)** · [User guide](USER_GUIDE.md) · [Feature status](FEATURES.md)
 
-The November 5, 2026 review fixes participant-count editing and round-robin
-settings. Fractional counts cannot silently create fewer entrants, pasted lists
-show their actual count, and large group draws use readable labels after Z.
-Earlier layout updates separate template arrows from captions, wrap long preview
-and podium names, and keep presentation controls and export artwork clear of text.
-Earlier updates fixed placement tables and delayed sharing work, added failed-save recovery and reduced
-initial JavaScript transfer by about 46% in the recorded test. The
-[release handoff](RELEASE_STATUS.md), [performance measurements](PERFORMANCE.md)
-and [maintenance review](MAINTENANCE_AUDIT.md) record the checks and their limits.
+The November 6, 2026 interface review puts saved tournaments and ready matches
+first. It fixes narrow search and presentation fields, clarifies setup in both
+languages, and keeps game artwork without the repeated promotional panels.
+The [interface audit](UI_REVIEW.md) records the five specialist reviews and the
+second visual pass. Earlier participant-count, group-draw and data-recovery fixes
+remain covered by the tests. The [release handoff](RELEASE_STATUS.md),
+[performance measurements](PERFORMANCE.md) and [maintenance review](MAINTENANCE_AUDIT.md)
+record the checks and their limits.
 
 ![TournaStudio home with its local tournament library](docs/screenshots/home.png)
+
+Fictional tournaments shown for illustration.
 
 The application is a static React and TypeScript bundle hosted on GitHub Pages. Tournament documents live in IndexedDB. After a successful initial cache, the app works offline. Every production font, icon, and library ships with the build.
 

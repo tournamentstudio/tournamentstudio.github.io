@@ -249,7 +249,7 @@ test("rehearses Gol hands, pauses, offline play, qualification and backup recove
     const fresh = await recovery.newPage();
     await fresh.goto("/");
     await fresh
-      .getByRole("button", { name: "Import a tournament", exact: true })
+      .getByRole("button", { name: "Import", exact: true })
       .click();
     const importer = fresh.getByRole("dialog", {
       name: "Bring a tournament into your studio",

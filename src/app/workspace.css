@@ -1,0 +1,204 @@
+.game-workspace .workspace-heading {
+  padding-block: 22px;
+}
+.game-workspace .workspace-title h1 {
+  font-size: clamp(24px, 2.3vw, 30px);
+  line-height: 1.65;
+}
+.game-workspace .workspace-breadcrumb {
+  font-size: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.game-workspace .workspace-heading .game-identity-mark {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  background: transparent;
+}
+.game-workspace .workspace-heading .game-identity-mark svg {
+  width: 26px;
+  height: 26px;
+}
+.game-workspace .workspace-heading .game-identity-copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+.game-workspace .workspace-heading .game-identity-copy > strong,
+.game-workspace .workspace-heading .game-identity-copy > span {
+  color: var(--theme-fg);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.6;
+}
+.game-workspace .workspace-heading .game-identity-copy > span {
+  padding-inline-start: 10px;
+  border-inline-start: 1px solid currentColor;
+}
+.workspace-navigation {
+  display: flex;
+  align-items: center;
+  background: #fcfdf9;
+  border-bottom: 1px solid var(--line);
+}
+.workspace-navigation .workspace-tabs {
+  flex: 1;
+  min-width: 0;
+  border-bottom: 0;
+}
+.workspace-section-picker {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 8px 24px 8px 12px;
+  background: #fcfdf9;
+  font-size: 12px;
+}
+.workspace-section-picker select {
+  width: 180px;
+  max-width: 100%;
+  min-height: 40px;
+  padding-block: 8px;
+}
+@media (min-width: 901px) {
+  .workspace-section-picker > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+}
+.game-workspace .workspace-tabs button,
+.game-workspace .workspace-heading .button {
+  font-size: 12px;
+}
+.game-workspace .workspace-tabs button {
+  padding: 12px;
+}
+.game-workspace .overview-welcome h2 {
+  font-size: 23px;
+  line-height: 1.4;
+  margin-bottom: 6px;
+  overflow-wrap: anywhere;
+}
+.game-workspace .overview-welcome p {
+  font-size: 13px;
+  max-width: 680px;
+  margin-bottom: 8px;
+}
+.game-workspace .overview-welcome .text-button {
+  font-size: 12px;
+}
+.game-workspace .workspace-metrics {
+  gap: 0;
+  background: white;
+  border-block: 1px solid var(--line);
+  margin-bottom: 26px;
+}
+.game-workspace .workspace-metrics .stat-card {
+  border: 0;
+  border-radius: 0;
+  min-height: 0;
+  margin-block: 14px;
+  padding: 0 20px;
+  border-inline-end: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20px;
+  gap: 5px 10px;
+  align-content: start;
+}
+.game-workspace .workspace-metrics .stat-card:last-child {
+  border-inline-end: 0;
+}
+.game-workspace .workspace-metrics .stat-card svg {
+  position: static;
+  grid-column: 2;
+  grid-row: 1;
+  width: 20px;
+  align-self: center;
+}
+.game-workspace .workspace-metrics .stat-card strong {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+  font-size: 25px;
+  letter-spacing: normal;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+}
+.game-workspace .workspace-metrics .stat-card > span {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.game-workspace .match-tile-meta,
+.game-workspace .match-tile-foot,
+.game-workspace .match-tile .badge {
+  font-size: 11px;
+}
+.game-workspace .match-tile-meta {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.game-workspace .match-entrant {
+  font-size: 13px;
+  line-height: 1.6;
+}
+.game-workspace .match-entrant strong {
+  font-size: 17px;
+}
+.workspace-group {
+  margin-bottom: 28px;
+}
+.workspace-group h3 {
+  margin-bottom: 12px;
+}
+.workspace-group .standings-table caption.sr-only {
+  padding: 0;
+}
+@media (max-width: 900px) {
+  .workspace-navigation {
+    display: block;
+  }
+  .workspace-section-picker {
+    padding-inline: 20px;
+    padding-bottom: 12px;
+  }
+  .game-workspace .workspace-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .game-workspace .workspace-metrics .stat-card:nth-child(2n) {
+    border-inline-end: 0;
+  }
+}
+@media (max-width: 480px) {
+  .workspace-section-picker {
+    display: grid;
+    gap: 6px;
+    padding-inline: 18px;
+  }
+  .workspace-section-picker select {
+    width: 100%;
+  }
+  .game-workspace .workspace-metrics .stat-card {
+    padding-inline: 12px;
+  }
+  .game-workspace .workspace-heading .button {
+    min-height: 40px;
+  }
+}
+@media print {
+  .workspace-navigation {
+    display: none;
+  }
+}

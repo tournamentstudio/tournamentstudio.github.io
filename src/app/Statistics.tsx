@@ -25,8 +25,8 @@ function StatisticsSummary({ tournament: doc }: { tournament: Tournament }) {
     return (
       <Empty
         title={t(
-          "The story is still being written",
-          "داستان هنوز در حال شکل‌گیری است",
+          "No completed matches yet",
+          "هنوز دیداری کامل نشده است",
         )}
       >
         {t(
@@ -44,7 +44,7 @@ function StatisticsSummary({ tournament: doc }: { tournament: Tournament }) {
     <div className="panel-content">
       <div className="section-heading">
         <div>
-          <h2>{t("Every match tells a story", "هر دیدار داستانی دارد")}</h2>
+          <h2>{t("Match statistics", "آمار دیدارها")}</h2>
           <p>
             {t(
               "Calculated only from recorded results. BYEs are excluded from played-match totals.",

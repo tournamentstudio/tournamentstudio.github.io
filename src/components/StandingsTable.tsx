@@ -8,11 +8,13 @@ export function StandingsTable({
   stageId,
   group,
   locale = "en",
+  hideCaption = false,
 }: {
   tournament: Tournament;
   stageId?: string;
   group?: string;
   locale?: Locale;
+  hideCaption?: boolean;
 }) {
   const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
   const standings = getStandings(tournament, stageId, group);
@@ -57,7 +59,7 @@ export function StandingsTable({
       dir={locale === "fa" ? "rtl" : "ltr"}
     >
       <table className="standings-table">
-        <caption>
+        <caption className={hideCaption ? "sr-only" : undefined}>
           {t("Standings", "جدول رده‌بندی")}
           {group ? ` · ${group}` : ""}
           {cumulative

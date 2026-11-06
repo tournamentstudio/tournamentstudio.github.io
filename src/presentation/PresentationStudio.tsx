@@ -60,12 +60,7 @@ export function PresentationStudio({
     <div className="presentation-studio" dir={locale === "fa" ? "rtl" : "ltr"}>
       <div className="presentation-studio-intro">
         <div>
-          <span className="studio-eyebrow">
-            {t("THE BIG SCREEN", "صفحه بزرگ")}
-          </span>
-          <h2>
-            {t("Make every moment count.", "هر لحظه را به نمایش بگذارید.")}
-          </h2>
+          <h2>{t("Presentation playlist", "فهرست نمایش")}</h2>
           <p>
             {t(
               "Build a playlist for your projector, event screen or captured browser window.",
@@ -76,6 +71,7 @@ export function PresentationStudio({
         <button
           ref={previewButton}
           type="button"
+          className="button secondary"
           onClick={() => setPreview(true)}
         >
           {t("Preview presentation", "پیش‌نمایش")}
@@ -146,13 +142,6 @@ export function PresentationStudio({
           "متن نماها و نام حامیان عمومی است. اطلاعات خصوصی را در یادداشت برگزارکننده بنویسید. نمای نمایش پس از ذخیره، در همین پروفایل مرورگر به‌روز می‌شود. در OBS پنجره مرورگر را ضبط کنید؛ منبع مرورگر جداگانه حافظه مستقل دارد.",
         )}
       </p>
-      <OverlayEditor
-        tournament={tournament}
-        value={settings.overlay}
-        onChange={(overlay) => update({ overlay })}
-        locale={locale}
-      />
-      <SponsorEditor settings={settings} onChange={onChange} locale={locale} />
       <div className="scene-list">
         {settings.scenes.map((scene, i) => (
           <article className="scene-editor" key={scene.id}>
@@ -239,6 +228,7 @@ export function PresentationStudio({
             <div className="scene-actions">
               <button
                 type="button"
+                className="button secondary"
                 onClick={() => move(i, -1)}
                 disabled={!i}
                 aria-label={t("Move scene up", "جابجایی نما به بالا")}
@@ -247,6 +237,7 @@ export function PresentationStudio({
               </button>
               <button
                 type="button"
+                className="button secondary"
                 onClick={() => move(i, 1)}
                 disabled={i === settings.scenes.length - 1}
                 aria-label={t("Move scene down", "جابجایی نما به پایین")}
@@ -255,6 +246,7 @@ export function PresentationStudio({
               </button>
               <button
                 type="button"
+                className="button secondary"
                 onClick={() =>
                   update({
                     scenes: settings.scenes.filter((s) => s.id !== scene.id),
@@ -284,6 +276,7 @@ export function PresentationStudio({
         </label>
         <button
           type="button"
+          className="button secondary"
           disabled={settings.scenes.length >= 50}
           onClick={() =>
             update({
@@ -311,6 +304,13 @@ export function PresentationStudio({
           {t("Add scene", "افزودن نما")}
         </button>
       </div>
+      <OverlayEditor
+        tournament={tournament}
+        value={settings.overlay}
+        onChange={(overlay) => update({ overlay })}
+        locale={locale}
+      />
+      <SponsorEditor settings={settings} onChange={onChange} locale={locale} />
     </div>
   );
 }
