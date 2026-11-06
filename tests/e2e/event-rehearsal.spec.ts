@@ -260,8 +260,9 @@ test("rehearses Gol hands, pauses, offline play, qualification and backup recove
   try {
     const fresh = await recovery.newPage();
     await fresh.goto("/");
+    await expect(fresh.locator(".welcome-page")).toBeVisible();
     await fresh
-      .getByRole("button", { name: "Import tournament", exact: true })
+      .getByRole("button", { name: "Import & restore", exact: true })
       .click();
     const importer = fresh.getByRole("dialog", {
       name: "Bring a tournament into your studio",

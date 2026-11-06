@@ -360,11 +360,15 @@ for (const width of [320, 390]) {
     original.schedule.resources[0].availableFrom = "2026-10-22T19:00";
     await page.setViewportSize({ width, height: 960 });
     await page.goto("/");
+    await expect(page.locator(".welcome-page")).toBeVisible();
     await page
       .getByRole("button", { name: "Switch to Persian", exact: true })
       .click();
     await page
-      .getByRole("button", { name: "وارد کردن مسابقات", exact: true })
+      .getByRole("button", { name: "باز کردن فهرست", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "وارد کردن و بازیابی", exact: true })
       .first()
       .click();
     const dialog = page.getByRole("dialog", {

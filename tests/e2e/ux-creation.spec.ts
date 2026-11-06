@@ -189,7 +189,7 @@ for (const locale of ["en", "fa"] as const) {
     await page.goto("/#/");
     await expect(
       page.getByRole("button", {
-        name: locale === "en" ? "Import tournament" : "وارد کردن مسابقات",
+        name: locale === "en" ? "Import & restore" : "وارد کردن و بازیابی",
         exact: true,
       }),
     ).toBeVisible();

@@ -135,6 +135,7 @@ test("keyboard imports a portable code and can leave its preview without a focus
   const doc = generateStage(draft, draft.stages[0].id),
     code = await encodeCode(doc);
   await page.goto("/");
+  await expect(page.locator(".welcome-page")).toBeVisible();
   const opener = page.getByRole("button", {
     name: "Import & restore",
     exact: true,

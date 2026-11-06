@@ -20,6 +20,7 @@ import { sports } from "../sports";
 import type { LibraryEntry } from "../persistence";
 import { Empty } from "../components/ui";
 import { GameScene } from "../themes/GameScene";
+import { Welcome } from "./Welcome";
 import "./home.css";
 
 interface Props {
@@ -105,6 +106,7 @@ export function Home({
   function favorite(id: string) {
     onAction(id, "favorite");
   }
+  if (!library && entries.length === 0) return <Welcome onCreate={onCreate} />;
   return (
     <div className="home-page">
       <header className="page-heading">
@@ -126,67 +128,6 @@ export function Home({
           {t("Create tournament", "ساخت مسابقات")}
         </button>
       </header>
-      {!library && entries.length === 0 && (
-        <section className="hero">
-          <div className="hero-copy">
-            <h2>
-              {t("Set up the next competition.", "رقابت بعدی را آماده کنید.")}
-            </h2>
-            <p>
-              {t(
-                "Choose a template below or start with your own settings. Keep the draw, matches and results together.",
-                "یکی از الگوهای زیر را انتخاب کنید یا با تنظیمات خود شروع کنید. قرعه‌کشی، دیدارها و نتایج را یکجا نگه دارید.",
-              )}
-            </p>
-            <p className="hero-note">
-              {t(
-                "No account needed. Export a backup to keep a copy outside this browser.",
-                "نیازی به حساب کاربری نیست. برای نگهداری نسخه‌ای خارج از این مرورگر، پشتیبان بگیرید.",
-              )}
-            </p>
-          </div>
-          <div className="competition-program">
-            <h3>
-              {t("Your competition, in order", "مسابقات شما، قدم به قدم")}
-            </h3>
-            <ol>
-              {[
-                [
-                  "Participants",
-                  "شرکت‌کنندگان",
-                  "Names, teams and seeds",
-                  "نام‌ها، تیم‌ها و سیدبندی",
-                ],
-                [
-                  "Draw",
-                  "قرعه‌کشی",
-                  "Groups, pairings and progression",
-                  "گروه‌ها، دیدارها و صعود",
-                ],
-                [
-                  "Results",
-                  "نتایج",
-                  "Scores, standings and the final",
-                  "امتیازها، رده‌بندی و فینال",
-                ],
-              ].map(([en, fa, detailEn, detailFa], index) => (
-                <li key={en}>
-                  <span className="program-step" aria-hidden="true">
-                    {number(index + 1)}
-                  </span>
-                  <div>
-                    <strong>{t(en, fa)}</strong>
-                    <span>{t(detailEn, detailFa)}</span>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
-      )}
-      {!library && entries.length === 0 && (
-        <StarterFormats onCreate={onCreate} />
-      )}
       <section className="library-section">
         <div className="section-heading">
           <div>

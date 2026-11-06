@@ -101,6 +101,9 @@ function Studio({
   const { t } = useI18n();
   const [route, setRoute] = useState(getRoute);
   const [entries, setEntries] = useState<LibraryEntry[]>([]);
+  const [libraryState, setLibraryState] = useState<
+    "loading" | "ready" | "error"
+  >("loading");
   const [doc, setDoc] = useState<Tournament>();
   const [externalRevision, setExternalRevision] = useState(0);
   const [workspaceReset, setWorkspaceReset] = useState(0);
@@ -143,8 +146,17 @@ function Studio({
   } = useRegisterSW();
   const refresh = useCallback(async () => {
     const sequence = ++refreshSequence.current;
-    const list = await repository.list();
-    if (sequence === refreshSequence.current) setEntries(list);
+    try {
+      const list = await repository.list();
+      if (sequence === refreshSequence.current) {
+        setEntries(list);
+        setLibraryState("ready");
+      }
+    } catch (cause) {
+      if (sequence === refreshSequence.current)
+        setLibraryState((current) => (current === "ready" ? current : "error"));
+      throw cause;
+    }
   }, []);
   function setUnsaved(value: Tournament | undefined) {
     unsavedRef.current = value;
@@ -247,6 +259,10 @@ function Studio({
     setToast(t("Tournament locked", "مسابقات قفل شد"));
   }
   const id = documentId(route);
+  const libraryPending =
+    libraryState === "loading" && (route === "/" || route === "/library");
+  const welcome =
+    route === "/" && libraryState === "ready" && entries.length === 0;
   const presentation = route.startsWith("/present/");
   const previousRoute = useRef(route);
   const routeTitles: Record<string, string> = {
@@ -257,7 +273,12 @@ function Studio({
     "/storage": t("Storage health", "وضعیت ذخیره‌سازی"),
     "/create": t("Create tournament", "ساخت مسابقات"),
   };
-  const pageTitle = `${doc?.title ?? routeTitles[route] ?? t("Tournament workspace", "فضای مدیریت مسابقات")} | TournaStudio`;
+  const pageTitle = welcome
+    ? t(
+        "TournaStudio | Tournament brackets, scores and displays",
+        "TournaStudio | جدول، نتیجه و نمایش مسابقات",
+      )
+    : `${doc?.title ?? routeTitles[route] ?? t("Tournament workspace", "فضای مدیریت مسابقات")} | TournaStudio`;
   useEffect(() => {
     document.title = pageTitle;
   }, [pageTitle]);
@@ -314,6 +335,7 @@ function Studio({
         const list = await repository.list();
         if (!active()) return;
         setEntries(list);
+        setLibraryState("ready");
         const entry = list.find((e) => e.id === id);
         if (!entry)
           throw new Error(
@@ -770,7 +792,9 @@ function Studio({
       </Suspense>
     );
   return (
-    <div className={`app-shell ${sidebar ? "sidebar-open" : ""}`}>
+    <div
+      className={`app-shell ${sidebar ? "sidebar-open" : ""} ${welcome ? "welcome-shell" : ""}`}
+    >
       <a
         className="skip-link"
         inert={navigation.active}
@@ -796,7 +820,8 @@ function Studio({
         ref={navigation.drawer}
         id="studio-navigation"
         className="sidebar"
-        inert={navigation.mobile && !sidebar}
+        inert={libraryPending || (navigation.mobile && !sidebar)}
+        aria-hidden={libraryPending || undefined}
         role={navigation.active ? "dialog" : undefined}
         aria-modal={navigation.active ? "true" : undefined}
         aria-label={t("Studio navigation", "فهرست استودیو")}
@@ -922,7 +947,11 @@ function Studio({
         </div>
       </aside>
       <div className="app-body" inert={navigation.active}>
-        <header className="topbar">
+        <header
+          className="topbar"
+          inert={libraryPending}
+          aria-hidden={libraryPending || undefined}
+        >
           <div className="topbar-left">
             <button
               ref={navigation.trigger}
@@ -934,15 +963,49 @@ function Studio({
             >
               {sidebar ? <X size={21} /> : <Menu size={21} />}
             </button>
-            <span className="topbar-page">
-              {route === "/create"
-                ? t("Create tournament", "ساخت مسابقات")
-                : id
-                  ? t("Tournament workspace", "فضای مدیریت مسابقات")
-                  : t("Your studio", "استودیوی شما")}
-            </span>
+            {welcome ? (
+              <a
+                href="#/"
+                className="brand"
+                aria-label={t("TournaStudio home", "خانه TournaStudio")}
+              >
+                <img
+                  src={`${import.meta.env.BASE_URL}icon.svg`}
+                  width={36}
+                  height={36}
+                  alt=""
+                />
+                <span>
+                  Tourna<span>Studio</span>
+                </span>
+              </a>
+            ) : (
+              <span className="topbar-page">
+                {route === "/create"
+                  ? t("Create tournament", "ساخت مسابقات")
+                  : id
+                    ? t("Tournament workspace", "فضای مدیریت مسابقات")
+                    : t("Your studio", "استودیوی شما")}
+              </span>
+            )}
           </div>
           <div className="topbar-right">
+            {welcome && (
+              <>
+                <a href="#/library" className="welcome-nav-action">
+                  {t("My tournaments", "مسابقات من")}
+                </a>
+                <button className="welcome-nav-action" onClick={openHelp}>
+                  {t("How it works", "روش کار")}
+                </button>
+                <button
+                  className="welcome-nav-action"
+                  onClick={() => changeImport("")}
+                >
+                  {t("Import & restore", "وارد کردن و بازیابی")}
+                </button>
+              </>
+            )}
             <span
               className={`save-status ${saveError ? "failed" : ""}`}
               role="status"
@@ -1081,6 +1144,34 @@ function Studio({
                 onOpenTournament={(entryId) => go(`/t/${entryId}`)}
                 onLibraryChanged={refresh}
               />
+            ) : libraryState !== "ready" ? (
+              <div className="loading-state library-load-state" role="status">
+                {libraryState === "loading" ? (
+                  <>
+                    <LoaderCircle className="spin" aria-hidden="true" />
+                    {t("Loading tournaments...", "در حال بارگذاری مسابقات...")}
+                  </>
+                ) : (
+                  <>
+                    <span>
+                      {t(
+                        "Could not load your tournaments.",
+                        "مسابقات شما بارگذاری نشد.",
+                      )}
+                    </span>
+                    <button
+                      className="button secondary"
+                      onClick={() => {
+                        setError(undefined);
+                        setLibraryState("loading");
+                        void refresh().catch(setError);
+                      }}
+                    >
+                      {t("Retry loading", "تلاش دوباره برای بارگذاری")}
+                    </button>
+                  </>
+                )}
+              </div>
             ) : (
               <Home
                 entries={entries}

@@ -7,6 +7,12 @@ losing a device can remove local access.
 
 ## Create your first tournament
 
+On your first visit, **Try a match** moves to a four-team example. Choose the
+winner of each semifinal and the final to see the bracket advance. **Reset
+example** starts it again. This example is not saved and does not add a tournament
+to your library. The illustrated templates open real creation settings that you
+can edit before saving.
+
 1. Choose **Create tournament** on the home screen.
 2. Enter a title and choose a sport or activity. A sport sets starting rules;
    it does not limit the whole competition to that sport.

@@ -30,8 +30,9 @@ for (const obsoleteValid of [true, false]) {
     const old = make("Old selection");
     const current = make("انتخاب جدید Current");
     await page.goto("/");
+    await expect(page.locator(".welcome-page")).toBeVisible();
     await page
-      .getByRole("button", { name: "Import tournament", exact: true })
+      .getByRole("button", { name: "Import & restore", exact: true })
       .first()
       .click();
     const dialog = page.getByRole("dialog", {

@@ -19,9 +19,15 @@ remain covered by the tests. The [release handoff](RELEASE_STATUS.md),
 [performance measurements](PERFORMANCE.md) and [maintenance review](MAINTENANCE_AUDIT.md)
 record the checks and their limits.
 
-![TournaStudio home with its local tournament library](docs/screenshots/home.png)
+The first-visit page now lets you play through a small example before creating
+your own tournament. Its illustrated Football, Esports and Gol Ya Pooch programs
+open editable setups. Once you have saved a tournament, Home returns to your
+library. The [landing-page review](LANDING_REVIEW.md) records the design decisions
+and bilingual checks.
 
-Fictional tournaments shown for illustration.
+![TournaStudio welcome page with a playable bracket and illustrated game setups](docs/screenshots/home.png)
+
+The example uses fictional teams and does not save its results.
 
 The application is a static React and TypeScript bundle hosted on GitHub Pages. Tournament documents live in IndexedDB. After a successful initial cache, the app works offline. Every production font, icon, and library ships with the build.
 

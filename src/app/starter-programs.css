@@ -1,0 +1,239 @@
+.starter-programs {
+  margin-block: 58px 44px;
+}
+
+.starter-programs-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px 32px;
+  margin-bottom: 22px;
+}
+
+.starter-programs-heading h2 {
+  margin: 0;
+  font-size: clamp(23px, 2.5vw, 30px);
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.starter-programs-heading p {
+  max-width: 47ch;
+  margin: 0;
+  color: #58665c;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.starter-programs .template-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  border: 0;
+}
+
+.starter-programs .template-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 184px auto 1fr auto;
+  gap: 0;
+  min-width: 0;
+  padding: 24px 26px 20px;
+  border: 1px solid #365e4e;
+  border-radius: 2px;
+  text-align: start;
+  background: #224d3e;
+  color: #f6f3df;
+  --scene-paper: #224d3e;
+}
+
+.starter-programs .template-card[data-template="esports"] {
+  border-color: #b9b1ca;
+  background: #e8e1f0;
+  color: #49335e;
+  --scene-paper: #e8e1f0;
+}
+
+.starter-programs .template-card[data-template="gol-ya-pooch"] {
+  border: 3px double #b88f64;
+  padding: 22px 24px 18px;
+  background: #f0e2c8;
+  color: #6c3d21;
+  --scene-paper: #f0e2c8;
+}
+
+.starter-programs .template-card:focus-visible {
+  outline: 3px solid var(--forest);
+  outline-offset: 4px;
+}
+
+.starter-programs .starter-program-sport {
+  display: block;
+  padding-bottom: 12px;
+  border-bottom: 1px solid currentColor;
+  font-size: 12px;
+  font-weight: 550;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.starter-programs .template-top {
+  display: flex;
+  grid-column: auto;
+  grid-row: auto;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  width: 100%;
+  min-width: 0;
+}
+
+.starter-programs .template-top > svg {
+  width: min(100%, 270px);
+  height: 180px;
+}
+
+.starter-programs .template-card h3 {
+  margin: 4px 0 10px;
+  font-size: clamp(23px, 2.4vw, 29px);
+  font-weight: 600;
+  line-height: 1.45;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.starter-programs .starter-program-format {
+  display: grid;
+  grid-column: auto;
+  gap: 2px;
+  margin: 0 0 24px;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.starter-programs .starter-program-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 15px;
+  border-top: 1px solid currentColor;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+.starter-programs .template-arrow {
+  display: flex;
+  flex: 0 0 20px;
+  grid-column: auto;
+  grid-row: auto;
+  align-self: center;
+}
+
+.starter-programs
+  .template-card:hover
+  .starter-program-action
+  > span:first-child {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+[dir="rtl"] .starter-programs-heading h2,
+[dir="rtl"] .starter-programs .template-card h3 {
+  letter-spacing: normal;
+  line-height: 1.6;
+}
+
+[dir="rtl"] .starter-programs .template-arrow {
+  transform: scaleX(-1);
+}
+
+@media (max-width: 900px) {
+  .starter-programs .template-card {
+    padding-inline: 20px;
+    grid-template-rows: auto 158px auto 1fr auto;
+  }
+
+  .starter-programs .template-card[data-template="gol-ya-pooch"] {
+    padding-inline: 18px;
+  }
+
+  .starter-programs .template-top > svg {
+    height: 150px;
+  }
+}
+
+@media (max-width: 650px) {
+  .starter-programs {
+    margin-block: 38px 28px;
+  }
+
+  .starter-programs-heading {
+    display: block;
+  }
+
+  .starter-programs-heading p {
+    margin-top: 8px;
+  }
+
+  .starter-programs .template-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .starter-programs .template-card {
+    grid-template-columns: minmax(84px, 0.9fr) minmax(0, 1.5fr);
+    grid-template-rows: auto auto 1fr auto;
+    column-gap: 16px;
+    padding: 20px;
+  }
+
+  .starter-programs .template-card[data-template="gol-ya-pooch"] {
+    padding: 18px;
+  }
+
+  .starter-programs .starter-program-sport {
+    grid-column: 1 / -1;
+  }
+
+  .starter-programs .template-top {
+    grid-column: 1;
+    grid-row: 2 / 4;
+  }
+
+  .starter-programs .template-top > svg {
+    height: 130px;
+  }
+
+  .starter-programs .template-card h3 {
+    grid-column: 2;
+    align-self: end;
+    margin: 18px 0 7px;
+    font-size: 23px;
+  }
+
+  .starter-programs .starter-program-format {
+    grid-column: 2;
+    margin-bottom: 20px;
+    font-size: 13px;
+  }
+
+  .starter-programs .starter-program-action {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (forced-colors: active) {
+  .starter-programs .template-card,
+  .starter-programs .template-card[data-template] {
+    color: ButtonText;
+    background: ButtonFace;
+    border: 1px solid ButtonText;
+  }
+
+  .starter-programs .template-card:focus-visible {
+    outline-color: Highlight;
+  }
+}

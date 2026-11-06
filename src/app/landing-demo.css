@@ -1,0 +1,301 @@
+.landing-demo {
+  container-type: inline-size;
+  width: 100%;
+  min-width: 0;
+  color: #173f35;
+  background: #fffdf4;
+  border: 1px solid #d4d6c4;
+  border-radius: 3px;
+  box-shadow: 0 16px 34px #081d1720;
+}
+.landing-demo-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid #d4d6c4;
+}
+.landing-demo-heading p {
+  color: #586858;
+  font-size: 11px;
+  line-height: 1.6;
+  margin: 0 0 3px;
+}
+.landing-demo-heading h2 {
+  color: #173f35;
+  margin: 0;
+  font-size: clamp(21px, 4cqi, 28px);
+  font-weight: 650;
+  line-height: 1.5;
+  letter-spacing: -0.025em;
+}
+.landing-demo-progress {
+  text-align: end;
+  flex: 0 0 auto;
+}
+.landing-demo-progress strong {
+  display: block;
+  font-size: 21px;
+  line-height: 1.3;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.landing-demo-progress strong span {
+  color: #657257;
+  font-size: 13px;
+}
+.landing-demo-progress > span {
+  color: #586858;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.landing-demo-bracket {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 28px;
+  padding: 28px 24px;
+}
+.landing-demo-semifinals {
+  display: grid;
+  gap: 16px;
+  position: relative;
+}
+.landing-demo-semifinals::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: -14px;
+  inset-block: calc((100% - 16px) / 4);
+  border-inline-end: 1px solid #8d9a7c;
+}
+.landing-demo-match {
+  position: relative;
+  min-width: 0;
+  border: 1px solid #cdd3bf;
+  border-radius: 2px;
+  background: #fffef9;
+}
+.landing-demo-match.is-next {
+  border-color: #54714b;
+}
+.landing-demo-semifinals .landing-demo-match::after,
+.landing-demo-final > .landing-demo-match::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 50%;
+  width: 14px;
+  border-top: 1px solid #8d9a7c;
+}
+.landing-demo-semifinals .landing-demo-match::after {
+  inset-inline-end: -15px;
+}
+.landing-demo-final > .landing-demo-match::before {
+  inset-inline-start: -15px;
+}
+.landing-demo-match-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 9px;
+  min-height: 29px;
+  color: #586858;
+  background: #f0f1e5;
+  border-bottom: 1px solid #dde1d0;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.landing-demo-match-label svg {
+  flex: 0 0 auto;
+}
+.landing-demo-entrant {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 19px;
+  align-items: center;
+  gap: 7px;
+  min-height: 39px;
+  padding: 7px 9px;
+}
+.landing-demo-entrant + .landing-demo-entrant {
+  border-top: 1px solid #e5e6d9;
+}
+.landing-demo-entrant.is-winner {
+  background: #eaf1d8;
+}
+.landing-demo-team-mark {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 24px;
+  color: #fffdf4;
+  border-radius: 1px 1px 7px 7px;
+  font-size: 10px;
+  font-weight: 650;
+  background: #244d3b;
+}
+.landing-demo-team-mark.blue {
+  background: #436575;
+}
+.landing-demo-team-mark.gold {
+  background: #82652e;
+}
+.landing-demo-team-mark.copper {
+  background: #a85536;
+}
+.landing-demo-team-mark.pending {
+  border: 1px solid #b6bfa6;
+  background: transparent;
+  color: #5f6b53;
+}
+.landing-demo-name {
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+.landing-demo-score {
+  text-align: center;
+  font-size: 17px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.landing-demo-final {
+  min-width: 0;
+  position: relative;
+}
+.landing-demo-final-emblem {
+  position: absolute;
+  inset-inline: 0;
+  bottom: calc(100% + 12px);
+  display: flex;
+  justify-content: center;
+  color: #9a6533;
+}
+.landing-demo-play {
+  padding: 17px 24px 18px;
+  background: #f0f1e5;
+  border-top: 1px solid #d4d6c4;
+}
+.landing-demo-status {
+  min-height: 22px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 550;
+  line-height: 1.8;
+}
+.landing-demo-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.landing-demo-actions button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #80936f;
+  border-radius: 2px;
+  color: #173f35;
+  background: #fffdf4;
+  text-align: start;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.landing-demo-actions button:hover:not(:disabled) {
+  border-color: #173f35;
+  background: #e0edbe;
+}
+.landing-demo-actions button:disabled {
+  opacity: 0.65;
+}
+.landing-demo-actions bdi {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+.landing-demo-champion {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 44px;
+  padding: 9px 12px;
+  background: #d8ee9b;
+  border: 1px solid #9cae69;
+  color: #173f35;
+  font-weight: 650;
+  font-size: 14px;
+}
+.landing-demo-champion > span:last-child {
+  margin-inline-start: auto;
+  font-size: 11px;
+  font-weight: 500;
+}
+.landing-demo-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 9px 24px;
+  border-top: 1px solid #d4d6c4;
+  color: #586858;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.landing-demo-footer button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 34px;
+  padding: 5px 0;
+  border: 0;
+  background: transparent;
+  color: #345740;
+  font-size: 11px;
+}
+.landing-demo-footer button:disabled {
+  color: #74806a;
+}
+[dir="rtl"] .landing-demo-heading h2 {
+  letter-spacing: normal;
+}
+@container (max-width: 370px) {
+  .landing-demo-heading {
+    padding: 18px;
+  }
+  .landing-demo-bracket {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
+    padding: 20px 18px;
+  }
+  .landing-demo-semifinals {
+    gap: 12px;
+  }
+  .landing-demo-semifinals::after,
+  .landing-demo-semifinals .landing-demo-match::after,
+  .landing-demo-final > .landing-demo-match::before {
+    display: none;
+  }
+  .landing-demo-final-emblem {
+    position: static;
+    margin-bottom: 8px;
+  }
+  .landing-demo-final {
+    padding-top: 4px;
+  }
+  .landing-demo-play {
+    padding-inline: 18px;
+  }
+  .landing-demo-actions button {
+    flex-wrap: wrap;
+    padding-inline: 10px;
+  }
+  .landing-demo-footer {
+    padding-inline: 18px;
+  }
+}

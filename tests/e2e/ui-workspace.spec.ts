@@ -8,8 +8,9 @@ import { generateStage } from "../../src/engine";
 
 async function open(page: Page, tournament: Tournament, persian: boolean) {
   await page.goto("/");
+  await expect(page.locator(".welcome-page")).toBeVisible();
   await page
-    .getByRole("button", { name: "Import tournament", exact: true })
+    .getByRole("button", { name: "Import & restore", exact: true })
     .click();
   const dialog = page.getByRole("dialog");
   await dialog.locator('input[type="file"]').setInputFiles({
