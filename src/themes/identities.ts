@@ -51,6 +51,7 @@ export const gameCollections: Record<
     fa: "زمین‌های فوتبال",
     motif: "football-field",
   },
+  petanque: { name: "Pétanque", fa: "پتانک", motif: "constellation" },
   futsal: {
     name: "Futsal courts",
     fa: "زمین‌های فوتسال",
@@ -422,7 +423,10 @@ export function identityFor(id: string): ThemeIdentity {
     identities[id] ?? identities["minimal-light"];
   const collection = gameCollections[sport];
   return {
-    sports: [sport],
+    sports:
+      id === "editorial" || id === "minimal-light"
+        ? [sport, "petanque"]
+        : [sport],
     material,
     description,
     descriptionFa,

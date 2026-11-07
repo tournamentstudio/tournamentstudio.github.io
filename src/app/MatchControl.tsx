@@ -216,10 +216,15 @@ function StandardMatchControl({
       const isMulti = entrants.length > 2;
       if (winnerIds.length > 1 && !isMulti && outcome !== "draw")
         throw new Error(
-          t(
-            "Scores are tied. Choose Draw if allowed, or enter the scores after the tiebreak.",
-            "امتیازها برابر است. اگر تساوی مجاز است، آن را انتخاب کنید؛ در غیر این صورت امتیازهای پس از رفع تساوی را وارد کنید.",
-          ),
+          doc.rules.allowDraws
+            ? t(
+                "Scores are tied. Choose Draw if allowed, or enter the scores after the tiebreak.",
+                "امتیازها برابر است. اگر تساوی مجاز است، آن را انتخاب کنید؛ در غیر این صورت امتیازهای پس از رفع تساوی را وارد کنید.",
+              )
+            : t(
+                "Scores are tied. Enter the agreed final score after resolving the tie.",
+                "امتیازها برابر است. پس از رفع تساوی، امتیاز نهایی مورد توافق را وارد کنید.",
+              ),
         );
       const result: MatchResult = {
         scores: officialScores,

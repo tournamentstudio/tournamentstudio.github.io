@@ -22,11 +22,11 @@ test("shows a distinct activity icon for every creation preset", async ({
       svg: await icon.evaluate((element) => element.outerHTML),
     });
   }
-  expect(icons).toHaveLength(14);
+  expect(icons).toHaveLength(sports.length);
   expect(
     new Set(icons.map((icon) => icon.svg.replace(/data-game-icon="[^"]*"/, "")))
       .size,
-  ).toBe(14);
+  ).toBe(sports.length);
   if (browserName === "chromium") {
     const gallery = await page.context().newPage();
     try {

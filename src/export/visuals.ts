@@ -387,10 +387,14 @@ export function standingsVisualPages(
         (group ? ` · ${groupLabel(group, locale)}` : "") +
         " · " +
         exportLabel(locale, "Standings", "رده‌بندی"),
-      getStandings(t, stageId, group).map(
-        (row) =>
-          `${row.rank.toLocaleString(locale)}${row.tied ? "*" : ""}. ${names.get(row.participantId) ?? ""} · ${row.points.toLocaleString(locale)} ${exportLabel(locale, "points", "امتیاز")} · ${row.played.toLocaleString(locale)} ${exportLabel(locale, "played", "بازی")}`,
-      ),
+      getStandings(t, stageId, group).map((row) => {
+        const ranking = `${row.rank.toLocaleString(locale)}${row.tied ? "*" : ""}. ${names.get(row.participantId) ?? ""}`;
+        const totals =
+          t.sport === "petanque"
+            ? `${row.wins.toLocaleString(locale)} ${exportLabel(locale, "wins", "برد")} · ${row.differential.toLocaleString(locale)} ${exportLabel(locale, "point difference", "تفاضل امتیاز")} · ${row.scored.toLocaleString(locale)} ${exportLabel(locale, "points scored", "امتیاز کسب‌شده")}`
+            : `${row.points.toLocaleString(locale)} ${exportLabel(locale, "points", "امتیاز")}`;
+        return `${ranking} · ${totals} · ${row.played.toLocaleString(locale)} ${exportLabel(locale, "played", "بازی")}`;
+      }),
       locale,
     ),
   );

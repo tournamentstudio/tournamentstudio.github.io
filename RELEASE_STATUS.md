@@ -1,6 +1,28 @@
 # TournaStudio release handoff
 
-## Current grouping release
+## Current Pétanque release
+
+The November 7, 2026 Pétanque release adds the club ranking preset, clearer Rules
+controls, on-screen ranking explanations and the actual ranking totals in
+exported graphics. The existing standings algorithm and data schema remain
+unchanged. Normal tied scores remain invalid when draws are disabled; equal
+standings totals retain shared ranks. See [PETANQUE_REVIEW.md](PETANQUE_REVIEW.md)
+for the reproduced example, test coverage and compatibility boundaries.
+
+The final `npm run check` passed TypeScript, ESLint, 1,389 unit/integration tests
+across 115 files and the production build. All four release-packaging tests
+passed. The prepared bundle contains 93 files and 82 precache entries.
+
+Production-bundle browser runs passed 99 cases with no retries: four new
+Pétanque workflows in each of Chromium, Firefox and WebKit, plus 87 broader
+Chromium regressions. English/Persian standings, Rules and result dialogs were
+checked at 320, 390, 768 and 1280 pixels. Eighteen automated accessibility scans
+found no AA violations. Narrow tables retain their own horizontal scrolling.
+
+GitHub Actions remains disabled. Publication uses locally prepared `main/docs`
+files; hosted verification is recorded with the GitHub release after publishing.
+
+## Previous grouping release
 
 The November 6, 2026 grouping release fixes home/away balance in newly generated
 round robins and round ordering in the match desk. Sorting happens before

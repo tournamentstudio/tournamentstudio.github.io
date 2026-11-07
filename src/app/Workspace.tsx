@@ -35,6 +35,7 @@ import {
 } from "../i18n";
 import { Bracket } from "../components/Bracket";
 import { StandingsTable } from "../components/StandingsTable";
+import { RankingSummary } from "../components/RankingSummary";
 import { orderFixtures } from "./match-order";
 import { ErrorText, Empty } from "../components/ui";
 import { Pagination, usePagination } from "../components/Pagination";
@@ -134,6 +135,19 @@ export function Workspace({
   const [search, setSearch] = useState("");
   const [error, setError] = useState<unknown>();
   const [stageId, setStageId] = useState(doc.stages[0]?.id ?? "");
+  const standingsGroups = useMemo(
+    () => [
+      ...new Set(
+        doc.matches.flatMap((match) =>
+          match.stageId === stageId && match.group ? [match.group] : [],
+        ),
+      ),
+    ],
+    [doc.matches, stageId],
+  );
+  const sharedGroupRanking =
+    doc.sport === "petanque" &&
+    doc.stages.find((stage) => stage.id === stageId)?.format === "groups";
   const [matchStageId, setMatchStageId] = useState("");
   const matchStage = doc.stages.find((stage) => stage.id === matchStageId);
   const roundStage =
@@ -799,22 +813,14 @@ export function Workspace({
                   ))}
                 </select>
               </div>
-              {[
-                ...new Set(
-                  doc.matches
-                    .filter((m) => m.stageId === stageId)
-                    .map((m) => m.group)
-                    .filter(Boolean),
-                ),
-              ].length ? (
-                [
-                  ...new Set(
-                    doc.matches
-                      .filter((m) => m.stageId === stageId)
-                      .map((m) => m.group)
-                      .filter(Boolean),
-                  ),
-                ].map((group) => (
+              {standingsGroups.length > 0 && sharedGroupRanking && (
+                <RankingSummary
+                  tieBreakers={doc.rules.tieBreakers}
+                  locale={locale}
+                />
+              )}
+              {standingsGroups.length ? (
+                standingsGroups.map((group) => (
                   <section className="workspace-group" key={group}>
                     <h3>
                       {t("Group", "گروه")} {group}
@@ -825,6 +831,7 @@ export function Workspace({
                       group={group}
                       locale={locale}
                       hideCaption
+                      hideRankingSummary={sharedGroupRanking}
                     />
                   </section>
                 ))

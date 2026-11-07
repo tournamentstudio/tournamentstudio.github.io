@@ -83,7 +83,8 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for algorithms and measured engine tests.
 | Postponed/contested/abandoned workflows | Implemented | Reviewed match status actions, explicit ruling before abandoned/contested matches count, restricted cancellation and downstream impact handling. Status changes do not invent a result. |
 | Placement ties | Implemented | Tied entrants share the points of the positions occupied by the tie. |
 | Judge scores and weighted dimensions | Implemented | Typed numeric, judge-panel and placement dimensions; sum/mean/trimmed mean, bounded weights and reproducible totals. Up to 20 dimensions and 20 judges per panel. Recorded scores must agree with weighted evidence; rules lock after play. |
-| Ordered standings tie-breakers | Implemented | Points, wins, difference, scored, head-to-head mini-table, Buchholz, Median Buchholz, Sonneborn-Berger and optional seed. |
+| Ordered standings tie-breakers | Implemented | Standings points, wins, point difference, points scored, head-to-head mini-table, Buchholz, Median Buchholz, Sonneborn-Berger and optional seed. The selected order is authoritative; equal values retain shared ranks. Rules explains the difference between match scores and standings points. |
+| Pétanque club standings | Implemented | Dedicated preset with no draws in normal played games; descending wins, cumulative point difference, then cumulative points scored. Round-robin/group tables display that order and the actual totals. Target 13 is an editable guide, not an enforced total. Existing scores and historical draws are retained when editing ranking rules. No complete federation ruleset is claimed. |
 | Set ratios, point ratios, fair play | Implemented | Actual set/point evidence and explicit public sanctions feed ordered criteria. Missing evidence skips the criterion for the tied cohort; zero sanctions must be entered explicitly. No synthetic penalty or ratio is inferred. |
 | Safe result correction | Implemented | Played downstream effects are listed before confirmation. Prior state is recoverable; invalid dependent results are reopened or removed. |
 | Match result reopening | Implemented | Explicit reopen-to-unplayed review, match-state controls and recoverable downstream invalidation. Unsafe played dependencies require confirmation. |
@@ -139,9 +140,9 @@ chosen scoring model does not require them.
 | Other competition displays | Implemented | Match grids, group/overall standings and multi-entrant scores. |
 | Bracket controls | Implemented | Zoom, fit, keyboard scrolling, round/stage selection, participant highlighting, score/seed visibility and RTL orientation. |
 | Advanced bracket layouts | Implemented | Horizontal, vertical, centered-final and compact layouts, RTL connectors and matching SVG export. Collapse/reopen individual rounds; optional pointer panning and keyboard scrolling. Centered finals require a single championship tree. |
-| Theme presets | Implemented | 50 presets across 14 game collections, with 17 original vector motifs and 12 material treatments as well as typography, geometry and color tokens. Original preset IDs remain compatible. |
+| Theme presets | Implemented | 50 presets across 15 game collections, with 17 original vector motifs and 12 material treatments as well as typography, geometry and color tokens. Original preset IDs remain compatible. |
 | Related game themes | Implemented | At least two related choices for each activity. Game-specific creation previews, workspace identity, match cards, scorekeeper artwork and presentation backgrounds. |
-| Activity icons | Implemented | Fourteen original SVG icons stay tied to the activity across theme changes, with localized library labels. Gol Ya Pooch has closed-fist and bead emblems plus bell/card referee symbols. Static artwork receives no secret match state. |
+| Activity icons | Implemented | Fifteen original SVG icons stay tied to the activity across theme changes, with localized library labels. Pétanque has boules and a jack. Gol Ya Pooch has closed-fist and bead emblems plus bell/card referee symbols. Static artwork receives no secret match state. |
 | Theme Studio | Implemented | Game recommendations, bilingual search, full-catalog browsing, live preview, colors with contrast warning, fonts, size, spacing, borders, corners, connectors, raster background/logo and reduced motion. |
 | Custom theme portability | Implemented | Versioned theme JSON import/export, applied to the current tournament without changing results. |
 | Saved personal theme library | Implemented | Up to 50 named theme-only copies, with apply, duplicate, rename, delete, export and reload. Images require an explicit opt-in; the personal library is separate from vaults. |
@@ -169,6 +170,7 @@ Theme collections:
 | Activity | Related choices |
 | --- | --- |
 | Open competition | Minimal Light, Minimal Dark, Modern Glass, Editorial, Professional Corporate, Championship Gold, Festival, Boxing, Classic Sports Broadcast, Winter, Summer |
+| Pétanque | Editorial, Minimal Light |
 | Football | Football Stadium, Football Chalkboard |
 | Futsal | Futsal After Hours, Futsal Parquet |
 | Basketball | Basketball Arena, Basketball Street Court |
@@ -187,7 +189,7 @@ Theme collections:
 
 | Capability | Status | Actual behavior |
 | --- | --- | --- |
-| Sport presets | Implemented | Generic, football, futsal, basketball, volleyball, tennis, table tennis, badminton, chess, esports, racing, board games, quiz/academics and Gol Ya Pooch. |
+| Sport presets | Implemented | Generic, Pétanque, football, futsal, basketball, volleyball, tennis, table tennis, badminton, chess, esports, racing, board games, quiz/academics and Gol Ya Pooch. Pétanque suggests round robin during creation while retaining an explicitly selected format. |
 | Sport-specific statistics | Implemented | Typed entrant-level measured/judge/placement dimensions and private roster-player observations with sport templates and custom numeric metrics. Sum/mean/min/max summaries use actual entered evidence. Missing measurements stay missing. |
 | Player-event timeline | Implemented | Match/team/player identity, period, elapsed time, notes and recorded value; private totals, match history and CSV. Corrections/removal/restoration keep reasons and prior values. Result or roster changes quarantine affected observations for review. Public projections omit the entire extension. Limits: 50 metrics, 5,000 events and 30 prior edits per event, plus tournament revisions. |
 | Custom reusable sport presets | Implemented | Named local library with save, apply, import/export and delete. Presets contain rules, entrant kind, duration and theme ID; no entrants, results or raster assets. Applying replacement rules is blocked after play. |
@@ -247,7 +249,7 @@ files already delivered to the browser cannot be recalled.
 | PDF | Implemented | Browser print dialog offers Save as PDF where the platform supports it. No separate PDF rendering engine. |
 | Print-friendly HTML | Implemented | Standalone public tournament HTML download with standings, schedule and stage brackets, escaped content and printable pages, alongside browser print output. |
 | Participant/match CSV and schedule ICS | Implemented | Portable tabular data and calendar events, with formula/injection defenses. |
-| Scoreboard images, posters and slide files | Implemented | SVG/PNG scoreboards, champion posters and paginated standings. Fourteen original activity scenes and emblems complement participant logos. Width-aware wrapping preserves graphemes; independent bidi-isolated lines keep mixed Persian/Latin names inside exports across browser engines. Scores keep every digit and long introduction descriptions continue on extra slides. Selected scenes export as a ZIP of SVGs, manifest and offline HTML viewer. These are snapshots; no PPTX or running countdown is implied. |
+| Scoreboard images, posters and slide files | Implemented | SVG/PNG scoreboards, champion posters and paginated standings. Fifteen original activity scenes and emblems complement participant logos. Width-aware wrapping preserves graphemes; independent bidi-isolated lines keep mixed Persian/Latin names inside exports across browser engines. Scores keep every digit and long introduction descriptions continue on extra slides. Selected scenes export as a ZIP of SVGs, manifest and offline HTML viewer. These are snapshots; no PPTX or running countdown is implied. |
 | Statistics | Implemented | Recorded wins/losses/draws, win percentage, scores, difference, points, recent results and a points chart; BYEs do not inflate played totals. |
 | Elo and rating history | Implemented | Configurable Elo from completed played/drawn two-entrant matches, explicit cross-tournament identity mappings and TSH1 result packets. |
 | Multi-format predictions | Implemented | TSB1 version 2 supports generated static stages and dynamic-round scopes: winner/loser paths, draws, conditional resets and full placement rankings with ties. Swiss, three-loss and challenge formats predict only the generated round. Exact correct outcomes score one point, with shared ranks and separate scope/schema leaderboards. Legacy version-1 packets remain readable. Imported identity/time claims remain unverified. |

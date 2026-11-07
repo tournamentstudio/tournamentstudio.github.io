@@ -47,6 +47,20 @@ function Court({ sport }: { sport: GameIconId }) {
 }
 
 function Scene({ sport }: { sport: GameIconId }) {
+  if (sport === "petanque") {
+    return (
+      <>
+        <g className="game-scene-ground">
+          <path d="M38 32H322V208H38ZM51 194H309" />
+          <circle cx="86" cy="156" r="25" />
+          <path d="M131 151L138 147M153 137L160 133M175 123L182 119" />
+        </g>
+        <g transform="translate(178 58)">
+          <GameIcon sport={sport} size={125} />
+        </g>
+      </>
+    );
+  }
   if (sport === "gol-ya-pooch") {
     return (
       <>

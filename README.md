@@ -37,6 +37,7 @@ The application is a static React and TypeScript bundle hosted on GitHub Pages. 
 - True double elimination with loser drop paths, a conditional grand-final reset and optional full classification.
 - A documented progressive three-loss elimination policy.
 - Round robin, balanced uneven groups, GSL groups of four, Swiss, and qualifying stages feeding playoffs.
+- Pétanque with win/loss results, standings ordered by wins, cumulative point difference and points scored, and explicit shared ranks. The preset suggests round robin and supports groups; its target score is editable.
 - Multiple qualifying sources, exact cross-group bracket slots, and wildcard comparisons by totals, per-match values or retained group results.
 - Seed pots for Groups and GSL, with previewed balanced draws and limits on entrants from the same region or organization.
 - Knockout pot draws with region and organization separation through selected winners and losers rounds, protected seed positions, explicit qualifier slots, and a BYE preview.
@@ -59,18 +60,18 @@ Quick Create accepts numbered entrants or pasted names. The workspace includes p
 
 English and Persian labels, local Inter and Vazirmatn fonts, and RTL layouts are included. The interface is designed for desktop and phones. Engine and import diagnostics have Persian display translations. Mobile navigation contains focus, routes identify the current page, and saved changes and public scoreboards have assistive announcements. [FEATURES.md](FEATURES.md) records supported behavior and platform boundaries.
 
-Named personal designs complement 50 theme presets with game collections for all 14 activities. Original court diagrams, paddles, chess pieces, Persian geometry and other vector artwork sit on paper, wood, felt, tile and other material treatments. Theme Studio recommends related choices and lets you search the full catalog. The selected identity appears in creation, the workspace, match cards and scorekeeping.
+Named personal designs complement 50 theme presets with game collections for all 15 activities. Original court diagrams, paddles, chess pieces, Persian geometry and other vector artwork sit on paper, wood, felt, tile and other material treatments. Theme Studio recommends related choices and lets you search the full catalog. The selected identity appears in creation, the workspace, match cards and scorekeeping.
 
-Fourteen separate activity icons keep each game recognizable across theme changes, library covers and presentation screens. Gol Ya Pooch uses closed fists and a bead, with bell and card symbols in its referee controls. [Design references](DESIGN_REFERENCES.md) explain the Persian sources and original artwork.
+Fifteen separate activity icons keep each game recognizable across theme changes, library covers and presentation screens. Pétanque uses boules and a jack. Gol Ya Pooch uses closed fists and a bead, with bell and card symbols in its referee controls. [Design references](DESIGN_REFERENCES.md) explain the Persian sources and original artwork.
 
-Fourteen original SVG scenes extend those icons into courts, boards and tabletop
+Fifteen original SVG scenes extend those icons into courts, boards and tabletop
 compositions for library covers, the match desk, draws and presentation. They are
 local artwork with no access to referee information. Protected library entries
 keep their activity hidden.
 
-![TournaStudio's fourteen activity icons](docs/screenshots/activity-icons.png)
+![TournaStudio activity icons](docs/screenshots/activity-icons.png)
 
-Exported scoreboards and champion posters use original scenes for all fourteen
+Exported scoreboards and champion posters use original scenes for all fifteen
 activities. Gol Ya Pooch has closed hands, a bead, a tabletop bell, cards and a
 Persian arch. Mixed Persian and English names wrap within the exported image.
 

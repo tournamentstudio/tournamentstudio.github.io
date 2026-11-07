@@ -60,11 +60,15 @@ export function CreateFlow({
   const [format, setFormat] = useState<FormatId>(
     initialPlan?.format ??
       initialFormat ??
+      sports.find((preset) => preset.id === template)?.defaultFormat ??
       (template === "esports"
         ? "double-elimination"
         : template === "football" || template === "gol-ya-pooch"
           ? "groups"
           : "single-elimination"),
+  );
+  const [formatChosen, setFormatChosen] = useState(
+    Boolean(initialFormat || initialPlan),
   );
   const [countInput, setCountInput] = useState(
     String(initialPlan?.count ?? (template === "football" ? 16 : 8)),
@@ -101,6 +105,9 @@ export function CreateFlow({
   const [error, setError] = useState<unknown>();
   const [savedSports, setSavedSports] = useState<SavedSport[]>([]);
   const [savedSportId, setSavedSportId] = useState("");
+  const sportDescription = sports.find(
+    (item) => item.id === sport,
+  )?.description;
   useEffect(() => {
     let active = true;
     void loadSportPresets()
@@ -412,6 +419,11 @@ export function CreateFlow({
                   onChange={(e) => {
                     setSavedSportId("");
                     setSport(e.target.value);
+                    const preset = sports.find(
+                      (item) => item.id === e.target.value,
+                    );
+                    if (preset?.defaultFormat && !formatChosen)
+                      setFormat(preset.defaultFormat);
                     setTheme(
                       sports.find((preset) => preset.id === e.target.value)
                         ?.theme ?? "minimal-light",
@@ -454,10 +466,12 @@ export function CreateFlow({
               <div className="creation-note">
                 <GameIcon sport={sport} size={36} />
                 <p>
-                  {t(
-                    "Every preset is a starting point. Scoring, teams, and rules can all be changed in your workspace.",
-                    "هر الگو یک نقطه شروع است. امتیازدهی، تیم‌ها و قوانین در فضای مدیریت قابل تغییر هستند.",
-                  )}
+                  {!savedSportId && sportDescription
+                    ? t(...sportDescription)
+                    : t(
+                        "Every preset is a starting point. Scoring, teams, and rules can all be changed in your workspace.",
+                        "هر الگو یک نقطه شروع است. امتیازدهی، تیم‌ها و قوانین در فضای مدیریت قابل تغییر هستند.",
+                      )}
                 </p>
               </div>
               <label className="check-row">
@@ -480,6 +494,7 @@ export function CreateFlow({
                   value={format}
                   onChange={(e) => {
                     const next = e.target.value as FormatId;
+                    setFormatChosen(true);
                     setFormat(next);
                     adjustDefaults(actualCount, next);
                   }}

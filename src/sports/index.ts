@@ -2,6 +2,7 @@ import {
   DEFAULT_RULES,
   type Participant,
   type Rules,
+  type FormatId,
   type Tournament,
 } from "../domain/types";
 export interface SportPreset {
@@ -12,6 +13,8 @@ export interface SportPreset {
   rule: Partial<Rules>;
   theme: string;
   duration: number;
+  defaultFormat?: FormatId;
+  description?: [string, string];
 }
 export const sports: SportPreset[] = [
   {
@@ -22,6 +25,28 @@ export const sports: SportPreset[] = [
     rule: {},
     theme: "minimal-light",
     duration: 20,
+  },
+  {
+    id: "petanque",
+    name: "Pétanque",
+    fa: "پتانک",
+    kind: "individual",
+    rule: {
+      scoring: "high",
+      allowDraws: false,
+      pointsWin: 1,
+      pointsDraw: 0,
+      pointsLoss: 0,
+      tieBreakers: ["wins", "differential", "scored"],
+      targetScore: 13,
+    },
+    theme: "editorial",
+    duration: 45,
+    defaultFormat: "round-robin",
+    description: [
+      "Win/loss results. Rank by wins, then total point difference, then total points scored. Equal values share a rank. You can change the target score in Rules.",
+      "نتیجه هر بازی برد یا باخت است. رتبه‌بندی بر اساس تعداد برد، سپس مجموع تفاضل امتیاز و بعد مجموع امتیاز کسب‌شده است. مقادیر برابر رتبه مشترک دارند. امتیاز هدف را می‌توانید در قوانین تغییر دهید.",
+    ],
   },
   {
     id: "football",

@@ -471,6 +471,27 @@ two entrants tied first share the first- and second-place awards. Seed order is
 only a ranking criterion when selected in the rules. Otherwise it provides a
 stable display order while the shared rank remains explicitly tied.
 
+The `petanque` preset uses the existing high-score result validator and standings
+engine with `allowDraws: false` and `tieBreakers: ["wins", "differential", "scored"]`.
+All three metrics sort descending. Differential is the cumulative scored total
+minus the cumulative conceded total; only completed matches contribute. Group
+BYEs do not create wins. The preset's standings-point awards are 1/0/0, but those
+awards and manual point adjustments do not control ranking because `points` is
+absent from the criteria. Equal values retain a shared rank. A target of 13 is
+an editable hint, not a threshold enforced by numeric result entry. Explicit
+forfeit rulings remain distinct from normal played results.
+
+This is configuration of existing contracts, not a new scoring format or schema
+version. `SportPreset.defaultFormat` suggests round robin only while the creator
+has not selected a format. `description` supplies bilingual setup guidance.
+`RankingSummary` and shared ranking labels explain the stored criteria in Rules
+and Pétanque round-robin/group tables. Scored and conceded totals remain derived
+from saved results; no separate cached ranking is persisted. Ranking edits after
+play recalculate standings without reinterpreting historical scores, wins or
+draws. The Rules editor locks after a dependent stage is generated. Imported
+generic tournaments remain generic and keep their existing configuration.
+No complete Pétanque federation ruleset is implied.
+
 Completed elimination rankings follow elimination depth, with the champion
 first. Entrants eliminated at the same depth share a rank unless third place or
 full classification separates them. Several independent groups
@@ -636,7 +657,7 @@ receives private match state. Long text still passes through measured wrapping.
 
 The 50 presets combine color, typography and geometry tokens with 17 original
 vector motifs and 12 material treatments. `identities.ts` maps presets to the
-14 activity collections; `getThemesForSport` supplies creation and gallery
+15 activity collections; `getThemesForSport` supplies creation and gallery
 recommendations. The original 27 preset IDs remain stable.
 
 `ThemeMotif` accepts a preset identifier and layout variant. It never receives
@@ -645,7 +666,7 @@ only sport, preset and locale. Theme artwork therefore cannot reveal a referee
 secret through a different emblem, position or color. Material textures and
 vector paths are local static definitions, without remote assets.
 
-`GameIcon` uses a separate fourteen-sport geometry registry. `GameIdentity`
+`GameIcon` uses a separate fifteen-sport geometry registry. `GameIdentity`
 selects this icon from the sport while retaining the chosen theme's styling.
 `GolActionIcon` supplies hands, bead, bell and cards. Shared static geometry keeps
 the closed fists consistent in interface icons and exported theme motifs.

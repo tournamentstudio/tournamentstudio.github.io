@@ -606,8 +606,11 @@ fair play and optional seed.
 An asterisk in standings marks an unresolved tie. Equal ranks are preserved when
 the selected sporting criteria cannot separate entrants.
 
-Changing points after play has started recalculates standings. Existing match
-winners remain recorded decisions. Review any effect on later qualification.
+Changing ranking order or standings points after play has started recalculates
+standings without rewriting saved scores, wins or draws. New match rules apply
+when entering or correcting results. Once a dependent stage has been generated,
+Rules is locked to protect its entrants and results. Restore a suitable earlier
+revision through History if the agreed rules need to change at that point.
 
 The statistics screen uses recorded results and excludes BYEs from played-match
 totals. It does not estimate missing scores or create player statistics that were
@@ -626,6 +629,59 @@ Keep private explanations in the separate notes field.
 Use the named sport preset library to save rules, entrant kind, duration and theme
 for later tournaments. Imported presets are previewed; applying new rules after
 play is blocked. Presets exclude entrant names, results and uploaded artwork.
+
+## Run a Pétanque tournament
+
+1. Choose **Create tournament**, enter a title, and select **Pétanque** under
+   **Sport or activity**. Choose **Continue**.
+2. Keep **Round robin** for one table, or select **Groups & pools** for separate
+   tables and set the group count. An explicitly chosen format is retained if
+   you return to change the sport. Enter the participant count or paste names.
+3. Choose **Continue**, review the theme and settings, then **Create tournament**.
+4. In **Matches**, open each game, enter both final scores, and choose
+   **Save result**. Normal played games need unequal scores. For a forfeit or
+   other administrative ruling, select that outcome and its winner explicitly.
+5. Open **Standings**, or **Groups** for separate tables. The visible ranking
+   order is **Wins**, **Point difference**, then **Points scored**, all descending.
+
+Point difference is the sum of points scored minus points conceded across
+completed games. Points scored is the cumulative total from those same games.
+Unfinished games and group BYEs do not add wins or points. If all three values
+are equal, entrants keep a shared rank, marked with an asterisk; seed order does
+not decide the winner. Resolve a tied qualification cutoff by an agreed policy
+before advancing entrants.
+
+The preset starts with an editable **Target score** of 13 in **Rules**. This is
+a guide, not an enforced winning total. A decisive timed-game score such as 7-3
+can be recorded. The preset supports this club ranking policy; it does not claim
+to implement a federation's complete rules.
+
+For example, record A beating B 13-5, A beating C 13-8, D beating A 13-6,
+B beating C 13-7, B beating D 13-5, and C beating D 13-9:
+
+| Rank | Entrant | Wins | Point difference | Points scored |
+| --- | --- | --- | --- | --- |
+| 1 | A | 2 | +6 | 32 |
+| 2 | B | 2 | +6 | 31 |
+| 3 | D | 1 | -5 | 27 |
+| 4 | C | 1 | -7 | 28 |
+
+A finishes above B on points scored. D finishes above C on point difference.
+Standings images from **Export Studio** include wins, point difference, points
+scored and played games, with the same ranks and shared-rank markers.
+
+For an existing generic tournament or an older backup, keep its saved results.
+Open **Rules**, choose **Highest score wins**, and clear **Allow draws in league
+and group matches**. Under **Ranking order**, remove **Standings points** and any
+other unwanted criteria. Use **Add a ranking criterion** and the move buttons to
+leave exactly **Wins**, **Point difference**, **Points scored**, in that order.
+Choose **Save rules**. Historical draws remain visible and are not converted
+into wins; review and correct any such game separately with the organizer's
+agreed result. Changing this configuration does not rename the activity or
+replace its theme. Existing dependent-stage locks still apply.
+
+In Persian, select **پتانک**. The same order is shown as **برد**,
+**تفاضل امتیاز**, then **امتیاز کسب‌شده**. Names can mix Persian and Latin text.
 
 ## Run Gol Ya Pooch
 
@@ -1197,7 +1253,7 @@ Open **Participants** and choose **Edit**. Add a local logo, set availability, o
 **Export Studio** creates scoreboards, group tables, champion posters and presentation slide archives. Choose the match, stage or scenes, then inspect the preview. SVG keeps text and lines scalable; PNG has bounded dimensions. Standalone HTML can be opened and printed offline. Extract a slide ZIP and open its HTML viewer to move through the selected pages. The files are snapshots and do not receive new results.
 
 Scoreboards use participant logos when supplied, or an emblem for the selected
-activity. Champion posters have a related scene for each of the fourteen
+activity. Champion posters have a related scene for each of the fifteen
 activities. Gol Ya Pooch artwork uses closed hands and a bead with bell, cards
 and an arch. These are decorative shapes; they never reveal concealed gameplay
 information. Long Persian and English names wrap on separate isolated lines.

@@ -50,6 +50,8 @@ function field(lines: string, rounded = 6) {
 
 function scene(sport: string) {
   switch (sport) {
+    case "petanque":
+      return `<rect x="70" y="44" width="500" height="264" rx="2"/><circle cx="133" cy="244" r="28"/><path d="M179 223L190 217M206 207L217 201M233 191L244 185"/><path d="M90 292H550"/>`;
     case "football":
       return field(
         "M320 44V308M70 104H144V248H70M570 104H496V248H570M70 136H101V216H70M570 136H539V216H570",

@@ -14,20 +14,22 @@ import { rulesSchema } from "../domain/validate";
 import { ErrorText, Field, Notice } from "../components/ui";
 import { useI18n, statusName } from "../i18n";
 import type { EditorProps } from "./Participants";
+import { rankingLabel } from "../standings/ranking-labels";
+import "./rules.css";
 
-const breakerLabels: [TieBreaker, string, string][] = [
-  ["points", "Points", "امتیاز"],
-  ["wins", "Wins", "برد"],
-  ["differential", "Score difference", "تفاضل"],
-  ["scored", "Scored", "امتیاز کسب‌شده"],
-  ["head-to-head", "Head to head", "رو در رو"],
-  ["set-ratio", "Set ratio", "نسبت ست"],
-  ["point-ratio", "Point ratio", "نسبت امتیاز"],
-  ["fair-play", "Fewest fair-play penalties", "کمترین جریمه بازی جوانمردانه"],
-  ["buchholz", "Buchholz", "بوخهولتز"],
-  ["median-buchholz", "Median Buchholz", "بوخهولتز میانه"],
-  ["sonneborn-berger", "Sonneborn-Berger", "سونبورن برگر"],
-  ["seed", "Seed", "سید"],
+const breakerIds: TieBreaker[] = [
+  "points",
+  "wins",
+  "differential",
+  "scored",
+  "head-to-head",
+  "set-ratio",
+  "point-ratio",
+  "fair-play",
+  "buchholz",
+  "median-buchholz",
+  "sonneborn-berger",
+  "seed",
 ];
 
 export function Rules({ tournament: doc, onChange }: EditorProps) {
@@ -35,6 +37,20 @@ export function Rules({ tournament: doc, onChange }: EditorProps) {
   const [rules, setRules] = useState(structuredClone(doc.rules));
   const [error, setError] = useState<unknown>();
   const played = doc.matches.some((match) => match.status === "completed");
+  const usesStandingsPoints =
+    doc.sport !== "petanque" ||
+    rules.tieBreakers.some((criterion) =>
+      [
+        "points",
+        "buchholz",
+        "median-buchholz",
+        "sonneborn-berger",
+        "head-to-head",
+      ].includes(criterion),
+    );
+  const pointFields = usesStandingsPoints
+    ? (["pointsWin", "pointsDraw", "pointsLoss", "targetScore"] as const)
+    : (["targetScore"] as const);
   const locked = doc.stages.some(
     (stage) =>
       stage.sources.length > 0 &&
@@ -132,8 +148,8 @@ export function Rules({ tournament: doc, onChange }: EditorProps) {
         played && (
           <Notice>
             {t(
-              "Results already exist. Changing standings points recalculates rankings. Existing winner decisions are retained.",
-              "نتایج ثبت شده‌اند. تغییر امتیاز جدول رتبه‌ها را دوباره محاسبه می‌کند. برنده‌های ثبت شده حفظ می‌شوند.",
+              "Results already exist. Changing the ranking order or standings points recalculates ranks. Recorded scores, wins and draws are retained. New match rules apply to future result entries.",
+              "نتایج ثبت شده‌اند. تغییر ترتیب رتبه‌بندی یا امتیاز جدول، رتبه‌ها را دوباره محاسبه می‌کند. امتیازها، بردها و تساوی‌های ثبت شده حفظ می‌شوند. قوانین جدید دیدار برای ثبت نتایج بعدی اعمال می‌شوند.",
             )}
           </Notice>
         )
@@ -142,7 +158,9 @@ export function Rules({ tournament: doc, onChange }: EditorProps) {
         disabled={locked}
         style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
       >
-        <div className="two-columns">
+        <div
+          className={rules.scoring === "sets" ? "two-columns" : "form-stack"}
+        >
           <Field label={t("Scoring system", "روش امتیازدهی")}>
             <select
               value={rules.scoring}
@@ -181,18 +199,20 @@ export function Rules({ tournament: doc, onChange }: EditorProps) {
               ))}
             </select>
           </Field>
-          <Field label={t("Best of (odd number)", "بهترین از (عدد فرد)")}>
-            <input
-              type="number"
-              min={1}
-              max={99}
-              step={2}
-              value={rules.bestOf}
-              onChange={(event) =>
-                setRules({ ...rules, bestOf: Number(event.target.value) })
-              }
-            />
-          </Field>
+          {rules.scoring === "sets" && (
+            <Field label={t("Best of (odd number)", "بهترین از (عدد فرد)")}>
+              <input
+                type="number"
+                min={1}
+                max={99}
+                step={2}
+                value={rules.bestOf}
+                onChange={(event) =>
+                  setRules({ ...rules, bestOf: Number(event.target.value) })
+                }
+              />
+            </Field>
+          )}
         </div>
         {rules.scoring === "weighted" && (
           <Field label={t("Weighted winner direction", "جهت برنده وزن‌دار")}>
@@ -228,19 +248,25 @@ export function Rules({ tournament: doc, onChange }: EditorProps) {
             "اجازه تساوی در دیدارهای لیگ و گروه",
           )}
         </label>
-        <div className="three-columns">
-          {(
-            ["pointsWin", "pointsDraw", "pointsLoss", "targetScore"] as const
-          ).map((key, index) => (
+        <div className={usesStandingsPoints ? "two-columns" : "form-stack"}>
+          {pointFields.map((key) => (
             <Field
               key={key}
+              hint={
+                key === "targetScore" && doc.sport === "petanque"
+                  ? t(
+                      "An editable guide, not a required winning total. Record the agreed final score, including timed games.",
+                      "راهنمایی قابل تغییر است، نه شرط اجباری برد. امتیاز نهایی مورد توافق را ثبت کنید، از جمله در بازی‌های زمان‌دار.",
+                    )
+                  : undefined
+              }
               label={
-                [
-                  t("Win points", "امتیاز برد"),
-                  t("Draw points", "امتیاز تساوی"),
-                  t("Loss points", "امتیاز باخت"),
-                  t("Target score", "امتیاز هدف"),
-                ][index]
+                {
+                  pointsWin: t("Win points", "امتیاز برد"),
+                  pointsDraw: t("Draw points", "امتیاز تساوی"),
+                  pointsLoss: t("Loss points", "امتیاز باخت"),
+                  targetScore: t("Target score", "امتیاز هدف"),
+                }[key]
               }
             >
               <input
@@ -255,32 +281,32 @@ export function Rules({ tournament: doc, onChange }: EditorProps) {
             </Field>
           ))}
         </div>
-        <section className="panel inset-panel">
-          <h3>{t("Ordered tiebreakers", "ترتیب رفع تساوی")}</h3>
+        <section className="panel inset-panel ranking-editor">
+          <h3>{t("Ranking order", "ترتیب رتبه‌بندی")}</h3>
           <p className="muted">
             {t(
-              "Ratios use recorded sets or nonnegative points. A positive total divided by zero is unbeaten; zero divided by zero is neutral (1). Missing ratio or fair-play evidence skips that criterion for the tied group. Fair-play ranks lower penalty totals first.",
-              "نسبت‌ها از ست‌های ثبت شده یا امتیاز غیرمنفی محاسبه می‌شوند. مجموع مثبت بر صفر، بی‌شکست است؛ صفر بر صفر خنثی (۱) است. نبود داده نسبت یا بازی جوانمردانه، آن معیار را برای گروه مساوی کنار می‌گذارد. جریمه کمتر بازی جوانمردانه رتبه بهتری دارد.",
+              "In round-robin and group standings, the first criterion determines the ranking. Each next criterion separates only those still tied. Equal values across all criteria keep a shared rank.",
+              "در جدول‌های دوره‌ای و گروهی، معیار نخست رتبه را تعیین می‌کند. هر معیار بعدی فقط شرکت‌کنندگان همچنان مساوی را جدا می‌کند. برابری در همه معیارها، رتبه مشترک را حفظ می‌کند.",
             )}
           </p>
           <p className="muted">
             {t(
-              "Criteria are applied from top to bottom. Equal criteria leave a shared rank. Add seed only when that policy is agreed in advance.",
-              "معیارها از بالا به پایین اعمال می‌شوند. برابری معیارها رتبه مشترک ایجاد می‌کند. فقط با توافق قبلی سید را اضافه کنید.",
+              "Point difference totals points scored minus points conceded across completed games. Points scored is the total scored in those games. Standings points are separate awards for wins, draws and losses; they affect the order only when a selected criterion uses them. Add seed only if agreed in advance.",
+              "تفاضل امتیاز، مجموع امتیاز کسب‌شده منهای امتیاز واگذارشده در بازی‌های پایان‌یافته است. امتیاز کسب‌شده، مجموع امتیازهای همان بازی‌هاست. امتیاز جدول، امتیاز جداگانه برد، تساوی و باخت است و فقط با معیار مرتبط بر ترتیب اثر دارد. سید را فقط با توافق قبلی اضافه کنید.",
             )}
           </p>
           <ol>
             {rules.tieBreakers.map((breaker, index) => {
-              const label = breakerLabels.find(([id]) => id === breaker)!;
+              const label = rankingLabel(breaker, locale);
               return (
                 <li key={breaker}>
-                  <div className="section-heading">
-                    <span>{t(label[1], label[2])}</span>
+                  <div className="ranking-editor-row">
+                    <span>{label}</span>
                     <div className="button-row">
                       <button
                         className="icon-button"
                         disabled={index === 0}
-                        aria-label={`${t("Move earlier", "جابجایی به قبل")}: ${t(label[1], label[2])}`}
+                        aria-label={`${t("Move earlier", "جابجایی به قبل")}: ${label}`}
                         onClick={() => moveBreaker(index, -1)}
                       >
                         <ArrowUp size={15} />
@@ -288,14 +314,14 @@ export function Rules({ tournament: doc, onChange }: EditorProps) {
                       <button
                         className="icon-button"
                         disabled={index === rules.tieBreakers.length - 1}
-                        aria-label={`${t("Move later", "جابجایی به بعد")}: ${t(label[1], label[2])}`}
+                        aria-label={`${t("Move later", "جابجایی به بعد")}: ${label}`}
                         onClick={() => moveBreaker(index, 1)}
                       >
                         <ArrowDown size={15} />
                       </button>
                       <button
                         className="icon-button"
-                        aria-label={`${t("Remove criterion", "حذف معیار")}: ${t(label[1], label[2])}`}
+                        aria-label={`${t("Remove criterion", "حذف معیار")}: ${label}`}
                         onClick={() =>
                           setRules({
                             ...rules,
@@ -313,7 +339,7 @@ export function Rules({ tournament: doc, onChange }: EditorProps) {
               );
             })}
           </ol>
-          <Field label={t("Add a tiebreaker", "افزودن معیار رفع تساوی")}>
+          <Field label={t("Add a ranking criterion", "افزودن معیار رتبه‌بندی")}>
             <select
               value=""
               onChange={(event) => {
@@ -330,15 +356,26 @@ export function Rules({ tournament: doc, onChange }: EditorProps) {
               <option value="">
                 {t("Choose a criterion", "انتخاب معیار")}
               </option>
-              {breakerLabels
-                .filter(([id]) => !rules.tieBreakers.includes(id))
-                .map(([id, en, fa]) => (
+              {breakerIds
+                .filter((id) => !rules.tieBreakers.includes(id))
+                .map((id) => (
                   <option key={id} value={id}>
-                    {t(en, fa)}
+                    {rankingLabel(id, locale)}
                   </option>
                 ))}
             </select>
           </Field>
+          <details>
+            <summary>
+              {t("Ratios and specialist criteria", "نسبت‌ها و معیارهای تخصصی")}
+            </summary>
+            <p className="muted">
+              {t(
+                "Ratios use recorded sets or nonnegative points. A positive total divided by zero is unbeaten; zero divided by zero is neutral (1). Missing ratio or fair-play evidence skips that criterion for the tied group. Fair-play ranks lower penalty totals first.",
+                "نسبت‌ها از ست‌های ثبت شده یا امتیاز غیرمنفی محاسبه می‌شوند. مجموع مثبت بر صفر، بی‌شکست است؛ صفر بر صفر خنثی (۱) است. نبود داده نسبت یا بازی جوانمردانه، آن معیار را برای گروه مساوی کنار می‌گذارد. جریمه کمتر بازی جوانمردانه رتبه بهتری دارد.",
+              )}
+            </p>
+          </details>
         </section>
         <Field
           label={t(

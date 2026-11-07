@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { strFromU8, unzipSync } from "fflate";
 import { createParticipant, createTournament } from "../domain/types";
-import { generateStage, simulate } from "../engine";
+import { generateStage, recordResult, simulate } from "../engine";
+import { applySport } from "../sports";
 import { podiumPlaces, sceneTypes } from "../presentation/Presentation";
 import {
   championPosterSVG,
@@ -228,6 +229,117 @@ describe("public graphics", () => {
     const pages = standingsVisualPages(generated, t.stages[0].id);
     expect(pages).toHaveLength(2);
     expect(pages[0].title).not.toBe(pages[1].title);
+  });
+
+  it.each(["en", "fa"] as const)(
+    "exports Pétanque wins and both score criteria from actual results in %s",
+    (locale) => {
+      const source = applySport(
+        createTournament(
+          "Club standings",
+          ["A", "B", "C", "D"].map((name, index) => ({
+            ...createParticipant(name, index + 1),
+            id: name,
+          })),
+          "groups",
+        ),
+        "petanque",
+      );
+      source.stages[0].config.groupCount = 1;
+      let doc = generateStage(source, source.stages[0].id);
+      for (const [winner, loser, scored, conceded] of [
+        ["A", "B", 13, 5],
+        ["A", "C", 13, 8],
+        ["D", "A", 13, 6],
+        ["B", "C", 13, 7],
+        ["B", "D", 13, 5],
+        ["C", "D", 13, 9],
+      ] as const) {
+        const match = doc.matches.find((item) =>
+          [winner, loser].every((id) =>
+            item.slots.some((slot) => slot.participantId === id),
+          ),
+        )!;
+        doc = recordResult(doc, match.id, {
+          scores: match.slots.map((slot) =>
+            slot.participantId === winner ? scored : conceded,
+          ),
+          winnerIds: [],
+          outcome: "played",
+          recordedAt: doc.updatedAt,
+        });
+      }
+      const readPages = (value: typeof doc) =>
+        standingsVisualPages(value, value.stages[0].id, locale)
+          .flatMap((page) =>
+            Array.from(
+              page.svg.matchAll(/<tspan[^>]*>(.*?)<\/tspan>/g),
+              (match) => match[1],
+            ),
+          )
+          .join(" ");
+      const text = readPages(doc);
+      const number = (value: number) => value.toLocaleString(locale);
+      for (const [index, [name, wins, difference, scored]] of (
+        [
+          ["A", 2, 6, 32],
+          ["B", 2, 6, 31],
+          ["D", 1, -5, 27],
+          ["C", 1, -7, 28],
+        ] as const
+      ).entries()) {
+        const labels =
+          locale === "fa"
+            ? ["برد", "تفاضل امتیاز", "امتیاز کسب‌شده", "بازی"]
+            : ["wins", "point difference", "points scored", "played"];
+        expect(text).toContain(
+          `${number(index + 1)}. ${name} · ${number(wins)} ${labels[0]} · ${number(difference)} ${labels[1]} · ${number(scored)} ${labels[2]} · ${number(3)} ${labels[3]}`,
+        );
+      }
+      const otherSport = structuredClone(doc);
+      otherSport.sport = "generic";
+      const genericText = readPages(otherSport);
+      expect(genericText).toContain(
+        `${number(1)}. A · ${number(2)} ${locale === "fa" ? "امتیاز" : "points"} · ${number(3)} ${locale === "fa" ? "بازی" : "played"}`,
+      );
+      expect(genericText).not.toContain(
+        locale === "fa" ? "تفاضل امتیاز" : "point difference",
+      );
+    },
+  );
+
+  it("retains shared rank markers and long mixed-script names in Pétanque exports", () => {
+    const name = "Long club name باشگاه پتانک ".repeat(8).trim();
+    const source = applySport(
+      createTournament(
+        "Club standings",
+        [createParticipant(name, 1), createParticipant("Willow", 2)],
+        "round-robin",
+      ),
+      "petanque",
+    );
+    const doc = generateStage(source, source.stages[0].id);
+    for (const locale of ["en", "fa"] as const) {
+      const pages = standingsVisualPages(doc, doc.stages[0].id, locale);
+      const text = pages
+        .flatMap((page) =>
+          Array.from(
+            page.svg.matchAll(/<tspan[^>]*>(.*?)<\/tspan>/g),
+            (match) => match[1],
+          ),
+        )
+        .join(" ");
+      const rank = (1).toLocaleString(locale);
+      expect(text).toContain(`${rank}*. Willow`);
+      expect(text.replaceAll(" ", "")).toContain(
+        `${rank}*.${name}`.replaceAll(" ", ""),
+      );
+      expect(text).not.toContain("\uFFFD");
+      for (const page of pages) {
+        expect(page.svg).toContain('unicode-bidi="isolate"');
+        expect(page.svg).not.toContain("textLength=");
+      }
+    }
   });
 });
 

@@ -213,7 +213,7 @@ test("records public fair-play sanctions and shows the configured standings colu
   await openCup(page, false);
   await section(page, "Rules");
   await page
-    .getByLabel("Add a tiebreaker", { exact: true })
+    .getByLabel("Add a ranking criterion", { exact: true })
     .selectOption("fair-play");
   await page.getByRole("button", { name: "Save rules", exact: true }).click();
   await expect(page.locator(".save-status")).toHaveText("Saved locally");

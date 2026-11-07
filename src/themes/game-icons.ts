@@ -63,6 +63,14 @@ export const gameIconGeometry = {
       "M32 20L44 28L40 42H24L20 28ZM32 20V7M44 28L55 23M40 42L47 52M24 42L17 52M20 28L9 23M14 15L23 9M41 9L50 15M56 34L52 45M12 45L8 34M27 56H37",
     ),
   ],
+  petanque: [
+    circle(21, 36, 15),
+    circle(45, 19, 11),
+    circle(47, 48, 4, true),
+    path(
+      "M9 29C19 29 26 35 28 48M12 25C24 25 31 34 32 44M36 15C43 14 48 19 49 29",
+    ),
+  ],
   futsal: [
     rect(4, 9, 56, 46, 9),
     path("M4 25H11V39H4M60 25H53V39H60"),

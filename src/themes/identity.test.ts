@@ -41,7 +41,7 @@ const originalIds = [
 
 describe("game theme collections", () => {
   it("offers multiple related identities for every preset activity", () => {
-    expect(sports).toHaveLength(14);
+    expect(sports).toHaveLength(15);
     for (const sport of sports) {
       const collection = getThemesForSport(sport.id);
       expect(collection.length, sport.id).toBeGreaterThanOrEqual(2);
