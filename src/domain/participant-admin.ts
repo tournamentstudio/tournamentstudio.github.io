@@ -1,3 +1,4 @@
+import { translate } from "../i18n/translate";
 import { z } from "zod";
 import type { Locale, Participant } from "./types";
 
@@ -34,17 +35,21 @@ export function participantAvailabilityError(
         (typeof value !== "string" || !Number.isFinite(Date.parse(value))),
     )
   )
-    return locale === "fa"
-      ? "زمان دسترسی شرکت‌کننده معتبر نیست."
-      : "Participant availability needs valid dates.";
+    return translate(
+      locale,
+      "Participant availability needs valid dates.",
+      "زمان دسترسی شرکت‌کننده معتبر نیست.",
+    );
   if (
     typeof from === "string" &&
     typeof until === "string" &&
     Date.parse(from) >= Date.parse(until)
   )
-    return locale === "fa"
-      ? "پایان دسترسی باید پس از شروع باشد."
-      : "Availability must end after it starts.";
+    return translate(
+      locale,
+      "Availability must end after it starts.",
+      "پایان دسترسی باید پس از شروع باشد.",
+    );
 }
 export function waitingList(participants: Participant[]): Participant[] {
   return participants

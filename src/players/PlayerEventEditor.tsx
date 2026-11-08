@@ -1,3 +1,4 @@
+import { playerMetricLabel } from "./labels";
 import { useState } from "react";
 import type { Tournament } from "../domain/types";
 import { ErrorText, Field, Modal, Notice } from "../components/ui";
@@ -184,7 +185,7 @@ export function PlayerEventEditor({
             >
               {metrics.map((m) => (
                 <option key={m.id} value={m.id}>
-                  {locale === "fa" ? m.fa || m.label : m.label}
+                  {playerMetricLabel(m, doc.sport, locale)}
                 </option>
               ))}
             </select>

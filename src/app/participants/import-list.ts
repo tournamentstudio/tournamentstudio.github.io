@@ -1,3 +1,4 @@
+import { translate } from "../../i18n/translate";
 import {
   createParticipant,
   uid,
@@ -83,7 +84,7 @@ export function importParticipants(
   locale: Locale = "en",
 ): Participant[] {
   const fail = (en: string, fa: string): never => {
-    throw new Error(locale === "fa" ? fa : en);
+    throw new Error(translate(locale, en, fa));
   };
   if (new TextEncoder().encode(text).length > 1024 * 1024)
     fail(

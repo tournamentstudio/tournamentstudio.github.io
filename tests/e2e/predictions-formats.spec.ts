@@ -283,9 +283,7 @@ test("Persian multi-entrant prediction controls fit mobile and pass automated ac
     participant.name = `تیم مسابقات دانشگاهی با نام بلند برای پیش‌بینی رتبه ${participant.seed}`;
   });
   await importDocument(page, doc);
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.setViewportSize({ width: 320, height: 800 });
   const builder = page.locator(".prediction-builder");
   await expect(builder.getByRole("spinbutton").first()).toBeVisible();

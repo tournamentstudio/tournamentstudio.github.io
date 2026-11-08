@@ -1,5 +1,7 @@
+import { translate } from "../i18n/translate";
 import type { Locale, Tournament } from "../domain/types";
 import { playerEventIssue, readPlayerStatistics } from "./model";
+import { playerMetricLabel } from "./labels";
 
 function csv(value: unknown) {
   const text = String(value ?? "");
@@ -10,48 +12,26 @@ export function playerStatisticsCSV(
   locale: Locale = "en",
 ): string {
   const data = readPlayerStatistics(doc);
-  const headers =
-    locale === "fa"
-      ? [
-          "شناسه رویداد",
-          "شناسه دیدار",
-          "دیدار",
-          "شناسه تیم",
-          "تیم",
-          "شناسه بازیکن",
-          "بازیکن",
-          "شاخص",
-          "مقدار",
-          "واحد",
-          "بخش",
-          "زمان سپری شده (ثانیه)",
-          "وضعیت",
-          "یادداشت خصوصی",
-          "علت تغییر",
-          "تاریخ ثبت",
-          "تاریخ ویرایش",
-          "تعداد اصلاحات",
-        ]
-      : [
-          "Event ID",
-          "Match ID",
-          "Match",
-          "Team ID",
-          "Team",
-          "Player ID",
-          "Player",
-          "Metric",
-          "Value",
-          "Unit",
-          "Period",
-          "Elapsed seconds",
-          "Status",
-          "Private notes",
-          "Change reason",
-          "Created",
-          "Updated",
-          "Revision count",
-        ];
+  const headers = [
+    ["Event ID", "شناسه رویداد"],
+    ["Match ID", "شناسه دیدار"],
+    ["Match", "دیدار"],
+    ["Team ID", "شناسه تیم"],
+    ["Team", "تیم"],
+    ["Player ID", "شناسه بازیکن"],
+    ["Player", "بازیکن"],
+    ["Metric", "شاخص"],
+    ["Value", "مقدار"],
+    ["Unit", "واحد"],
+    ["Period", "بخش"],
+    ["Elapsed seconds", "زمان سپری شده (ثانیه)"],
+    ["Status", "وضعیت"],
+    ["Private notes", "یادداشت خصوصی"],
+    ["Change reason", "علت تغییر"],
+    ["Created", "تاریخ ثبت"],
+    ["Updated", "تاریخ ویرایش"],
+    ["Revision count", "تعداد اصلاحات"],
+  ].map(([en, fa]) => translate(locale, en, fa));
   return (
     "\uFEFF" +
     [
@@ -66,7 +46,7 @@ export function playerStatisticsCSV(
           e.teamName,
           e.playerId,
           e.playerName,
-          locale === "fa" ? metric.fa || metric.label : metric.label,
+          playerMetricLabel(metric, doc.sport, locale),
           e.value,
           metric.unit,
           e.period,

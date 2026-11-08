@@ -1,3 +1,4 @@
+import { translate } from "../i18n/translate";
 import type { Locale, Tournament } from "../domain/types";
 import { useState } from "react";
 import {
@@ -26,7 +27,7 @@ export function OverlayEditor({
   const settings = value ?? defaultOverlay;
   const update = (part: Partial<OverlaySettings>) =>
     onChange({ ...settings, ...part });
-  const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
+  const t = (en: string, fa: string) => translate(locale, en, fa);
   async function download(kind: "svg" | "png") {
     setBusy(true);
     setError(undefined);

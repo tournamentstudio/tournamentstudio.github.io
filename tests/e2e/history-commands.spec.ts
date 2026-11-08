@@ -111,9 +111,7 @@ test("keeps Persian records and restoration controls inside a narrow viewport", 
 }) => {
   await fixture(page);
   await changeTheme(page);
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.setViewportSize({ width: 390, height: 844 });
   await page
     .getByRole("navigation", { name: "بخش‌های مسابقات" })

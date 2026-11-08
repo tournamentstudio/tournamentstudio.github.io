@@ -1,3 +1,4 @@
+import { translate } from "../i18n/translate";
 import { useState } from "react";
 import {
   ArrowRight,
@@ -192,9 +193,11 @@ export function Home({
                   .sort()
                   .map((id) => (
                     <option key={id} value={id}>
-                      {locale === "fa"
-                        ? (sports.find((sport) => sport.id === id)?.fa ?? id)
-                        : (sports.find((sport) => sport.id === id)?.name ?? id)}
+                      {translate(
+                        locale,
+                        sports.find((sport) => sport.id === id)?.name ?? id,
+                        sports.find((sport) => sport.id === id)?.fa ?? id,
+                      )}
                     </option>
                   ))}
               </select>
@@ -268,11 +271,13 @@ export function Home({
                     <span className="cover-sport">
                       {entry.protected
                         ? t("LOCAL VAULT", "گاوصندوق محلی")
-                        : locale === "fa"
-                          ? (sports.find((sport) => sport.id === entry.sport)
-                              ?.fa ?? entry.sport)
-                          : (sports.find((sport) => sport.id === entry.sport)
-                              ?.name ?? entry.sport)}
+                        : translate(
+                            locale,
+                            sports.find((sport) => sport.id === entry.sport)
+                              ?.name ?? entry.sport,
+                            sports.find((sport) => sport.id === entry.sport)
+                              ?.fa ?? entry.sport,
+                          )}
                     </span>
                     {!entry.protected && !!entry.formats?.length && (
                       <span className="cover-format">
@@ -450,8 +455,8 @@ function StarterFormats({ onCreate }: Pick<Props, "onCreate">) {
             <div className="template-top" aria-hidden="true">
               <GameScene sport={template.id} />
             </div>
-            <h3>{template.title[locale === "fa" ? 1 : 0]}</h3>
-            <p>{template.caption[locale === "fa" ? 1 : 0]}</p>
+            <h3>{translate(locale, template.title[0], template.title[1])}</h3>
+            <p>{translate(locale, template.caption[0], template.caption[1])}</p>
             <span className="template-arrow">
               <ArrowUpRight size={19} />
             </span>

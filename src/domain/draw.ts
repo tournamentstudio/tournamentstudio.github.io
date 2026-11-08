@@ -1,3 +1,4 @@
+import { translate } from "../i18n/translate";
 import { z } from "zod";
 import type { GroupDrawIssue, Locale, Stage, Tournament } from "./types";
 
@@ -149,14 +150,13 @@ export function groupDrawIssueText(
   issue: GroupDrawIssue,
   locale: Locale = "en",
 ): string {
-  const template = messages[issue.code]?.[locale === "fa" ? 1 : 0];
-  if (!template)
-    return locale === "fa" ? "قرعه‌کشی نامعتبر است." : "Invalid group draw.";
+  const message = messages[issue.code];
+  if (!message)
+    return translate(locale, "Invalid group draw.", "قرعه‌کشی نامعتبر است.");
+  const template = translate(locale, ...message);
   return template.replace(/\{(\d+)\}/g, (_, index: string) => {
     const value = issue.values[Number(index)] ?? "";
-    return locale === "fa" && /^\d+$/.test(value)
-      ? Number(value).toLocaleString("fa")
-      : value;
+    return /^\d+$/.test(value) ? Number(value).toLocaleString(locale) : value;
   });
 }
 

@@ -1,3 +1,4 @@
+import { translate } from "../i18n/translate";
 import type { Locale, Tournament } from "../domain/types";
 import { publicProjection } from "../sharing";
 import { sponsorPages } from "../presentation/sponsors";
@@ -24,7 +25,7 @@ export function sponsorVisualPages(
     return tableVisualPages(
       t,
       title,
-      [locale === "fa" ? "حامی ثبت نشده است." : "No sponsors recorded."],
+      [translate(locale, "No sponsors recorded.", "حامی ثبت نشده است.")],
       locale,
     );
   return pages.map((cards, page) => {

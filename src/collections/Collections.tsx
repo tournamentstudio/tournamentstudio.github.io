@@ -27,7 +27,7 @@ export function Collections({
   onOpenTournament: (id: string) => void;
   onLibraryChanged: () => Promise<void>;
 }) {
-  const { t, date } = useI18n();
+  const { t, date, locale } = useI18n();
   const [entries, setEntries] = useState<CollectionEntry[]>([]);
   const [opened, setOpened] = useState<EventCollection>();
   const [secret, setSecret] = useState<string>();
@@ -160,7 +160,9 @@ export function Collections({
           .filter(
             (e) =>
               (!e.archived || archived) &&
-              e.title.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
+              e.title
+                .toLocaleLowerCase(locale)
+                .includes(query.toLocaleLowerCase(locale)),
           )
           .map((e) => (
             <article className="panel" key={e.id}>

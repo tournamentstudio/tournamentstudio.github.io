@@ -1,16 +1,17 @@
 import { createContext, useContext } from "react";
 import type { FormatId, Locale, TournamentStatus } from "../domain/types";
+import { translate } from "./translate";
+import { localeTag } from "./locales";
 
 export const LocaleContext = createContext<Locale>("en");
 export function useI18n() {
   const locale = useContext(LocaleContext);
   return {
     locale,
-    t: (en: string, fa: string) => (locale === "fa" ? fa : en),
-    number: (n: number) =>
-      new Intl.NumberFormat(locale === "fa" ? "fa-IR" : "en-US").format(n),
+    t: (en: string, fa: string) => translate(locale, en, fa),
+    number: (n: number) => new Intl.NumberFormat(localeTag(locale)).format(n),
     date: (v: string) =>
-      new Date(v).toLocaleDateString(locale === "fa" ? "fa-IR" : "en-US", {
+      new Date(v).toLocaleDateString(localeTag(locale), {
         month: "short",
         day: "numeric",
         year: "numeric",
@@ -32,7 +33,7 @@ const formatNames: Record<FormatId, [string, string]> = {
   "grand-prix": ["Grand Prix", "گرندپری"],
 };
 export const formatName = (id: FormatId, locale: Locale = "en") =>
-  formatNames[id]?.[locale === "fa" ? 1 : 0] ?? id;
+  formatNames[id] ? translate(locale, ...formatNames[id]) : id;
 const statuses: Record<TournamentStatus, [string, string]> = {
   draft: ["Draft", "پیش‌نویس"],
   ready: ["Ready", "آماده"],
@@ -46,7 +47,7 @@ const statuses: Record<TournamentStatus, [string, string]> = {
   canceled: ["Canceled", "لغو شده"],
 };
 export const statusName = (id: TournamentStatus, locale: Locale = "en") =>
-  statuses[id]?.[locale === "fa" ? 1 : 0] ?? id;
+  statuses[id] ? translate(locale, ...statuses[id]) : id;
 
 export { localizedDiagnostic } from "./diagnostics";
 export { generatedMatchLabel, groupLabel } from "./match-labels";

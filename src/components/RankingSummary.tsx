@@ -1,3 +1,5 @@
+import { translate } from "../i18n/translate";
+import { localeDirection } from "../i18n/locales";
 import type { Locale, TieBreaker } from "../domain/types";
 import { rankingLabel } from "../standings/ranking-labels";
 import "./competition.css";
@@ -9,9 +11,9 @@ export function RankingSummary({
   tieBreakers: TieBreaker[];
   locale?: Locale;
 }) {
-  const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
+  const t = (en: string, fa: string) => translate(locale, en, fa);
   return (
-    <div className="ranking-summary" dir={locale === "fa" ? "rtl" : "ltr"}>
+    <div className="ranking-summary" dir={localeDirection(locale)}>
       <p>
         <strong>{t("Ranking order", "ترتیب رتبه‌بندی")}</strong>
       </p>

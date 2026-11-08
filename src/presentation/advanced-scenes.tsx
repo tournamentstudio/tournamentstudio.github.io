@@ -1,3 +1,5 @@
+import { translate } from "../i18n/translate";
+import { localeTag } from "../i18n/locales";
 import type { Locale, Scene, Tournament } from "../domain/types";
 import type { AdvancedSceneType } from "../domain/display-options";
 import { podiumPlaces } from "./Presentation";
@@ -105,7 +107,7 @@ export function AdvancedSceneContent({
   elapsed: number;
 }) {
   const safe = publicProjection(tournament);
-  const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
+  const t = (en: string, fa: string) => translate(locale, en, fa);
   if (scene.type === "trophy") {
     const place = podiumPlaces(safe).find((p) => p.rank === 1 && !p.tied);
     const champion = safe.participants.find(
@@ -171,8 +173,8 @@ export function AdvancedSceneContent({
         )}
         <p>{scene.text}</p>
         <small>
-          {(participant ? index + 1 : 0).toLocaleString(locale)} /{" "}
-          {entrants.length.toLocaleString(locale)}
+          {(participant ? index + 1 : 0).toLocaleString(localeTag(locale))} /{" "}
+          {entrants.length.toLocaleString(localeTag(locale))}
         </small>
       </div>
     );
@@ -190,7 +192,9 @@ export function AdvancedSceneContent({
         {match ? (
           matchNames(safe, match, locale).map((name, i) => (
             <div key={i}>
-              <span aria-hidden="true">{(i + 1).toLocaleString(locale)}</span>
+              <span aria-hidden="true">
+                {(i + 1).toLocaleString(localeTag(locale))}
+              </span>
               <h1>
                 <bdi>{name}</bdi>
               </h1>

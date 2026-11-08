@@ -116,9 +116,7 @@ for (const options of [
   }, testInfo) => {
     await open(page, fixture(options.count, "groups", options.groups));
     if (options.locale === "fa")
-      await page
-        .getByRole("button", { name: "Switch to Persian", exact: true })
-        .click();
+      await page.getByTestId("language-select").selectOption("fa");
     await section(page, "Structure", "ساختار");
     await page
       .getByRole("button", { name: /^(Generate draw|ساخت قرعه)$/ })
@@ -212,9 +210,7 @@ for (const options of [
         path: testInfo.outputPath("persian-group-standings.png"),
         fullPage: true,
       });
-      await page
-        .getByRole("button", { name: "تغییر به انگلیسی", exact: true })
-        .click();
+      await page.getByTestId("language-select").selectOption("en");
       await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
       await expect(page.locator(".standings-table")).toHaveCount(
         options.groups,

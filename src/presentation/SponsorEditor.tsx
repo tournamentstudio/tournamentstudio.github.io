@@ -1,3 +1,5 @@
+import { translate } from "../i18n/translate";
+import { localeTag } from "../i18n/locales";
 import { useState } from "react";
 import { uid, type Locale, type PresentationSettings } from "../domain/types";
 import { ErrorText, Field, Notice } from "../components/ui";
@@ -14,7 +16,7 @@ export function SponsorEditor({
   onChange: (settings: PresentationSettings) => void;
   locale: Locale;
 }) {
-  const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
+  const t = (en: string, fa: string) => translate(locale, en, fa);
   const [draft, setDraft] = useState(() => ({
     sponsorCards: savedSettings.sponsorCards ?? [],
     sponsorLayout: savedSettings.sponsorLayout,
@@ -80,7 +82,8 @@ export function SponsorEditor({
       {cards.map((card, index) => (
         <fieldset className="panel inset-panel" key={card.id} disabled={busy}>
           <legend>
-            {t("Sponsor", "حامی")} {(index + 1).toLocaleString(locale)}
+            {t("Sponsor", "حامی")}{" "}
+            {(index + 1).toLocaleString(localeTag(locale))}
           </legend>
           <div className="two-columns">
             <Field label={t("Sponsor name", "نام حامی")}>

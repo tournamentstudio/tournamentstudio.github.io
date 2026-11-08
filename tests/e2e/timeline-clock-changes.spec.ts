@@ -178,9 +178,7 @@ test("autumn timeline includes the last hour and preserves the chosen repeated-c
   expect(
     await storedBooking(page, document.id, document.matches[0].id),
   ).toEqual({ scheduledAt: "2026-11-01T09:30:00.000Z", resourceId: "east" });
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.setViewportSize({ width: 320, height: 900 });
   await expect(
     page.getByRole("button", { name: "West ۰۱:۳۰ UTC-8", exact: true }),

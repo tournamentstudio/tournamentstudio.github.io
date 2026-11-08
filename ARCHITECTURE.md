@@ -24,7 +24,7 @@ React, IndexedDB, themes, or network connections.
 | `src/presentation` | Spectator scenes and local presentation updates                               |
 | `src/export`       | Browser-generated graphics and printable documents                            |
 | `src/app`          | Organizer screens and user interactions                                       |
-| `src/i18n`         | English and Persian labels, direction, formatting                             |
+| `src/i18n`         | 20-language registry, bundled catalogs, diagnostics, direction and formatting |
 
 An organizer action first produces a candidate document. Domain and engine
 validation run before persistence. The repository checks the expected revision,
@@ -36,6 +36,44 @@ secret.
 React state holds the current editor document and temporary form values.
 Competition results are ordinary data. Standings and display layouts are derived
 instead of being an independent source of truth.
+
+## Language and display state
+
+`src/i18n/locales.ts` defines the accepted language codes, native names, Intl tags
+and layout direction. `Locale` uses that registry and the tournament validator
+accepts the same values. Persian and Arabic are RTL; all other supported interface
+languages are LTR. The browser profile's `tournastudio-locale` preference is
+separate from the locale stored inside a tournament document.
+
+English and Persian keep the existing source messages. The other 18 catalogs
+live in `src/i18n/catalogs` and become local JavaScript chunks in the production
+build. `loadLanguage` deduplicates pending loads. The application commits a
+language switch only after its pack loads, and a request counter prevents an
+older request from replacing a later selection. Failure retains the current
+language. The provider changes without remounting the workspace, preserving form
+values and tournament state. Low-level display functions remain synchronous;
+callers load the requested catalog before rendering or exporting.
+
+`translate` resolves exact interface messages and numbered templates. Inserted
+organizer text remains literal. Competition labels, standings, theme names,
+known diagnostics and exports share that path. Custom player metric labels are
+translated only while they still match a built-in preset. `localeDirection` and
+`localeTag` centralize bidi layout and Intl formatting. They do not convert saved
+timestamps or alter scores. Inter and Vazirmatn ship locally; device fonts cover
+scripts outside those fonts, including Indic and CJK text.
+
+`scripts/i18n-catalog.mjs` extracts messages and checks catalog coverage, obsolete
+keys and interpolation placeholders. Every added language must cover the current
+manifest, which contains 3,517 keys at this update. Reviewed replacements live
+in `src/i18n/overrides`. The initial added catalogs were generated automatically;
+selected sports terms and explanations received an agent review. This does not
+constitute a complete review by native-speaking human translators.
+
+Language assets use the existing app-shell cache and static deployment. There
+is no runtime translation API or upload of tournament content. Local tests cover
+language state, document roundtrips and translated views; browser checks exercise
+actual switching, layout and offline behavior. Actual runs belong in the release
+report. [LOCALIZATION.md](LOCALIZATION.md) documents the maintenance workflow.
 
 ## Engine contracts
 

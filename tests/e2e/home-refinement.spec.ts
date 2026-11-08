@@ -86,9 +86,7 @@ for (const locale of ["en", "fa"] as const) {
   }) => {
     await page.goto("/#/create");
     if (locale === "fa")
-      await page
-        .getByRole("button", { name: "Switch to Persian", exact: true })
-        .click();
+      await page.getByTestId("language-select").selectOption("fa");
     const title = page.getByLabel(text("Tournament title", "عنوان مسابقات"), {
       exact: true,
     });
@@ -96,11 +94,8 @@ for (const locale of ["en", "fa"] as const) {
     await title.fill(locale === "fa" ? "Autumn cup" : "جام پاییز");
     await expect(title).toHaveCSS("direction", locale === "fa" ? "ltr" : "rtl");
     await page
-      .getByRole("button", {
-        name: text("Switch to Persian", "تغییر به انگلیسی"),
-        exact: true,
-      })
-      .click();
+      .getByTestId("language-select")
+      .selectOption(locale === "fa" ? "en" : "fa");
     const switchedTitle = page.getByLabel(
       text("عنوان مسابقات", "Tournament title"),
       { exact: true },

@@ -57,9 +57,7 @@ test("exports game-specific Gol artwork with readable Persian and no private sta
   browserName,
 }) => {
   await openExports(page, "gol-ya-pooch");
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   const scoreboard = (await download(page, "دانلود SVG")).toString("utf8");
   expect(scoreboard.match(/data-game-emblem="gol-ya-pooch"/g)).toHaveLength(2);
   expect(scoreboard).toContain('data-game-art="gol-ya-pooch"');

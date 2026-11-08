@@ -1,3 +1,5 @@
+import { translate } from "../i18n/translate";
+import { localeDirection, localeTag } from "../i18n/locales";
 import { useEffect, useRef, useState } from "react";
 import {
   uid,
@@ -28,7 +30,7 @@ export function PresentationStudio({
     if (wasPreview.current && !preview) previewButton.current?.focus();
     wasPreview.current = preview;
   }, [preview]);
-  const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
+  const t = (en: string, fa: string) => translate(locale, en, fa);
   const settings = tournament.presentation;
   const update = (changes: Partial<PresentationSettings>) =>
     onChange({ ...settings, ...changes });
@@ -57,7 +59,7 @@ export function PresentationStudio({
       />
     );
   return (
-    <div className="presentation-studio" dir={locale === "fa" ? "rtl" : "ltr"}>
+    <div className="presentation-studio" dir={localeDirection(locale)}>
       <div className="presentation-studio-intro">
         <div>
           <h2>{t("Presentation playlist", "فهرست نمایش")}</h2>
@@ -145,7 +147,9 @@ export function PresentationStudio({
       <div className="scene-list">
         {settings.scenes.map((scene, i) => (
           <article className="scene-editor" key={scene.id}>
-            <div className="scene-number">{(i + 1).toLocaleString(locale)}</div>
+            <div className="scene-number">
+              {(i + 1).toLocaleString(localeTag(locale))}
+            </div>
             <div className="scene-editor-fields">
               <strong>{sceneLabel(scene.type, locale)}</strong>
               <label>
@@ -269,7 +273,7 @@ export function PresentationStudio({
           >
             {sceneTypes.map((s) => (
               <option key={s.id} value={s.id}>
-                {locale === "fa" ? s.fa : s.en}
+                {translate(locale, s.en, s.fa)}
               </option>
             ))}
           </select>

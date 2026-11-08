@@ -196,9 +196,7 @@ test("keeps a wrapped compact overlay title clear of entrants in both languages"
   try {
     for (const locale of ["en", "fa"]) {
       if (locale === "fa")
-        await page
-          .getByRole("button", { name: "Switch to Persian", exact: true })
-          .click();
+        await page.getByTestId("language-select").selectOption("fa");
       const svg = (
         await download(
           page,

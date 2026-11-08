@@ -1,3 +1,5 @@
+import { translate } from "../i18n/translate";
+import { localeDirection, localeTag } from "../i18n/locales";
 import { useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Locale, Match, Tournament } from "../domain/types";
 import { getTheme, themeStyle } from "../themes";
@@ -218,16 +220,12 @@ export function matchNames(
     s.participantId
       ? (participants.get(s.participantId) ?? "?")
       : s.source
-        ? locale === "fa"
-          ? s.source.result === "winner"
-            ? "برنده"
-            : "بازنده"
-          : s.source.result === "winner"
-            ? "Winner"
-            : "Loser"
-        : locale === "fa"
-          ? "استراحت"
-          : "BYE",
+        ? translate(
+            locale,
+            s.source.result === "winner" ? "Winner" : "Loser",
+            s.source.result === "winner" ? "برنده" : "بازنده",
+          )
+        : translate(locale, "BYE", "استراحت"),
   );
 }
 export function Bracket({
@@ -241,7 +239,7 @@ export function Bracket({
   readOnly?: boolean;
   locale?: Locale;
 }) {
-  const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
+  const t = (en: string, fa: string) => translate(locale, en, fa);
   const [stageId, setStageId] = useState(tournament.stages[0]?.id ?? "");
   const [zoom, setZoom] = useState(1),
     [layoutOverride, setLayout] = useState<BracketLayout>(),
@@ -250,7 +248,7 @@ export function Bracket({
     [search, setSearch] = useState(""),
     [showScores, setShowScores] = useState(true),
     [showSeeds, setShowSeeds] = useState(false);
-  const rtl = rtlOverride ?? locale === "fa";
+  const rtl = rtlOverride ?? localeDirection(locale) === "rtl";
   const clipPrefix = useId().replace(/:/g, "-");
   const fontScale = tournament.theme.fontScale ?? 1;
   const metrics = bracketTextMetrics(fontScale);
@@ -323,15 +321,9 @@ export function Bracket({
               ? (participantMap.get(slot.participantId)?.name ?? "?")
               : slot.source
                 ? slot.source.result === "winner"
-                  ? locale === "fa"
-                    ? "برنده"
-                    : "Winner"
-                  : locale === "fa"
-                    ? "بازنده"
-                    : "Loser"
-                : locale === "fa"
-                  ? "استراحت"
-                  : "BYE",
+                  ? translate(locale, "Winner", "برنده")
+                  : translate(locale, "Loser", "بازنده")
+                : translate(locale, "BYE", "استراحت"),
           ),
         ]),
       ),
@@ -342,7 +334,9 @@ export function Bracket({
       .filter(
         (p) =>
           search &&
-          p.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()),
+          p.name
+            .toLocaleLowerCase(localeTag(locale))
+            .includes(search.toLocaleLowerCase(localeTag(locale))),
       )
       .map((p) => p.id),
   );
@@ -640,7 +634,7 @@ export function Bracket({
               {[...clipGeometries.values()].flatMap(({ node, index }) => {
                 const regions = bracketTextRegions(
                   node.width,
-                  locale === "fa",
+                  localeDirection(locale) === "rtl",
                   showScores,
                   fontScale,
                 );
@@ -711,12 +705,12 @@ export function Bracket({
                 );
               const regions = bracketTextRegions(
                 node.width,
-                locale === "fa",
+                localeDirection(locale) === "rtl",
                 showScores,
                 fontScale,
               );
               const clipId = `${clipPrefix}-geometry-${clipGeometries.get(clipGeometryKey(node))!.index}`;
-              const fallbackDirection = locale === "fa" ? "rtl" : "ltr";
+              const fallbackDirection = localeDirection(locale);
               return (
                 <g
                   key={m.id}

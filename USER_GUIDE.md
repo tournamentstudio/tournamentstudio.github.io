@@ -1183,12 +1183,29 @@ version cancels pending edits from the old workspace. Start an unfinished upload
 again if you still need it.
 Do not assume an edit reached another display until its save succeeds.
 
-## Persian and keyboard use
+## Languages and keyboard use
 
-Use the language control in the application header to switch between English and
-Persian. Names, results and saved tournament settings stay unchanged. Editable
-names and titles align with their own text, so English names remain readable in
-Persian screens and Persian names remain readable in English screens.
+Open the language menu in the application header and select a language by its
+native name. For example, choose **Italiano** for Italian or **Español** for
+Spanish. The menu also offers English, Persian, French, German, Portuguese,
+Dutch, Polish, Ukrainian, Russian, Turkish, Arabic, Hindi, Bengali, Indonesian,
+Vietnamese, Simplified Chinese, Japanese and Korean.
+
+Wait for the selected language pack to load. The current screen stays available
+during loading; if the pack cannot load, the previous language stays active and
+a retry action appears. The choice is remembered in this browser profile when
+browser storage is available. Switching language does not erase form entries or
+rewrite tournament names, results, rules or saved history.
+
+Persian and Arabic use right-to-left layouts. Editable names and titles follow
+their own text, so an English team name remains readable in an Arabic or Persian
+screen, and a Persian name remains readable in an Italian screen. Number and date
+formatting follows the selected language; this changes their display, not stored
+scores or timestamps. It does not change the tournament timezone.
+
+All language packs are part of the app. They work offline after the application
+cache has finished downloading. There is no live translation service, and your
+tournament content is not sent elsewhere for translation.
 
 Bracket direction follows the current interface language. Its left/right control
 sets a manual direction for the open view; **Follow language** returns to the
@@ -1198,8 +1215,15 @@ in the match details. Names and scores occupy separate areas in each card.
 
 SVG, PNG and printed brackets use the same text-direction rules. Downloaded
 graphics and printable pages include their Persian and Latin fonts for offline
-use. User-written match labels keep their original text.
+use. Hindi, Bengali, Chinese, Japanese and Korean text relies on suitable fonts
+installed on the viewing device. Check exported graphics on the intended display
+before an event. User-written match labels keep their original text.
 Generated match labels and known validation messages follow the selected language. An unexpected external error retains its original technical details after a localized explanation.
+
+The added translations have complete message-key coverage, with a separate review
+of core sports terms. They began as automated translations and have not had a full
+native-speaking human review. Report an unclear phrase with the language, screen
+and suggested wording. [LOCALIZATION.md](LOCALIZATION.md) explains the scope.
 
 Use Tab to move through controls. A focused match card opens with Enter or Space.
 The bracket's scroll region can be panned with arrow keys. Stage ordering and

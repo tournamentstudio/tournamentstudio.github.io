@@ -1,3 +1,4 @@
+import { translate } from "../i18n/translate";
 import { useEffect, useId, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -432,7 +433,7 @@ export function CreateFlow({
                 >
                   {sports.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {locale === "fa" ? s.fa : s.name}
+                      {translate(locale, s.name, s.fa)}
                     </option>
                   ))}
                 </select>
@@ -704,7 +705,7 @@ export function CreateFlow({
                   <optgroup label={t("For this game", "ویژه این بازی")}>
                     {relatedThemes.map((s) => (
                       <option key={s.id} value={s.id}>
-                        {locale === "fa" ? s.fa : s.name}
+                        {translate(locale, s.name, s.fa)}
                       </option>
                     ))}
                   </optgroup>
@@ -713,7 +714,7 @@ export function CreateFlow({
                       .filter((s) => !relatedThemes.some((p) => p.id === s.id))
                       .map((s) => (
                         <option key={s.id} value={s.id}>
-                          {locale === "fa" ? s.fa : s.name}
+                          {translate(locale, s.name, s.fa)}
                         </option>
                       ))}
                   </optgroup>
@@ -732,9 +733,11 @@ export function CreateFlow({
                   className="creation-theme-art"
                 />
                 <p>
-                  {locale === "fa"
-                    ? getTheme(theme).descriptionFa
-                    : getTheme(theme).description}
+                  {translate(
+                    locale,
+                    getTheme(theme).description,
+                    getTheme(theme).descriptionFa,
+                  )}
                 </p>
               </div>
               <div
@@ -754,7 +757,7 @@ export function CreateFlow({
                     })}
                   >
                     <ThemeMotif preset={preset.id} variant="emblem" />
-                    <span>{locale === "fa" ? preset.fa : preset.name}</span>
+                    <span>{translate(locale, preset.name, preset.fa)}</span>
                   </button>
                 ))}
               </div>

@@ -1,3 +1,4 @@
+import { playerMetricLabel } from "./labels";
 import { useMemo, useState } from "react";
 import type { EditorProps } from "../app/Participants";
 import { ErrorText, Field, Notice } from "../components/ui";
@@ -105,7 +106,7 @@ function PlayerStatisticsContent({ tournament: doc, onChange }: EditorProps) {
   }
   const metricName = (id: string) => {
     const m = data.metrics.find((entry) => entry.id === id);
-    return m ? (locale === "fa" ? m.fa || m.label : m.label) : id;
+    return m ? playerMetricLabel(m, doc.sport, locale) : id;
   };
   const statusName = (status: PlayerEvent["status"]) =>
     status === "active"

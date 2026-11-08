@@ -1,3 +1,5 @@
+import { translate } from "../i18n/translate";
+import { localeDirection, localeTag } from "../i18n/locales";
 import { useMemo } from "react";
 import type { Locale, Tournament } from "../domain/types";
 import type { OverlaySettings } from "../domain/display-options";
@@ -23,7 +25,7 @@ export function BroadcastOverlay({
     ? safe.matches.find((m) => m.id === settings.matchId)
     : selectedScoreboardMatch(safe);
   const names = match ? matchNames(safe, match, locale) : [];
-  const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
+  const t = (en: string, fa: string) => translate(locale, en, fa);
   const visibleScore = (index: number) =>
     (match?.status === "live" ? match.liveScores?.[index] : undefined) ??
     match?.result?.scores[index] ??
@@ -34,7 +36,7 @@ export function BroadcastOverlay({
       data-layout={settings.layout}
       data-background={settings.background}
       data-position={settings.position}
-      dir={locale === "fa" ? "rtl" : "ltr"}
+      dir={localeDirection(locale)}
       style={{
         ...themeStyle(safe.theme),
         ...(settings.background === "chroma"
@@ -48,7 +50,7 @@ export function BroadcastOverlay({
         {names
           .map((name, index) =>
             safe.presentation.showScores
-              ? `${name}: ${visibleScore(index).toLocaleString(locale)}`
+              ? `${name}: ${visibleScore(index).toLocaleString(localeTag(locale))}`
               : name,
           )
           .join("; ")}
@@ -70,7 +72,7 @@ export function BroadcastOverlay({
               </span>
               <strong>
                 {safe.presentation.showScores
-                  ? visibleScore(index).toLocaleString(locale)
+                  ? visibleScore(index).toLocaleString(localeTag(locale))
                   : "·"}
               </strong>
             </div>

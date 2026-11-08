@@ -109,9 +109,7 @@ test("keeps Gol identity with a neutral theme and private state out of public ic
   await match
     .getByRole("button", { name: "Close dialog", exact: true })
     .click();
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator("button.match-tile.ready").first().click();
   await expect(

@@ -1,3 +1,4 @@
+import { translate } from "../i18n/translate";
 import { useEffect, useState } from "react";
 import "./library.css";
 import type { Locale, Tournament } from "../domain/types";
@@ -22,7 +23,7 @@ export function SportPresetLibrary({
   onApply: (preset: SavedSport) => void;
   applyDisabled?: boolean;
 }) {
-  const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
+  const t = (en: string, fa: string) => translate(locale, en, fa);
   const [presets, setPresets] = useState<SavedSport[]>([]),
     [name, setName] = useState(""),
     [error, setError] = useState<unknown>(),

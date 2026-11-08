@@ -9,6 +9,7 @@ import {
 } from "react";
 import { Field, Modal, Notice } from "../components/ui";
 import { useI18n } from "../i18n";
+import { sourceMessage, translate } from "../i18n/translate";
 import { downloadFile } from "../sharing";
 import type { ImportCenter } from "./ImportCenter";
 
@@ -37,7 +38,7 @@ function attempt(key: number) {
 }
 
 export function ImportLoader(props: ComponentProps<typeof ImportCenter>) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [current, setCurrent] = useState(() => attempt(0));
   const [copyStatus, setCopyStatus] = useState("");
   const codeField = useRef<HTMLTextAreaElement>(null);
@@ -110,7 +111,11 @@ export function ImportLoader(props: ComponentProps<typeof ImportCenter>) {
                   {t("Download received code", "دریافت کد دریافتی")}
                 </button>
               </div>
-              {copyStatus && <p role="status">{copyStatus}</p>}
+              {copyStatus && (
+                <p role="status">
+                  {translate(locale, sourceMessage(copyStatus))}
+                </p>
+              )}
             </>
           )}
           <p>

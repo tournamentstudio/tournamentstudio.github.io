@@ -45,13 +45,11 @@ async function open(page: Page, doc: Tournament) {
   const dialog = page.getByRole("dialog", {
     name: "Bring a tournament into your studio",
   });
-  await dialog
-    .locator('input[type="file"]')
-    .setInputFiles({
-      name: "stage.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(doc)),
-    });
+  await dialog.locator('input[type="file"]').setInputFiles({
+    name: "stage.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(doc)),
+  });
   await dialog
     .getByRole("button", { name: "Preview import", exact: true })
     .click();
@@ -276,9 +274,7 @@ test("Persian Swiss controls fit a narrow screen and retain accessible names", a
   const doc = fixture("swiss");
   doc.participants[0].name = "تیم دانشگاه صنعتی تهران و پژوهشگران مسابقات";
   await open(page, doc);
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.setViewportSize({ width: 320, height: 760 });
   for (const selector of [".swiss-pairing-editor", ".swiss-policy-editor"]) {
     const panel = page.locator(selector);

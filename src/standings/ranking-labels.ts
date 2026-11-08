@@ -1,4 +1,5 @@
 import type { Locale, TieBreaker } from "../domain/types";
+import { translate } from "../i18n/translate";
 
 const labels: Record<TieBreaker, [string, string]> = {
   points: ["Standings points", "امتیاز جدول"],
@@ -16,5 +17,5 @@ const labels: Record<TieBreaker, [string, string]> = {
 };
 
 export function rankingLabel(criterion: TieBreaker, locale: Locale): string {
-  return labels[criterion][locale === "fa" ? 1 : 0];
+  return translate(locale, ...labels[criterion]);
 }

@@ -24,13 +24,11 @@ test("reviews each leg booking, persists changes and fits Persian mobile", async
   const dialog = page.getByRole("dialog", {
     name: "Bring a tournament into your studio",
   });
-  await dialog
-    .locator('input[type="file"]')
-    .setInputFiles({
-      name: "legs.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(t)),
-    });
+  await dialog.locator('input[type="file"]').setInputFiles({
+    name: "legs.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(t)),
+  });
   await dialog
     .getByRole("button", { name: "Preview import", exact: true })
     .click();
@@ -84,9 +82,7 @@ test("reviews each leg booking, persists changes and fits Persian mobile", async
     .getByRole("button", { name: "Confirm schedule changes", exact: true })
     .click();
   await expect(page.locator(".save-status")).toHaveText("Saved locally");
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.setViewportSize({ width: 320, height: 900 });
   await page
     .getByLabel("دیدار رفت‌وبرگشت", { exact: true })

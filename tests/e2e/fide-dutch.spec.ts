@@ -53,7 +53,9 @@ async function open(page: Page, correctPoints = true) {
 async function exported(page: Page): Promise<Tournament> {
   await section(page, "Share Center");
   const pending = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Public tournament JSON", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Public tournament JSON", exact: true })
+    .click();
   const stream = await (await pending).createReadStream();
   const chunks: Buffer[] = [];
   for await (const chunk of stream!) chunks.push(Buffer.from(chunk));
@@ -212,9 +214,7 @@ test("Persian Dutch settings explain incompatible scoring and reflow at 320 pixe
   page,
 }) => {
   await open(page, false);
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.setViewportSize({ width: 320, height: 900 });
   const panel = page.locator(".swiss-policy-editor");
   await panel

@@ -1,6 +1,41 @@
 # TournaStudio release handoff
 
-## Current Pétanque release
+## Current language release
+
+The November 8, 2026 release replaces the English/Persian toggle with a
+20-language menu, including Italian and Spanish. The 18 added catalogs each
+contain 3,517 interface messages. Switching loads the selected pack before
+updating text, direction and formatting; it preserves entered forms and saved
+tournament data. Failed downloads can be retried. All packs are bundled and
+available offline after the application cache completes.
+
+The local `npm run check` passed TypeScript, ESLint, 1,523 unit/integration tests
+across 122 files, 12 catalog-tool tests and the production build. All four
+release-packaging tests passed. The refined build contains 100 precache entries
+and 111 publication files. Catalog and build checks were repeated after the
+last terminology corrections.
+
+The browser review covered all 20 languages on the welcome page and all three
+creation steps at 320, 768 and 1280 pixels. The 36 multilingual cases across
+Chromium, Firefox and WebKit cover persisted selection, offline packs, saved
+scores, RTL, locale-aware search, notices, delayed downloads and retry behavior.
+One WebKit storage-permission test needed a prototype-level mock; its corrected
+case passed. The 87 existing regression cases across the three engines also
+passed, including Pétanque, groups, exports, presentation and accessibility.
+
+Independent screenshot reviews covered the main European languages, Persian,
+Arabic, Hindi, Bengali, Chinese, Japanese and Korean. The review found and fixed
+Russian creation-step overflow, Dutch/Indonesian demo-header overflow and header
+collisions. Focused final captures verified the fixes in the actual built app.
+Translation coverage does not certify natural phrasing: the new catalogs began
+as automated drafts and still need full native-speaking human proofreading.
+See [LOCALIZATION.md](LOCALIZATION.md) for the language list, font behavior and
+contribution instructions.
+
+GitHub Actions remains disabled. Publication uses locally prepared `main/docs`
+files; hosted verification is recorded with the GitHub release after publishing.
+
+## Previous Pétanque release
 
 The November 7, 2026 Pétanque release adds the club ranking preset, clearer Rules
 controls, on-screen ranking explanations and the actual ranking totals in

@@ -149,7 +149,7 @@ describe("font-complete downloads and printing", () => {
     expect(calls[0]).toBe("open");
   });
 
-  it("embeds both bundled fonts in bracket downloads and waits for print fonts", async () => {
+  it("embeds the bundled script fonts and waits for print fonts", async () => {
     vi.useFakeTimers();
     vi.stubGlobal(
       "fetch",
@@ -172,6 +172,8 @@ describe("font-complete downloads and printing", () => {
     expect(svg).toContain("data:font/woff2;base64,AQID");
     expect(svg).toContain("font-family:TournaExportArabic");
     expect(svg).toContain("font-family:TournaExportLatin");
+    expect(svg).toContain("font-family:TournaExportLatinExtended");
+    expect(svg).toContain("font-family:TournaExportCyrillic");
     const calls: string[] = [];
     let finishFonts!: () => void;
     const ready = new Promise<void>((resolve) => {
@@ -202,6 +204,8 @@ describe("font-complete downloads and printing", () => {
     expect(print).not.toHaveBeenCalled();
     expect(load).toHaveBeenCalledWith("14px TournaExportArabic", "شاهین");
     expect(load).toHaveBeenCalledWith("14px TournaExportLatin", "TournaStudio");
+    expect(load).toHaveBeenCalledWith("14px TournaExportLatinExtended", "Čế");
+    expect(load).toHaveBeenCalledWith("14px TournaExportCyrillic", "Турнір");
     finishFonts();
     await printing;
     expect(calls).toEqual(["write", "print"]);

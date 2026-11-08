@@ -29,7 +29,7 @@ and bilingual checks.
 
 The example uses fictional teams and does not save its results.
 
-The application is a static React and TypeScript bundle hosted on GitHub Pages. Tournament documents live in IndexedDB. After a successful initial cache, the app works offline. Every production font, icon, and library ships with the build.
+The application is a static React and TypeScript bundle hosted on GitHub Pages. Tournament documents live in IndexedDB. After a successful initial cache, the app works offline. Core fonts, icons and libraries ship with the build.
 
 ## What you can run
 
@@ -58,7 +58,19 @@ These are defined local rulesets. General Swiss offers constrained score-based p
 
 Quick Create accepts numbered entrants or pasted names. The workspace includes participant rosters, local logo uploads, waiting lists, eligibility and payment-status records, participant availability, check-in, match control, standings, a stage graph, schedules, statistics, rules, themes, presentation, portable sharing, offline registration/result exchange, revision history, typed custom fields and vault settings.
 
-English and Persian labels, local Inter and Vazirmatn fonts, and RTL layouts are included. The interface is designed for desktop and phones. Engine and import diagnostics have Persian display translations. Mobile navigation contains focus, routes identify the current page, and saved changes and public scoreboards have assistive announcements. [FEATURES.md](FEATURES.md) records supported behavior and platform boundaries.
+The header language menu offers 20 languages, including Italian and Spanish.
+Language packs ship with the static build; changing language does not translate
+or rewrite tournament names, scores or rules. Persian and Arabic use RTL layouts.
+Inter and Vazirmatn are bundled, while scripts they do not cover use fonts installed
+on the device. The 18 added catalogs began as automated translations, with a
+separate review of core tournament terms. They have not had a full review by
+native-speaking human translators. [LOCALIZATION.md](LOCALIZATION.md) lists the
+languages, checks and review limits.
+
+The interface is designed for desktop and phones. Mobile navigation contains
+focus, routes identify the current page, and saved changes and public scoreboards
+have assistive announcements. [FEATURES.md](FEATURES.md) records supported
+behavior and platform boundaries.
 
 Named personal designs complement 50 theme presets with game collections for all 15 activities. Original court diagrams, paddles, chess pieces, Persian geometry and other vector artwork sit on paper, wood, felt, tile and other material treatments. Theme Studio recommends related choices and lets you search the full catalog. The selected identity appears in creation, the workspace, match cards and scorekeeping.
 
@@ -175,7 +187,11 @@ Modern Chromium, Firefox, and WebKit are the browser targets. PWA installation a
 
 ## Help shape the project
 
-I welcome fixes, tournament rules with worked examples, Persian translation improvements, and reports from real events. Start with [CONTRIBUTING.md](CONTRIBUTING.md) for setup and local checks. The [issue forms](https://github.com/tournamentstudio/tournamentstudio.github.io/issues/new/choose) help capture a reproducible bug or a proposed rule change.
+I welcome fixes, tournament rules with worked examples, translation corrections,
+and reports from real events. Start with [CONTRIBUTING.md](CONTRIBUTING.md) for
+setup and local checks, or [LOCALIZATION.md](LOCALIZATION.md) for language changes.
+The [issue forms](https://github.com/tournamentstudio/tournamentstudio.github.io/issues/new/choose)
+help capture a reproducible bug or a proposed rule change.
 
 Use [Discussions](https://github.com/tournamentstudio/tournamentstudio.github.io/discussions) for questions and ideas. [SUPPORT.md](SUPPORT.md) covers common storage, backup and offline questions. Please keep private tournament files and recovery secrets out of public posts; use [SECURITY.md](SECURITY.md) to report a vulnerability privately.
 

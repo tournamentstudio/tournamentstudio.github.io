@@ -203,13 +203,13 @@ export function Workspace({
               m.slots.some((s) =>
                 participants
                   .get(s.participantId ?? "")
-                  ?.name.toLocaleLowerCase()
-                  .includes(search.toLocaleLowerCase()),
+                  ?.name.toLocaleLowerCase(locale)
+                  .includes(search.toLocaleLowerCase(locale)),
               )),
         ),
         doc.stages,
       ),
-    [doc.matches, doc.stages, filter, search, participants, matchStage],
+    [doc.matches, doc.stages, filter, search, participants, matchStage, locale],
   );
   const { visible: visibleMatches, pagination: matchPagination } =
     usePagination(

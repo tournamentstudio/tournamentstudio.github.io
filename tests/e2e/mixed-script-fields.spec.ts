@@ -6,11 +6,8 @@ const label = (locale: Locale, en: string, fa: string) =>
 
 async function switchLanguage(page: Page, current: Locale) {
   await page
-    .getByRole("button", {
-      name: label(current, "Switch to Persian", "تغییر به انگلیسی"),
-      exact: true,
-    })
-    .click();
+    .getByTestId("language-select")
+    .selectOption(current === "en" ? "fa" : "en");
   await expect(page.locator("html")).toHaveAttribute(
     "dir",
     current === "en" ? "rtl" : "ltr",

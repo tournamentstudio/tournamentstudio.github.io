@@ -458,9 +458,7 @@ test("fits Persian losers controls and verified rules at 320 pixels", async ({
       index >= 5 ? "منطقه فرهنگی ورزشی شمال" : `منطقه شماره ${index + 1}`;
   });
   await importFixture(page, tournament);
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.setViewportSize({ width: 320, height: 760 });
   await page
     .getByRole("button", { name: "تنظیم قرعه حذفی", exact: true })

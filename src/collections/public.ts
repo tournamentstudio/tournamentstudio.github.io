@@ -1,3 +1,5 @@
+import { translate } from "../i18n/translate";
+import { localeDirection } from "../i18n/locales";
 import type { Locale, Tournament } from "../domain/types";
 import { publicProjection } from "../sharing";
 import { escapeXML } from "../export";
@@ -27,7 +29,7 @@ export function eventHTML(
   locale: Locale,
 ) {
   const { collection, documents } = publicEvent(input, source);
-  const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
+  const t = (en: string, fa: string) => translate(locale, en, fa);
   const sections = collection.divisions
     .map((d) => {
       const result = aggregateRankings(collection, documents, d.id);
@@ -35,5 +37,5 @@ export function eventHTML(
     })
     .join("");
   const slots = eventSchedule(collection, documents);
-  return `<!doctype html><html lang="${locale}" dir="${locale === "fa" ? "rtl" : "ltr"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><title>${escapeXML(collection.title)}</title><style>body{font-family:system-ui,sans-serif;max-width:1100px;margin:40px auto;padding:20px;line-height:1.7;color:#17242d}table{border-collapse:collapse;width:100%}td,th{text-align:start;padding:10px;border-bottom:1px solid #ccc;overflow-wrap:anywhere}h1{overflow-wrap:anywhere}section{margin-block:32px}tr{break-inside:avoid}@media print{body{margin:0}section{break-before:page}section:first-of-type{break-before:auto}}</style></head><body><h1>${escapeXML(collection.title)}</h1><p>${escapeXML(collection.season)}</p>${sections}<section><h2>${t("Shared schedule", "برنامه مشترک")}</h2><table><thead><tr><th>${t("Competition", "مسابقات")}</th><th>${t("Start", "شروع")}</th><th>${t("Venue", "مکان")}</th></tr></thead><tbody>${slots.map((s) => `<tr><td>${escapeXML(s.title)}</td><td>${escapeXML(new Date(s.starts).toISOString())}</td><td>${escapeXML(s.venue)}</td></tr>`).join("")}</tbody></table></section></body></html>`;
+  return `<!doctype html><html lang="${locale}" dir="${localeDirection(locale)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><title>${escapeXML(collection.title)}</title><style>body{font-family:system-ui,sans-serif;max-width:1100px;margin:40px auto;padding:20px;line-height:1.7;color:#17242d}table{border-collapse:collapse;width:100%}td,th{text-align:start;padding:10px;border-bottom:1px solid #ccc;overflow-wrap:anywhere}h1{overflow-wrap:anywhere}section{margin-block:32px}tr{break-inside:avoid}@media print{body{margin:0}section{break-before:page}section:first-of-type{break-before:auto}}</style></head><body><h1>${escapeXML(collection.title)}</h1><p>${escapeXML(collection.season)}</p>${sections}<section><h2>${t("Shared schedule", "برنامه مشترک")}</h2><table><thead><tr><th>${t("Competition", "مسابقات")}</th><th>${t("Start", "شروع")}</th><th>${t("Venue", "مکان")}</th></tr></thead><tbody>${slots.map((s) => `<tr><td>${escapeXML(s.title)}</td><td>${escapeXML(new Date(s.starts).toISOString())}</td><td>${escapeXML(s.venue)}</td></tr>`).join("")}</tbody></table></section></body></html>`;
 }

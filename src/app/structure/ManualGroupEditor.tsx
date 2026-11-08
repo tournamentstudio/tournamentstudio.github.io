@@ -17,7 +17,7 @@ export function ManualGroupEditor({
   locked: boolean;
   onEdit: (patch: Partial<Stage>) => void;
 }) {
-  const { t, number } = useI18n();
+  const { t, number, locale } = useI18n();
   const [draft, setDraft] = useState<{ groups: string[][]; basis: string }>();
   const [search, setSearch] = useState("");
   const [error, setError] = useState<unknown>();
@@ -35,7 +35,9 @@ export function ManualGroupEditor({
   const entrants = tournament.participants.filter(
     (participant) =>
       groups.flat().includes(participant.id) &&
-      participant.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()),
+      participant.name
+        .toLocaleLowerCase(locale)
+        .includes(search.toLocaleLowerCase(locale)),
   );
   const { visible, pagination } = usePagination(entrants, search);
   const blocked = locked || !!stage.config.draw || !preview.ready || stale;

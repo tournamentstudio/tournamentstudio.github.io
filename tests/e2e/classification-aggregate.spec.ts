@@ -357,9 +357,7 @@ test("Persian aggregate controls fit a narrow screen with long mixed-script name
   doc.stages[0].config.aggregate = { version: 1, legs: 2, tieBreak: "manual" };
   await open(page, generateStage(doc, doc.stages[0].id));
   await section(page, "Matches");
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.setViewportSize({ width: 320, height: 760 });
   await page.locator("button.match-tile.ready").click();
   const dialog = page.getByRole("dialog", {

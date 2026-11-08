@@ -327,9 +327,7 @@ test("exports real alpha in PNG overlays and keeps Persian controls inside mobil
     page.getByRole("button", { name: "Next scene", exact: true }),
   ).toBeDisabled();
   await page.keyboard.press("Escape");
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.setViewportSize({ width: 320, height: 740 });
   expect(
     await page.evaluate(

@@ -10,7 +10,7 @@ import {
 import "./landing-demo.css";
 
 export function LandingDemo() {
-  const { t, locale, number } = useI18n();
+  const { t, number } = useI18n();
   const [tournament, setTournament] = useState(createLandingSample);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
@@ -28,7 +28,7 @@ export function LandingDemo() {
 
   function teamName(id?: string) {
     const team = sampleTeams.find((item) => `sample-${item.id}` === id);
-    return team ? team[locale] : t("To be decided", "هنوز مشخص نیست");
+    return team ? t(team.en, team.fa) : t("To be decided", "هنوز مشخص نیست");
   }
 
   async function play(winnerId: string) {
@@ -106,7 +106,7 @@ export function LandingDemo() {
               </span>
               <span className="landing-demo-name" dir="auto">
                 {team
-                  ? team[locale]
+                  ? t(team.en, team.fa)
                   : t(
                       `Winner of semifinal ${slotIndex + 1}`,
                       `برنده نیمه‌نهایی ${number(slotIndex + 1)}`,

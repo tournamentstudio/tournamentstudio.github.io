@@ -1,3 +1,4 @@
+import { translate } from "../i18n/translate";
 import { z } from "zod";
 import type { GroupDrawIssue, Locale, Stage, Tournament } from "./types";
 import { groupDrawSchema } from "./draw";
@@ -12,7 +13,17 @@ const drawFields = {
   pots: groupDrawSchema.shape.pots,
   restrictions: z.array(z.enum(["region", "organization"])).max(2),
   protectedSeeds: z.number().int().min(0).max(512),
-  fixedSlots: z.array(z.object({ participantId: z.string().min(1).max(160), slot: z.number().int().min(1).max(512) }).strict()).max(512).optional(),
+  fixedSlots: z
+    .array(
+      z
+        .object({
+          participantId: z.string().min(1).max(160),
+          slot: z.number().int().min(1).max(512),
+        })
+        .strict(),
+    )
+    .max(512)
+    .optional(),
 };
 const separationRule = z
   .object({
@@ -151,7 +162,10 @@ export const knockoutDrawSchema = z.discriminatedUnion("version", [
 ]);
 
 const messages: Record<string, [string, string]> = {
-  fixedAssignment: ["Explicit protected slots must use distinct active entrants and positions within the draw, without conflicting with qualification slots.", "جایگاه‌های محافظت‌شده صریح باید شرکت‌کنندگان فعال و جایگاه‌های یکتا در محدوده قرعه داشته باشند و با جایگاه‌های صعود تداخل نکنند."],
+  fixedAssignment: [
+    "Explicit protected slots must use distinct active entrants and positions within the draw, without conflicting with qualification slots.",
+    "جایگاه‌های محافظت‌شده صریح باید شرکت‌کنندگان فعال و جایگاه‌های یکتا در محدوده قرعه داشته باشند و با جایگاه‌های صعود تداخل نکنند.",
+  ],
   stage: ["The stage does not exist.", "مرحله وجود ندارد."],
   format: [
     "Knockout draw restrictions require single or double elimination.",
@@ -359,25 +373,27 @@ export function knockoutDrawIssueText(
   issue: GroupDrawIssue,
   locale: Locale = "en",
 ): string {
-  const template = messages[issue.code]?.[locale === "fa" ? 1 : 0];
-  if (!template)
-    return locale === "fa"
-      ? "قرعه‌کشی حذفی نامعتبر است."
-      : "Invalid knockout draw.";
+  const message = messages[issue.code];
+  if (!message)
+    return translate(
+      locale,
+      "Invalid knockout draw.",
+      "قرعه‌کشی حذفی نامعتبر است.",
+    );
+  const template = translate(locale, ...message);
   return template.replace(/\{(\d+)\}/g, (_, index: string) => {
     let value = issue.values[Number(index)] ?? "";
     if (
-      locale === "fa" &&
       ["separationFixed", "losersFixed", "thirdPlaceFixed"].includes(issue.code)
     )
       value =
         value === "region"
-          ? "منطقه"
+          ? translate(locale, "region", "منطقه")
           : value === "organization"
-            ? "سازمان"
+            ? translate(locale, "organization", "سازمان")
             : value;
-    return locale === "fa" && /^\d+(\.\d+)?$/.test(value)
-      ? Number(value).toLocaleString("fa", { maximumFractionDigits: 6 })
+    return /^\d+(\.\d+)?$/.test(value)
+      ? Number(value).toLocaleString(locale, { maximumFractionDigits: 6 })
       : value;
   });
 }
@@ -404,7 +420,11 @@ export function knockoutDrawErrors(
   if (new Set(ids).size !== ids.length) add("duplicateEntrant");
   const participants = new Set(tournament.participants.map((item) => item.id));
   const fixed = parsed.data.fixedSlots ?? [];
-  if (new Set(fixed.map((slot) => slot.participantId)).size !== fixed.length || new Set(fixed.map((slot) => slot.slot)).size !== fixed.length || fixed.some((slot) => !participants.has(slot.participantId)))
+  if (
+    new Set(fixed.map((slot) => slot.participantId)).size !== fixed.length ||
+    new Set(fixed.map((slot) => slot.slot)).size !== fixed.length ||
+    fixed.some((slot) => !participants.has(slot.participantId))
+  )
     add("fixedAssignment");
   if (ids.some((id) => !participants.has(id))) add("unknownEntrant");
   if (new Set(restrictions).size !== restrictions.length)

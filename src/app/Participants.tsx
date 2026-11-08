@@ -19,6 +19,7 @@ import { Field, Modal, Notice, ErrorText } from "../components/ui";
 import { Pagination, usePagination } from "../components/Pagination";
 import { exportCSV, downloadBlob } from "../export";
 import { useI18n } from "../i18n";
+import { sourceMessage, translate } from "../i18n/translate";
 import { ParticipantLocationFields } from "./ParticipantLocationFields";
 import { ParticipantAdminFields } from "./participants/ParticipantAdminFields";
 import { ParticipantImportPreview } from "./participants/ParticipantImportPreview";
@@ -644,7 +645,7 @@ export function Participants({ tournament: doc, onChange }: EditorProps) {
         <ParticipantImportPreview
           participants={imported}
           existing={doc.participants}
-          note={importNote}
+          note={translate(locale, sourceMessage(importNote))}
           onChange={setImported}
           onClose={() => setImported(undefined)}
           onImport={() => {

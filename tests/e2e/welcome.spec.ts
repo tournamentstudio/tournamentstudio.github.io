@@ -52,6 +52,24 @@ for (const locale of ["en", "fa"] as const) {
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth),
       ).toBeLessThanOrEqual(width);
+      const headerBox = (await page.locator(".topbar").boundingBox())!;
+      const languageBox = (await page
+        .getByTestId("language-select")
+        .boundingBox())!;
+      expect(languageBox.y).toBeGreaterThanOrEqual(headerBox.y);
+      expect(languageBox.y + languageBox.height).toBeLessThanOrEqual(
+        headerBox.y + headerBox.height,
+      );
+      const firstNavigation = page.locator(".welcome-nav-action").first();
+      if (await firstNavigation.isVisible()) {
+        const brandBox = (await page.locator(".topbar .brand").boundingBox())!;
+        const navigationBox = (await firstNavigation.boundingBox())!;
+        const separation =
+          locale === "fa"
+            ? brandBox.x - (navigationBox.x + navigationBox.width)
+            : navigationBox.x - (brandBox.x + brandBox.width);
+        expect(separation).toBeGreaterThanOrEqual(10);
+      }
       const clipped = await welcome
         .locator("h1,h2,h3,p,button")
         .evaluateAll((elements) =>
@@ -294,9 +312,7 @@ test("first-visit language switching preserves the page and respects reduced mot
   await page.setViewportSize({ width: 320, height: 900 });
   await page.goto("/");
   await expect(page.locator(".welcome-page")).toBeVisible();
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "از قرعه‌کشی تا شادی قهرمانی",
@@ -304,9 +320,7 @@ test("first-visit language switching preserves the page and respects reduced mot
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(320);
-  await page
-    .getByRole("button", { name: "تغییر به انگلیسی", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("en");
   await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "From the first draw to the final cheer.",

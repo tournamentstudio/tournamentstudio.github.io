@@ -264,9 +264,7 @@ test("keeps long bilingual introduction and champion text inside downloaded slid
     },
   ];
   await openExports(page, tournament);
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   const downloaded = await download(page, "دانلود ZIP نمایش");
   const files = unzipSync(downloaded.bytes);
   const manifest = JSON.parse(strFromU8(files["manifest.json"])) as {
@@ -384,9 +382,7 @@ test("keeps Persian export controls readable at 320px with accessible labels", a
   browserName,
 }) => {
   await openExports(page, fixture());
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.setViewportSize({ width: 320, height: 740 });
   await expect(
     page.getByRole("heading", { name: "تصاویر و فایل‌های نمایش" }),

@@ -1,5 +1,7 @@
 import arabicFont from "@fontsource-variable/vazirmatn/files/vazirmatn-arabic-wght-normal.woff2?url";
 import latinFont from "@fontsource-variable/vazirmatn/files/vazirmatn-latin-wght-normal.woff2?url";
+import latinExtendedFont from "@fontsource-variable/vazirmatn/files/vazirmatn-latin-ext-wght-normal.woff2?url";
+import cyrillicFont from "@fontsource-variable/inter/files/inter-cyrillic-wght-normal.woff2?url";
 import type { Locale, Tournament } from "../domain/types";
 import { publicProjection } from "../sharing";
 import { downloadBlob, downloadText, printableHTML } from "./index";
@@ -9,22 +11,24 @@ let fonts: Promise<string> | undefined;
 
 async function embeddedFontCSS() {
   const values = await Promise.all(
-    [arabicFont, latinFont].map(async (url) => {
-      const response = await fetch(url);
-      if (!response.ok)
-        throw new Error("The bundled export font could not be loaded.");
-      const bytes = new Uint8Array(await response.arrayBuffer());
-      if (bytes.length > 256 * 1024)
-        throw new Error("The bundled export font exceeds its size limit.");
-      let binary = "";
-      for (const byte of bytes) binary += String.fromCharCode(byte);
-      return btoa(binary);
-    }),
+    [arabicFont, latinFont, latinExtendedFont, cyrillicFont].map(
+      async (url) => {
+        const response = await fetch(url);
+        if (!response.ok)
+          throw new Error("The bundled export font could not be loaded.");
+        const bytes = new Uint8Array(await response.arrayBuffer());
+        if (bytes.length > 256 * 1024)
+          throw new Error("The bundled export font exceeds its size limit.");
+        let binary = "";
+        for (const byte of bytes) binary += String.fromCharCode(byte);
+        return btoa(binary);
+      },
+    ),
   );
   return values
     .map(
       (value, i) =>
-        `@font-face{font-family:TournaExport${i === 0 ? "Arabic" : "Latin"};font-style:normal;font-weight:100 900;font-display:swap;src:url(data:font/woff2;base64,${value}) format('woff2')}`,
+        `@font-face{font-family:TournaExport${["Arabic", "Latin", "LatinExtended", "Cyrillic"][i]};font-style:normal;font-weight:100 900;font-display:swap;src:url(data:font/woff2;base64,${value}) format('woff2')}`,
     )
     .join("");
 }
@@ -41,7 +45,7 @@ export function embedSVGFonts(svg: string, css: string) {
   const end = svg.indexOf(">");
   return (
     svg.slice(0, end + 1) +
-    `<style>${css}text{font-family:TournaExportArabic,TournaExportLatin,sans-serif}</style>` +
+    `<style>${css}text{font-family:TournaExportArabic,TournaExportLatin,TournaExportLatinExtended,TournaExportCyrillic,sans-serif}</style>` +
     svg.slice(end + 1)
   );
 }
@@ -130,6 +134,6 @@ export async function standaloneTournamentHTML(
   const html = printableHTML(publicProjection(tournament), locale);
   return html.replace(
     "<style>",
-    `<meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:; base-uri 'none'; form-action 'none'"><style>${await exportFontCSS()}body,svg text{font-family:TournaExportArabic,TournaExportLatin,sans-serif}td,th,h1,p{overflow-wrap:anywhere}table{table-layout:fixed}`,
+    `<meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:; base-uri 'none'; form-action 'none'"><style>${await exportFontCSS()}body,svg text{font-family:TournaExportArabic,TournaExportLatin,TournaExportLatinExtended,TournaExportCyrillic,sans-serif}td,th,h1,p{overflow-wrap:anywhere}table{table-layout:fixed}`,
   );
 }

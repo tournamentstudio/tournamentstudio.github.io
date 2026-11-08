@@ -6,6 +6,7 @@ import type {
   Locale,
 } from "../domain/types";
 import { knockoutDrawIssueText } from "../domain/knockout-draw";
+import { translate } from "../i18n/translate";
 
 export type AutomaticVenueDraw = Extract<KnockoutDrawConfig, { version: 6 }>;
 
@@ -81,8 +82,8 @@ export function automaticVenueIssueText(
   issue: GroupDrawIssue,
   locale: Locale = "en",
 ): string {
-  return (
-    messages[issue.code]?.[locale === "fa" ? 1 : 0] ??
-    knockoutDrawIssueText(issue, locale)
-  );
+  const message = messages[issue.code];
+  return message
+    ? translate(locale, ...message)
+    : knockoutDrawIssueText(issue, locale);
 }

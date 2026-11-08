@@ -221,9 +221,7 @@ test("timeline supports Persian at320px with keyboard access", async ({
   page,
 }) => {
   await openSchedule(page);
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.setViewportSize({ width: 320, height: 800 });
   await page.getByText("خط زمان و تأخیر دیدارها", { exact: true }).click();
   const bounds = await page.evaluate(() => ({

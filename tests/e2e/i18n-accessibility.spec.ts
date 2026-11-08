@@ -3,9 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 
 async function persianTournament(page: Page) {
   await page.goto("/#/create");
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page
     .getByLabel("عنوان مسابقات", { exact: true })
     .fill("جام دسترس‌پذیر تهران");
@@ -101,9 +99,7 @@ test("Persian import errors keep focus inside the dialog and return to the opene
 }) => {
   await page.goto("/");
   await expect(page.locator(".welcome-page")).toBeVisible();
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   const opener = page
     .getByRole("button", { name: "وارد کردن و بازیابی", exact: true })
     .first();

@@ -361,9 +361,7 @@ for (const width of [320, 390]) {
     await page.setViewportSize({ width, height: 960 });
     await page.goto("/");
     await expect(page.locator(".welcome-page")).toBeVisible();
-    await page
-      .getByRole("button", { name: "Switch to Persian", exact: true })
-      .click();
+    await page.getByTestId("language-select").selectOption("fa");
     await page
       .getByRole("button", { name: "باز کردن فهرست", exact: true })
       .click();

@@ -101,9 +101,7 @@ test("changing interface language preserves an example result and translates its
     .getByRole("button", { name: "Cedar wins, 2 to 1", exact: true })
     .click();
   await expect(sample.locator(".is-complete")).toHaveCount(1);
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await expect(sample.getByRole("status")).toHaveText(
     "سرو صعود کرد. نتیجه بعدی را انتخاب کنید.",
   );

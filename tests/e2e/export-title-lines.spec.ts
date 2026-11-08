@@ -77,9 +77,7 @@ for (const locale of ["en", "fa"] as const)
   }, testInfo) => {
     await openExports(page);
     if (locale === "fa")
-      await page
-        .getByRole("button", { name: "Switch to Persian", exact: true })
-        .click();
+      await page.getByTestId("language-select").selectOption("fa");
     const graphics: { name: string; svg: string }[] = [];
     for (const kind of ["scoreboard", "champion"]) {
       await page

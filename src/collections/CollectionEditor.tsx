@@ -15,7 +15,7 @@ export function CollectionEditor({
   documents: Tournament[];
   onSave: (value: EventCollection) => Promise<void>;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [draft, setDraft] = useState(() => structuredClone(collection));
   const [error, setError] = useState<unknown>();
   const [tab, setTab] = useState("settings");
@@ -25,8 +25,8 @@ export function CollectionEditor({
   const filtered = draft.directory.filter((p) =>
     p.name
       .normalize("NFKC")
-      .toLocaleLowerCase()
-      .includes(query.normalize("NFKC").toLocaleLowerCase()),
+      .toLocaleLowerCase(locale)
+      .includes(query.normalize("NFKC").toLocaleLowerCase(locale)),
   );
   const { visible, pagination } = usePagination(filtered, query);
   const setLink = (

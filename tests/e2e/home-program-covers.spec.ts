@@ -34,9 +34,7 @@ for (const locale of ["en", "fa"] as const) {
     }
     await page.goto("/#/");
     if (locale === "fa")
-      await page
-        .getByRole("button", { name: "Switch to Persian", exact: true })
-        .click();
+      await page.getByTestId("language-select").selectOption("fa");
     const text = (en: string, fa: string) => (locale === "fa" ? fa : en);
     const protectedCover = page.locator(".tournament-cover[data-protected]");
     await expect(protectedCover).toHaveCount(1);

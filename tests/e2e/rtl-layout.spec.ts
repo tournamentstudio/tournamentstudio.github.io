@@ -87,9 +87,7 @@ for (const width of [320, 390, 768, 1280]) {
     await page.setViewportSize({ width, height: 960 });
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/#/create");
-    await page
-      .getByRole("button", { name: "Switch to Persian", exact: true })
-      .click();
+    await page.getByTestId("language-select").selectOption("fa");
     await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
     await page.evaluate(() => document.fonts.ready);
     if (width <= 760) {

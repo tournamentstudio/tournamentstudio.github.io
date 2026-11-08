@@ -8,7 +8,8 @@ import type { MetricDefinition, MetricValues } from "../scoring/metrics";
 import type { LadderPolicy } from "./ladder";
 import type { SwissPolicy } from "./swiss";
 import type { AggregatePolicy, LegSchedule } from "./aggregate";
-export type Locale = "en" | "fa";
+import type { SupportedLocale } from "../i18n/locales";
+export type Locale = SupportedLocale;
 export type TournamentStatus =
   | "draft"
   | "ready"

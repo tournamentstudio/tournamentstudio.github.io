@@ -389,9 +389,7 @@ test("fits Persian knockout controls and long entrant names at 320 pixels", asyn
     entrant.region = `منطقه شماره ${(index % 2) + 1}`;
   });
   await importFixture(page, tournament);
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.setViewportSize({ width: 320, height: 760 });
   await page
     .getByRole("button", { name: "تنظیم قرعه حذفی", exact: true })

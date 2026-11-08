@@ -1,3 +1,4 @@
+import { translate } from "../i18n/translate";
 import type { Locale } from "../domain/types";
 import { gameCollections, getTheme, getThemesForSport } from "./index";
 import { motifGeometry } from "./motifs";
@@ -97,10 +98,10 @@ export function GameIdentity({
         <GameIcon sport={sport} size={64} />
       </span>
       <div className="game-identity-copy">
-        <strong>{locale === "fa" ? game.fa : game.name}</strong>
-        <span>{locale === "fa" ? theme.fa : theme.name}</span>
+        <strong>{translate(locale, game.name, game.fa)}</strong>
+        <span>{translate(locale, theme.name, theme.fa)}</span>
         {!compact && (
-          <p>{locale === "fa" ? theme.descriptionFa : theme.description}</p>
+          <p>{translate(locale, theme.description, theme.descriptionFa)}</p>
         )}
       </div>
     </div>

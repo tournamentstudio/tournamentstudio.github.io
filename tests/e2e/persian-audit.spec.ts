@@ -6,9 +6,7 @@ const playerName = "محمدرضا قهرمانی دانشگاه امیرکبی�
 
 async function createPersianCup(page: Page) {
   await page.goto("/#/create");
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.getByLabel("عنوان مسابقات", { exact: true }).fill("جام گل یا پوچ");
   await page.getByLabel("ورزش یا فعالیت").selectOption("gol-ya-pooch");
   await page.getByRole("button", { name: "ادامه", exact: true }).click();

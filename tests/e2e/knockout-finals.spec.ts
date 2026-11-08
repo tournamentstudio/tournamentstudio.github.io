@@ -509,9 +509,7 @@ test("fits Persian finals controls and explains the three-entrant walkover at 32
     participant.organization = "سازمان شرکت‌کنندگان پیشکسوتان شهرستان";
   });
   await importFixture(page, tournament);
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.setViewportSize({ width: 320, height: 760 });
   await page
     .getByRole("button", { name: "تنظیم قرعه حذفی", exact: true })

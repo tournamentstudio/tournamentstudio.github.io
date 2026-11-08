@@ -1,3 +1,4 @@
+import { localeTag } from "../i18n/locales";
 import { useState } from "react";
 import type { Tournament } from "../domain/types";
 import { ErrorText, Field, Notice } from "../components/ui";
@@ -18,7 +19,7 @@ export function RouteNetworkItinerary({
 }) {
   const { t, locale, number } = useI18n();
   const date = (at: string) =>
-    new Date(at).toLocaleString(locale === "fa" ? "fa-IR" : "en-US", {
+    new Date(at).toLocaleString(localeTag(locale), {
       dateStyle: "medium",
       timeStyle: "short",
     });

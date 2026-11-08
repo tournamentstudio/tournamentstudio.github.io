@@ -22,8 +22,7 @@ async function open(page: Page, tournament: Tournament, persian: boolean) {
   await dialog.getByRole("button", { name: "Preview import" }).click();
   await dialog.getByRole("button", { name: "Save local copy" }).click();
   await expect(page.locator(".workspace-fieldset")).toBeEnabled();
-  if (persian)
-    await page.getByRole("button", { name: "Switch to Persian" }).click();
+  if (persian) await page.getByTestId("language-select").selectOption("fa");
 }
 
 function fixture(groups: boolean) {

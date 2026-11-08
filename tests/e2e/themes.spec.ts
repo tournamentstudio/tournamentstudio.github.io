@@ -142,9 +142,7 @@ test("shows Persian theme search on a narrow screen without overflow", async ({
 }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await createGol(page);
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page
     .getByRole("navigation", { name: "بخش‌های مسابقات" })
     .getByRole("button", { name: "استودیو تم", exact: true })

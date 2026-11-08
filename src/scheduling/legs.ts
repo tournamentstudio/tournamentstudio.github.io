@@ -1,4 +1,5 @@
 import { generatedMatchLabel } from "../i18n/match-labels";
+import { translate } from "../i18n/translate";
 import type { Match, Tournament } from "../domain/types";
 export type LegBooking = {
   leg: number;
@@ -73,7 +74,7 @@ export function expandedSchedule(input: Tournament): Tournament {
         id: virtualId(match.id, leg),
         label:
           counts.get(match.id)! > 1
-            ? `${generatedMatchLabel(match, input.locale)} (${input.locale === "fa" ? "بازی رفت‌وبرگشت" : "Leg"} ${leg.toLocaleString(input.locale)})`
+            ? `${generatedMatchLabel(match, input.locale)} (${translate(input.locale, "Leg", "بازی رفت‌وبرگشت")} ${leg.toLocaleString(input.locale)})`
             : match.label,
         slots: match.slots.map((s) => ({
           ...s,

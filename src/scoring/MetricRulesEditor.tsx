@@ -1,3 +1,4 @@
+import { translate } from "../i18n/translate";
 import { Field, Notice } from "../components/ui";
 import { uid, type Locale } from "../domain/types";
 import { metricSuggestions, type MetricDefinition } from "./metrics";
@@ -45,7 +46,7 @@ export function MetricRulesEditor({
   sport: string;
   disabled?: boolean;
 }) {
-  const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
+  const t = (en: string, fa: string) => translate(locale, en, fa);
   const edit = (id: string, changes: Partial<MetricDefinition>) =>
     onChange(definitions.map((d) => (d.id === id ? { ...d, ...changes } : d)));
   const add = (

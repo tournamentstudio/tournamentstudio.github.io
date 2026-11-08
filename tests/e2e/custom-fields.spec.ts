@@ -175,7 +175,9 @@ test("exports only explicitly public fields and reconstructs them in an independ
     .click();
   await page.locator("details.share-advanced > summary").click();
   const downloading = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Public tournament JSON", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Public tournament JSON", exact: true })
+    .click();
   const downloaded = await downloading,
     data = await readFile((await downloaded.path())!),
     json = JSON.parse(data.toString());
@@ -209,9 +211,7 @@ test("Persian custom field controls fit 320 pixels and pass automated AA checks"
   page,
 }) => {
   await importTournament(page, fixture());
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.setViewportSize({ width: 320, height: 800 });
   const studio = await fields(page, true);
   await studio

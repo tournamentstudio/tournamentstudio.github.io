@@ -18,13 +18,11 @@ async function open(page: Page) {
   const dialog = page.getByRole("dialog", {
     name: "Bring a tournament into your studio",
   });
-  await dialog
-    .locator('input[type="file"]')
-    .setInputFiles({
-      name: "swiss.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(doc)),
-    });
+  await dialog.locator('input[type="file"]').setInputFiles({
+    name: "swiss.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(doc)),
+  });
   await dialog
     .getByRole("button", { name: "Preview import", exact: true })
     .click();
@@ -87,9 +85,7 @@ test("Persian acceleration settings wrap at 320px and support keyboard input", a
   page,
 }) => {
   await open(page);
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.setViewportSize({ width: 320, height: 900 });
   const checkbox = page.getByLabel("استفاده از امتیاز موقت زوج‌بندی", {
     exact: true,

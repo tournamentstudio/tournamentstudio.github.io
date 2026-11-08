@@ -17,6 +17,9 @@
   width: 36px;
   height: 36px;
 }
+.welcome-shell .topbar-left {
+  flex-shrink: 0;
+}
 .welcome-shell .topbar-right {
   gap: 24px;
 }
@@ -349,8 +352,11 @@
     padding-inline: 20px;
   }
   .welcome-shell .topbar {
-    height: 72px;
+    height: auto;
+    min-height: 72px;
     padding-inline: 20px;
+    padding-block: 10px;
+    flex-wrap: wrap;
     gap: 10px;
   }
   .welcome-shell .welcome-nav-action {

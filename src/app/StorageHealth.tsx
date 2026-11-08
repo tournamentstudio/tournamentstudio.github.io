@@ -3,13 +3,14 @@ import { HardDrive, ShieldCheck, Download } from "lucide-react";
 import { repository, type LibraryEntry } from "../persistence";
 import { Field, Notice, ErrorText } from "../components/ui";
 import { useI18n } from "../i18n";
+import { sourceMessage, translate } from "../i18n/translate";
 import { StatusControl } from "./Rules";
 import type { EditorProps } from "./Participants";
 import { BackupReminderSettings } from "./BackupReminders";
 import { VaultInactivitySettings } from "./VaultInactivity";
 
 export function StorageHealth({ entries }: { entries: LibraryEntry[] }) {
-  const { t, date } = useI18n();
+  const { t, date, locale } = useI18n();
   const [health, setHealth] =
     useState<Awaited<ReturnType<typeof repository.storageHealth>>>();
   const [error, setError] = useState<unknown>();
@@ -92,7 +93,7 @@ export function StorageHealth({ entries }: { entries: LibraryEntry[] }) {
         <button className="button primary" onClick={persist}>
           {t("Request persistent storage", "درخواست ذخیره پایدار")}
         </button>
-        {answer && <Notice>{answer}</Notice>}
+        {answer && <Notice>{translate(locale, sourceMessage(answer))}</Notice>}
       </section>
       <BackupReminderSettings />
       <VaultInactivitySettings />

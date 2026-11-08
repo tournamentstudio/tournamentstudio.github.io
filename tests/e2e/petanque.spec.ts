@@ -416,9 +416,7 @@ test("grouped Pétanque standings and rules fit English and Persian at four widt
   await expect(page.locator(".toast")).not.toBeVisible();
   for (const locale of ["en", "fa"] as const) {
     if (locale === "fa")
-      await page
-        .getByRole("button", { name: "Switch to Persian", exact: true })
-        .click();
+      await page.getByTestId("language-select").selectOption("fa");
     await expect(page.locator("html")).toHaveAttribute(
       "dir",
       locale === "fa" ? "rtl" : "ltr",

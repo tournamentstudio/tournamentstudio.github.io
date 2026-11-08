@@ -1,3 +1,4 @@
+import { translate } from "../i18n/translate";
 import { Field } from "../components/ui";
 import { aggregateAwayWinner, type AggregatePolicy } from "../domain/aggregate";
 import type { Locale } from "../domain/types";
@@ -15,7 +16,7 @@ export function AggregateProposalEditor({
   names: string[];
   locale: Locale;
 }) {
-  const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
+  const t = (en: string, fa: string) => translate(locale, en, fa);
   const regulation = legs.slice(0, policy.legs),
     tied =
       regulation.length === policy.legs &&

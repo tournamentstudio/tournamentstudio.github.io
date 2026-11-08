@@ -243,9 +243,7 @@ test("rejects impossible regional limits, edits missing region, and renders long
     page.getByRole("button", { name: "Apply draw rules", exact: true }),
   ).toBeDisabled();
   expect((await readDocument(page)).matches).toHaveLength(0);
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.setViewportSize({ width: 320, height: 760 });
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await expect(page.getByRole("alert")).toContainText("دارای ۸ شرکت‌کننده");

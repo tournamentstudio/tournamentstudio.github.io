@@ -267,6 +267,15 @@
 @container (max-width: 370px) {
   .landing-demo-heading {
     padding: 18px;
+    flex-wrap: wrap;
+  }
+  .landing-demo-heading > div {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .landing-demo-progress {
+    margin-inline-start: auto;
+    overflow-wrap: anywhere;
   }
   .landing-demo-bracket {
     grid-template-columns: minmax(0, 1fr);

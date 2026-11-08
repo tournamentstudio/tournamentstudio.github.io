@@ -1,3 +1,4 @@
+import { localeTag } from "../i18n/locales";
 import { useEffect, useId, useMemo, useState } from "react";
 import type { Tournament } from "../domain/types";
 import { Field, Notice } from "../components/ui";
@@ -142,7 +143,7 @@ export function LegacyTimezoneReview({
   }
 
   function localPreview(iso: string, zone: string): string {
-    return new Intl.DateTimeFormat(locale === "fa" ? "fa-IR" : "en-US", {
+    return new Intl.DateTimeFormat(localeTag(locale), {
       calendar: "gregory",
       timeZone: zone,
       year: "numeric",

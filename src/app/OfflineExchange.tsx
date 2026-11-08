@@ -32,6 +32,7 @@ import { aggregateAwayWinner, aggregateScores } from "../domain/aggregate";
 import { AggregateProposalEditor } from "./AggregateProposalEditor";
 import { Field, Notice, ErrorText, Confirm, download } from "../components/ui";
 import { useI18n } from "../i18n";
+import { sourceMessage, translate } from "../i18n/translate";
 import { matchNames } from "../components/Bracket";
 import type { EditorProps } from "./Participants";
 
@@ -84,7 +85,7 @@ export function OfflineExchange({ tournament: doc, onChange }: EditorProps) {
           "Saving the approved result. Wait for the save confirmation before closing.",
           "در حال ذخیره نتیجه تأییدشده. پیش از بستن، منتظر تأیید ذخیره بمانید.",
         )
-    : message;
+    : translate(locale, sourceMessage(message));
   const weightedResult =
     doc.rules.scoring === "weighted" && ["played", "draw"].includes(outcome);
   const proposedStage = doc.stages.find((stage) => stage.id === match?.stageId);

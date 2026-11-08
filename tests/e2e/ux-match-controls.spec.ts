@@ -49,7 +49,7 @@ async function open(page: Page, doc: Tournament, fa: boolean) {
   await dialog.getByRole("button", { name: "Preview import" }).click();
   await dialog.getByRole("button", { name: "Save local copy" }).click();
   await expect(page.locator(".workspace-fieldset")).toBeEnabled();
-  if (fa) await page.getByRole("button", { name: "Switch to Persian" }).click();
+  if (fa) await page.getByTestId("language-select").selectOption("fa");
   await page
     .getByRole("combobox", {
       name: fa ? "بخش مسابقات" : "Tournament section",

@@ -295,9 +295,7 @@ test("keeps long Persian hand logs usable with touch and keyboard at 320px", asy
   try {
     const page = await touch.newPage();
     await createEvent(page);
-    await page
-      .getByRole("button", { name: "Switch to Persian", exact: true })
-      .tap();
+    await page.getByTestId("language-select").selectOption("fa");
     await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
     await section(page, "دیدارها");
     const opener = page.locator("button.match-tile.ready").first();
@@ -342,9 +340,7 @@ test("keeps long Persian hand logs usable with touch and keyboard at 320px", asy
     await page.keyboard.press("Escape");
     await expect(dialog).not.toBeVisible();
     await expect(page.locator("button.match-tile.live").first()).toBeFocused();
-    await page
-      .getByRole("button", { name: "تغییر به انگلیسی", exact: true })
-      .tap();
+    await page.getByTestId("language-select").selectOption("en");
     await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
     const live = page.locator("button.match-tile.live").first();
     await live.focus();

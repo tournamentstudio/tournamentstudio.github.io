@@ -341,9 +341,7 @@ test("shows unresolved qualification ties without generating matches and support
       (match) => match.stageId === finals.id,
     ),
   ).toHaveLength(0);
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await expect(

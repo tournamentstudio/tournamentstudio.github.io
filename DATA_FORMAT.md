@@ -17,6 +17,23 @@ Unknown group-label versions are rejected without changing the input.
 
 The first public schema is version `1`. A document has a stable `id`, integer `revision`, `revisionHash`, creation and modification timestamps, locale, timezone, sport, status, participants, stages, matches, scoring rules, theme, presentation, schedule, metadata, and audit history.
 
+`locale` accepts `en`, `fa`, `es`, `it`, `fr`, `de`, `pt`, `nl`, `pl`, `uk`, `ru`,
+`tr`, `ar`, `hi`, `bn`, `id`, `vi`, `zh`, `ja` and `ko`. The language registry maps
+these codes to display names, Intl tags and direction. `zh` selects Simplified
+Chinese; `pt` uses Brazilian Portuguese formatting. Unknown codes fail validation.
+The expanded enum keeps schema version 1 and does not rewrite existing `en` or
+`fa` documents, histories or hashes. Older application versions that accept only
+those two codes may reject a newer-language document; open it in the current
+version rather than editing its serialized bytes or hash by hand.
+
+The header's language selection is a browser preference, not a tournament edit.
+Changing it does not change the saved document locale, names, rules, results or
+revision hash. New tournaments record their creation locale. Portable packages
+retain that value, while display and export callers can choose an interface
+locale without modifying the source. Number and date formatting is presentational;
+scores remain JSON numbers and timestamps retain their original values. The
+timezone field is independent of language.
+
 Entrants can be individuals or teams with rosters. Match slots contain an entrant ID, a winner or loser reference to an earlier match, or an empty place awaiting qualification. A match can contain more than two entrants. Results contain scores, winner IDs, an outcome, a timestamp, and optional sets, placements, metric evidence, fair-play sanctions and aggregate legs. Optional `liveScores` publish current totals without disclosing the private hand log; their length must match the slot count.
 
 An optional participant `location` contains only finite numeric `latitude`

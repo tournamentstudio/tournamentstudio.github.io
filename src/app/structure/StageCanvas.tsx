@@ -1,3 +1,4 @@
+import { localeDirection } from "../../i18n/locales";
 import { useId, useRef, useState, type PointerEvent } from "react";
 import { GripVertical, Link2, Maximize, Minus, Plus, X } from "lucide-react";
 import type { Tournament } from "../../domain/types";
@@ -297,9 +298,9 @@ export function StageCanvas({
                       {source.perGroup ? t(" / group", " / گروه") : ""}
                       {source.selection?.kind === "wildcard"
                         ? t(" wildcard", " سهمیه آزاد")
-                         : source.selection?.kind === "match-results"
-                           ? t(" outcomes", " نتایج")
-                        : ""}
+                        : source.selection?.kind === "match-results"
+                          ? t(" outcomes", " نتایج")
+                          : ""}
                     </text>
                   </g>
                 );
@@ -324,7 +325,7 @@ export function StageCanvas({
                   width: NODE_WIDTH,
                   height: NODE_HEIGHT,
                 }}
-                dir={locale === "fa" ? "rtl" : "ltr"}
+                dir={localeDirection(locale)}
               >
                 <button
                   className="stage-move-handle"

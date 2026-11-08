@@ -1,3 +1,4 @@
+import { localeTag } from "../../i18n/locales";
 import type {
   AdvancementPreview,
   Stage,
@@ -5,7 +6,12 @@ import type {
   WildcardTieBreaker,
 } from "../../domain/types";
 import { Notice } from "../../components/ui";
-import { useI18n, localizedDiagnostic, groupLabel, generatedMatchLabel } from "../../i18n";
+import {
+  useI18n,
+  localizedDiagnostic,
+  groupLabel,
+  generatedMatchLabel,
+} from "../../i18n";
 import { matchResultQualifiers } from "../../engine/match-qualifiers";
 
 export function QualifierPreview({
@@ -22,7 +28,7 @@ export function QualifierPreview({
     tournament.participants.find((participant) => participant.id === id)
       ?.name ?? id;
   const metric = (value: number) =>
-    new Intl.NumberFormat(locale === "fa" ? "fa-IR" : "en-US", {
+    new Intl.NumberFormat(localeTag(locale), {
       maximumFractionDigits: 3,
     }).format(value);
   return (
@@ -86,11 +92,29 @@ export function QualifierPreview({
             )}
             {rule.selection?.kind === "match-results" ? (
               <ul>
-                {matchResultQualifiers(tournament, rule.stageId, rule.selection.picks, rule.count).outcomes.map((pick, index) => <li key={index}>
-                  {generatedMatchLabel({ label: tournament.matches.find((match) => match.id === pick.matchId)?.label ?? pick.matchId }, locale)}:
-                  {" "}{pick.outcome === "winners" ? t("Winners", "برندگان") : t("Losers", "بازندگان")}
-                  {" "}<bdi>{pick.participantIds.map(name).join(", ")}</bdi>
-                </li>)}
+                {matchResultQualifiers(
+                  tournament,
+                  rule.stageId,
+                  rule.selection.picks,
+                  rule.count,
+                ).outcomes.map((pick, index) => (
+                  <li key={index}>
+                    {generatedMatchLabel(
+                      {
+                        label:
+                          tournament.matches.find(
+                            (match) => match.id === pick.matchId,
+                          )?.label ?? pick.matchId,
+                      },
+                      locale,
+                    )}
+                    :{" "}
+                    {pick.outcome === "winners"
+                      ? t("Winners", "برندگان")
+                      : t("Losers", "بازندگان")}{" "}
+                    <bdi>{pick.participantIds.map(name).join(", ")}</bdi>
+                  </li>
+                ))}
               </ul>
             ) : source.candidates.length ? (
               <div className="structure-table-scroll">

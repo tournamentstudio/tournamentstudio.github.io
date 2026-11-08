@@ -181,8 +181,8 @@ export function DrawPots<T extends Pick<GroupDrawConfig, "pots">>({
               .filter((participant) =>
                 participant.name
                   .normalize("NFKC")
-                  .toLocaleLowerCase()
-                  .includes(search.normalize("NFKC").toLocaleLowerCase()),
+                  .toLocaleLowerCase(locale)
+                  .includes(search.normalize("NFKC").toLocaleLowerCase(locale)),
               )
               .map((participant) => (
                 <div className="draw-entrant" key={participant.id}>

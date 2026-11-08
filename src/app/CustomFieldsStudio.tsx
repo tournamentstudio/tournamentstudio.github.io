@@ -16,7 +16,7 @@ import type { EditorProps } from "./Participants";
 import "./custom-fields.css";
 
 export function CustomFieldsStudio({ tournament: doc, onChange }: EditorProps) {
-  const { t, number } = useI18n();
+  const { t, number, locale } = useI18n();
   const fields = useMemo(() => fieldDefinitions(doc), [doc]);
   const allRecords = useMemo(() => customRecords(doc), [doc]);
   const [editing, setEditing] = useState<FieldDefinition>();
@@ -356,8 +356,8 @@ export function CustomFieldsStudio({ tournament: doc, onChange }: EditorProps) {
                 r.id === recordId ||
                 r.label
                   .normalize("NFKC")
-                  .toLocaleLowerCase()
-                  .includes(search.normalize("NFKC").toLocaleLowerCase()),
+                  .toLocaleLowerCase(locale)
+                  .includes(search.normalize("NFKC").toLocaleLowerCase(locale)),
             )
             .slice(0, 200)
             .map((r) => (

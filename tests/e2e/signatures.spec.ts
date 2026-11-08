@@ -41,10 +41,7 @@ async function openStudio(page: Page, persian = false) {
     .click();
   await expect(dialog).not.toBeVisible();
   await expect(page.locator(".workspace-fieldset")).not.toBeDisabled();
-  if (persian)
-    await page
-      .getByRole("button", { name: "Switch to Persian", exact: true })
-      .click();
+  if (persian) await page.getByTestId("language-select").selectOption("fa");
   await page
     .getByRole("navigation", {
       name: persian ? "بخش‌های مسابقات" : "Tournament sections",

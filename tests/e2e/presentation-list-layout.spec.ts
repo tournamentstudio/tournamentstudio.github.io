@@ -80,12 +80,7 @@ for (const locale of ["en", "fa"] as const)
     const doc = await openTournament(page, locale);
     for (const active of [locale, locale === "en" ? "fa" : "en"] as const) {
       if (active !== locale)
-        await page
-          .getByRole("button", {
-            name: text(locale, "Switch to Persian", "تغییر به انگلیسی"),
-            exact: true,
-          })
-          .click();
+        await page.getByTestId("language-select").selectOption(active);
       await page
         .getByRole("button", {
           name: text(active, "Preview presentation", "پیش‌نمایش"),

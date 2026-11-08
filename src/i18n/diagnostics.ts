@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { sourceMessage, translate as translateMessage } from "./translate";
 import { customFieldTranslations } from "./custom-field-messages";
 import type { GroupDrawIssue, Locale } from "../domain/types";
 import { groupDrawIssueText } from "../domain/draw";
@@ -161,8 +162,27 @@ export function localizedDiagnostic(
   error: unknown,
   locale: Locale = "en",
 ): string {
-  if (locale !== "fa")
-    return error instanceof Error ? error.message : String(error);
+  if (locale === "en")
+    return sourceMessage(
+      error instanceof Error ? error.message : String(error),
+    );
+  if (locale !== "fa") {
+    if (error instanceof z.ZodError) {
+      const language =
+        locale === "zh" ? "zhCN" : locale === "pt" ? "ptBR" : locale;
+      const render = z.locales[language]().localeError;
+      return error.issues
+        .map((issue) => {
+          const message = render(issue as Parameters<typeof render>[0]);
+          return `${issue.path.length ? `${issue.path.join(".")}: ` : ""}${message || issue.message}`;
+        })
+        .join("\n");
+    }
+    const text = sourceMessage(
+      error instanceof Error ? error.message : String(error),
+    );
+    return translateOtherDiagnostic(text, locale);
+  }
   if (error instanceof z.ZodError) {
     const translate = z.locales.fa().localeError;
     return error.issues
@@ -172,8 +192,92 @@ export function localizedDiagnostic(
       })
       .join("\n");
   }
-  const text = error instanceof Error ? error.message : String(error);
-  return translateText(text);
+  const text = sourceMessage(
+    error instanceof Error ? error.message : String(error),
+  );
+  const legacy = translateText(text);
+  if (legacy !== text && !legacy.startsWith("جزئیات خطا به زبان اصلی:"))
+    return legacy;
+  const translated = translateMessage(locale, text);
+  return translated !== text ? translated : legacy;
+}
+
+function translateOtherDiagnostic(text: string, locale: Locale): string {
+  if (text.length > 32768) return text;
+  const schema = /^Invalid tournament at (.+?): ([\s\S]+)$/.exec(text);
+  if (schema)
+    return translateMessage(
+      locale,
+      `Invalid tournament at ${schema[1]}: ${translateOtherDiagnostic(schema[2], locale)}`,
+    );
+  const schemaDetail = localizedSchemaText(text, locale);
+  if (schemaDetail) return schemaDetail;
+  const translated = translateMessage(locale, text);
+  if (translated !== text) return translated;
+  if (text.length <= 32768) {
+    for (const prefix of prefixes) {
+      if (text.startsWith(`${prefix} `))
+        return `${translateMessage(locale, prefix)} ${translateOtherDiagnostic(text.slice(prefix.length + 1), locale)}`;
+    }
+  }
+  return text;
+}
+function localizedSchemaText(text: string, locale: Locale): string | undefined {
+  const language = locale === "zh" ? "zhCN" : locale === "pt" ? "ptBR" : locale;
+  const format = z.locales[language]().localeError;
+  const render = (issue: Parameters<typeof format>[0]) => {
+    const result = format(issue);
+    return typeof result === "string" ? result : result?.message;
+  };
+  const type = /^Invalid input: expected (\w+), received (\w+)$/.exec(text);
+  if (type) {
+    const examples: Record<string, unknown> = {
+      string: "",
+      number: 0,
+      boolean: false,
+      array: [],
+      object: {},
+      null: null,
+      undefined: undefined,
+      NaN: NaN,
+    };
+    if (Object.hasOwn(examples, type[2]))
+      return (
+        render({
+          code: "invalid_type",
+          expected: type[1],
+          input: examples[type[2]],
+        } as Parameters<typeof render>[0]) || undefined
+      );
+  }
+  const size =
+    /^Too (small|big): expected (.+?) to (?:(?:have|be) )?([<>]=?)(\d+)(?: (items|characters))?$/.exec(
+      text,
+    );
+  if (size)
+    return (
+      render({
+        code: size[1] === "small" ? "too_small" : "too_big",
+        origin: size[2],
+        minimum: Number(size[4]),
+        maximum: Number(size[4]),
+        inclusive: size[3].includes("="),
+        input: undefined,
+      } as Parameters<typeof render>[0]) || undefined
+    );
+  const option = /^Invalid (?:option|value): expected (?:one of )?(.+)$/.exec(
+    text,
+  );
+  if (option)
+    return (
+      render({
+        code: "invalid_value",
+        values: option[1]
+          .split("|")
+          .map((value) => value.replace(/^"|"$/g, "")),
+      } as Parameters<typeof render>[0]) || undefined
+    );
+  return undefined;
 }
 function translateText(text: string): string {
   if (text.length > 32768) return `جزئیات خطا به زبان اصلی: ${text}`;

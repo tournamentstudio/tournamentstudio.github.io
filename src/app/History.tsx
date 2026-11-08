@@ -5,6 +5,7 @@ import { repository, type RevisionEntry } from "../persistence";
 import { exportArchive, downloadFile } from "../sharing";
 import { Notice, ErrorText } from "../components/ui";
 import { useI18n } from "../i18n";
+import { localeTag } from "../i18n/locales";
 import { HistoryComparison } from "./HistoryComparison";
 import { RestorationReview } from "./RestorationReview";
 export function History({
@@ -16,7 +17,7 @@ export function History({
   secret?: string;
   onRestore: (t: Tournament) => void;
 }) {
-  const { t, date } = useI18n();
+  const { t, date, locale, number } = useI18n();
   const [revisions, setRevisions] = useState<RevisionEntry[]>([]);
   const [selected, setSelected] = useState<RevisionEntry>();
   const [error, setError] = useState<unknown>();
@@ -95,11 +96,14 @@ export function History({
             <span className="revision-dot" />
             <div>
               <b>
-                {t("Revision", "نسخه")} {r.revision}
+                {t("Revision", "نسخه")} {number(r.revision)}
               </b>
               <p>{r.action}</p>
               <small>
-                {date(r.at)} · {new Date(r.at).toLocaleTimeString()}
+                <time dateTime={r.at}>
+                  {date(r.at)} ·{" "}
+                  {new Date(r.at).toLocaleTimeString(localeTag(locale))}
+                </time>
               </small>
             </div>
             <span className="revision-hash" title={r.hash}>

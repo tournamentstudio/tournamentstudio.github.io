@@ -1,3 +1,4 @@
+import { localeTag } from "../i18n/locales";
 import type { Locale, Tournament } from "../domain/types";
 import { overlaySchema, type OverlaySettings } from "../domain/display-options";
 import { publicProjection } from "../sharing";
@@ -84,10 +85,10 @@ export function broadcastOverlaySVG(
             (match.status === "live" ? match.liveScores?.[index] : undefined) ??
             match.result?.scores[index] ??
             0
-          ).toLocaleString(locale)
+          ).toLocaleString(localeTag(locale))
         : "·";
       return `<rect x="${x}" y="${y}" width="${cardWidth}" height="${cardHeight}" rx="${c.radius}" fill="${c.card}"/><path d="M${x} ${y + cardHeight - 4}H${x + cardWidth}" stroke="${c.accent}" stroke-width="8"/>${visualText(name, x + (cardWidth - 130) / 2, y + 54, fontSize, cardWidth - 150, locale, c.foreground)}${visualScoreText(score, x + cardWidth - 65, y + 64, fontSize + 12, 110, c.accent)}`;
     })
     .join("");
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img"><title>${escapeXML(t.title)} · ${exportLabel(locale, "Broadcast overlay", "لایه پخش")}</title><style>text{font-family:TournaExportArabic,TournaExportLatin,sans-serif;font-weight:600}</style>${settings.background === "transparent" ? "" : `<rect width="100%" height="100%" fill="${settings.background === "chroma" ? settings.chroma : c.background}"/>`}${title}${rows}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img"><title>${escapeXML(t.title)} · ${exportLabel(locale, "Broadcast overlay", "لایه پخش")}</title><style>text{font-family:TournaExportArabic,TournaExportLatin,TournaExportLatinExtended,TournaExportCyrillic,sans-serif;font-weight:600}</style>${settings.background === "transparent" ? "" : `<rect width="100%" height="100%" fill="${settings.background === "chroma" ? settings.chroma : c.background}"/>`}${title}${rows}</svg>`;
 }

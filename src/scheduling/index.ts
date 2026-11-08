@@ -1,3 +1,4 @@
+import { translate } from "../i18n/translate";
 import type { Locale, Match, Tournament } from "../domain/types";
 import { knockoutDrawIssueText } from "../domain/knockout-draw";
 import { schedulingConflictPairs } from "./conflict-pairs";
@@ -282,9 +283,11 @@ export function detectConflictsCore(
           (resource) => resource.id === assigned,
         )?.name ?? assigned;
       conflicts.push(
-        locale === "fa"
-          ? `${match.label}: محل تعیین‌شده در قوانین قرعه (${name}) حفظ نشده است.`
-          : `${match.label} must use the venue assigned by its draw rule (${name}).`,
+        translate(
+          locale,
+          `${match.label} must use the venue assigned by its draw rule (${name}).`,
+          `${match.label}: محل تعیین‌شده در قوانین قرعه (${name}) حفظ نشده است.`,
+        ),
       );
     }
   }

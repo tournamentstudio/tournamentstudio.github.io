@@ -24,9 +24,7 @@ const text = (locale: Locale, en: string, fa: string) =>
 
 async function openBracket(page: Page, locale: Locale) {
   await page.goto("/");
-  await expect(
-    page.getByRole("button", { name: "Switch to Persian", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByTestId("language-select")).toBeVisible();
   if (locale === "fa") await switchLanguage(page, "en");
   const draft = createTournament(
     "University Championship جام دانشگاه تهران",
@@ -62,11 +60,8 @@ async function section(page: Page, locale: Locale, en: string, fa: string) {
 
 async function switchLanguage(page: Page, from: Locale) {
   await page
-    .getByRole("button", {
-      name: text(from, "Switch to Persian", "تغییر به انگلیسی"),
-      exact: true,
-    })
-    .click();
+    .getByTestId("language-select")
+    .selectOption(from === "en" ? "fa" : "en");
   await expect(page.locator("html")).toHaveAttribute(
     "dir",
     from === "en" ? "rtl" : "ltr",
@@ -198,7 +193,12 @@ for (const locale of ["en", "fa"] as const) {
     await section(page, locale, "Share Center", "مرکز اشتراک");
     await page.locator("details.share-advanced > summary").click();
     const pending = page.waitForEvent("download");
-    await page.getByRole("button", { name: text(locale, "Bracket SVG", "جدول SVG"), exact: true }).click();
+    await page
+      .getByRole("button", {
+        name: text(locale, "Bracket SVG", "جدول SVG"),
+        exact: true,
+      })
+      .click();
     const download = await pending;
     const svg = await readFile((await download.path())!, "utf8");
     expect(svg).toContain("data:font/woff2;base64,");
@@ -248,7 +248,9 @@ for (const locale of ["en", "fa"] as const) {
       ),
     ).toEqual([
       { family: "TournaExportArabic", status: "loaded" },
+      { family: "TournaExportCyrillic", status: "loaded" },
       { family: "TournaExportLatin", status: "loaded" },
+      { family: "TournaExportLatinExtended", status: "loaded" },
     ]);
     await bracketTextFits(printed.locator("svg"));
     await printed.close();

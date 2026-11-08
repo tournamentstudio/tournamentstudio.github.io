@@ -1,3 +1,5 @@
+import { translate } from "../i18n/translate";
+import { localeTag, localeDirection } from "../i18n/locales";
 import type { Locale, Tournament } from "../domain/types";
 import { getStandings } from "../engine";
 import { getTheme, themeStyle } from "../themes";
@@ -19,7 +21,7 @@ export function StandingsTable({
   hideCaption?: boolean;
   hideRankingSummary?: boolean;
 }) {
-  const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
+  const t = (en: string, fa: string) => translate(locale, en, fa);
   const standings = getStandings(tournament, stageId, group);
   const petanque = tournament.sport === "petanque";
   const stage = tournament.stages.find((item) => item.id === stageId);
@@ -105,11 +107,11 @@ export function StandingsTable({
   );
   const participantMap = new Map(tournament.participants.map((p) => [p.id, p]));
   const n = (v: number) =>
-    v.toLocaleString(locale === "fa" ? "fa-IR" : "en-US", {
+    v.toLocaleString(localeTag(locale), {
       maximumFractionDigits: cumulative ? 3 : 2,
     });
   return (
-    <div className="standings-frame" dir={locale === "fa" ? "rtl" : "ltr"}>
+    <div className="standings-frame" dir={localeDirection(locale)}>
       {petanque && orderedRanking && !hideRankingSummary && (
         <RankingSummary
           tieBreakers={tournament.rules.tieBreakers}

@@ -36,13 +36,11 @@ async function open(page: Page, doc: ReturnType<typeof fixture>) {
   const dialog = page.getByRole("dialog", {
     name: "Bring a tournament into your studio",
   });
-  await dialog
-    .locator('input[type="file"]')
-    .setInputFiles({
-      name: "routes.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(doc)),
-    });
+  await dialog.locator('input[type="file"]').setInputFiles({
+    name: "routes.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(doc)),
+  });
   await dialog
     .getByRole("button", { name: "Preview import", exact: true })
     .click();
@@ -152,14 +150,12 @@ test("reviews imported route networks, rejects broken references and fits Persia
     homes: [{ participantId: doc.participants[0].id, nodeId: "home" }],
     venues: [{ resourceId: doc.schedule.resources[0].id, nodeId: "court" }],
   };
-  await studio
-    .getByLabel("Route network JSON", { exact: true })
-    .fill(
-      JSON.stringify({
-        ...graph,
-        homes: [{ participantId: "missing", nodeId: "home" }],
-      }),
-    );
+  await studio.getByLabel("Route network JSON", { exact: true }).fill(
+    JSON.stringify({
+      ...graph,
+      homes: [{ participantId: "missing", nodeId: "home" }],
+    }),
+  );
   await studio
     .getByRole("button", { name: "Preview route import", exact: true })
     .click();
@@ -194,9 +190,7 @@ test("reviews imported route networks, rejects broken references and fits Persia
   await expect(
     studio.getByText("No connecting route", { exact: false }).first(),
   ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.setViewportSize({ width: 320, height: 800 });
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   expect(

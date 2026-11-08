@@ -789,9 +789,7 @@ test("renders Persian navigation and mixed-script names on a mobile viewport", a
     title: "جام پاییز Autumn",
     names: ["تیم آفتاب", "North Stars", "تیم باران", "Atlas United"],
   });
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await expect(page.locator("html")).toHaveAttribute("lang", "fa");
   await page

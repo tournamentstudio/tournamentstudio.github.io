@@ -1,3 +1,4 @@
+import { localeTag } from "../i18n/locales";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { EditorProps } from "../app/Participants";
 import { Field, ErrorText, Modal, Notice } from "../components/ui";
@@ -24,7 +25,7 @@ const localInput = (value: string) => {
 export function ScheduleTimeline({ tournament, onChange }: EditorProps) {
   const { t, locale, number } = useI18n();
   const date = (value: string) =>
-    new Date(value).toLocaleString(locale === "fa" ? "fa-IR" : "en-US", {
+    new Date(value).toLocaleString(localeTag(locale), {
       dateStyle: "short",
       timeStyle: "short",
     });

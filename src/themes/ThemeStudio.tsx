@@ -1,3 +1,5 @@
+import { translate } from "../i18n/translate";
+import { localeDirection } from "../i18n/locales";
 import { useId, useState } from "react";
 import type { Locale, ThemeSettings, Tournament } from "../domain/types";
 import { downloadText } from "../export";
@@ -30,8 +32,8 @@ export function ThemeStudio({
   onChange: (theme: ThemeSettings) => void;
   locale?: Locale;
 }) {
-  const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
-  const [error, setError] = useState("");
+  const t = (en: string, fa: string) => translate(locale, en, fa);
+  const [error, setError] = useState<"image" | "theme">();
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [showAll, setShowAll] = useState(false);
@@ -51,6 +53,9 @@ export function ThemeStudio({
         theme.descriptionFa,
         theme.collection.name,
         theme.collection.fa,
+        translate(locale, theme.name, theme.fa),
+        translate(locale, theme.description, theme.descriptionFa),
+        translate(locale, theme.collection.name, theme.collection.fa),
       ].some((value) =>
         value.normalize("NFKC").toLocaleLowerCase(locale).includes(query),
       ),
@@ -68,14 +73,9 @@ export function ThemeStudio({
     if (!file) return;
     try {
       update({ [field]: await readImageAsset(file) });
-      setError("");
+      setError(undefined);
     } catch {
-      setError(
-        t(
-          "Use a PNG, JPEG or WebP image under 2 MB and 16 megapixels.",
-          "تصویر PNG، JPEG یا WebP کمتر از ۲ مگابایت و ۱۶ مگاپیکسل انتخاب کنید.",
-        ),
-      );
+      setError("image");
     }
   };
   const importTheme = async (file: File | undefined) => {
@@ -83,18 +83,13 @@ export function ThemeStudio({
     try {
       if (file.size > 8_000_000) throw new Error("size");
       onChange(parsePortableTheme(await file.text()));
-      setError("");
+      setError(undefined);
     } catch {
-      setError(
-        t(
-          "This theme file is invalid or too large.",
-          "فایل قالب نامعتبر یا بیش از حد بزرگ است.",
-        ),
-      );
+      setError("theme");
     }
   };
   return (
-    <div className="theme-studio" dir={locale === "fa" ? "rtl" : "ltr"}>
+    <div className="theme-studio" dir={localeDirection(locale)}>
       <div
         className="theme-preview themed"
         style={themeStyle(current)}
@@ -482,7 +477,19 @@ export function ThemeStudio({
         onApply={onChange}
         locale={locale}
       />
-      {error && <p role="alert">{error}</p>}
+      {error && (
+        <p role="alert">
+          {error === "image"
+            ? t(
+                "Use a PNG, JPEG or WebP image under 2 MB and 16 megapixels.",
+                "تصویر PNG، JPEG یا WebP کمتر از ۲ مگابایت و ۱۶ مگاپیکسل انتخاب کنید.",
+              )
+            : t(
+                "This theme file is invalid or too large.",
+                "فایل قالب نامعتبر یا بیش از حد بزرگ است.",
+              )}
+        </p>
+      )}
     </div>
   );
 }

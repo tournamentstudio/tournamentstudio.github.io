@@ -235,7 +235,9 @@ test("private archives reconstruct player history in another profile while publi
   const privateFile = await download,
     privateData = await readFile((await privateFile.path())!);
   download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Public tournament JSON", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Public tournament JSON", exact: true })
+    .click();
   const publicFile = await download,
     publicData = await readFile((await publicFile.path())!);
   expect(publicData.toString()).not.toContain("playerStatistics");
@@ -330,9 +332,7 @@ test("Persian player controls and event timeline fit 320 pixels and support keyb
     .slice(0, 240);
   await open(page, doc);
   await record(page);
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.setViewportSize({ width: 320, height: 800 });
   const studio = page.locator(".player-statistics-studio");
   await expect(

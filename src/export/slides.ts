@@ -1,3 +1,4 @@
+import { localeDirection, localeTag } from "../i18n/locales";
 import { strToU8, zipSync } from "fflate";
 import QRCode from "qrcode";
 import type { Locale, Scene, Tournament } from "../domain/types";
@@ -64,7 +65,7 @@ async function scenePages(
         t,
         title,
         t.participants.map(
-          (p, i) => `${(i + 1).toLocaleString(locale)}. ${p.name}`,
+          (p, i) => `${(i + 1).toLocaleString(localeTag(locale))}. ${p.name}`,
         ),
         locale,
       );
@@ -99,7 +100,7 @@ async function scenePages(
           .filter((m) => m.status === "completed")
           .map(
             (m) =>
-              `${matchNames(t, m, locale).join(" / ")} · ${t.presentation.showScores ? (m.result?.scores.map((score) => score.toLocaleString(locale)).join(" : ") ?? "") : "·"}`,
+              `${matchNames(t, m, locale).join(" / ")} · ${t.presentation.showScores ? (m.result?.scores.map((score) => score.toLocaleString(localeTag(locale))).join(" : ") ?? "") : "·"}`,
           ),
         locale,
       );
@@ -112,7 +113,7 @@ async function scenePages(
           .sort((a, b) => a.scheduledAt!.localeCompare(b.scheduledAt!))
           .map(
             (m) =>
-              `${new Date(m.scheduledAt!).toLocaleString(locale, { timeZone: t.timezone })} · ${generatedMatchLabel(m, locale)} · ${matchNames(t, m, locale).join(" / ")} · ${t.schedule.resources.find((r) => r.id === m.resourceId)?.name ?? ""}`,
+              `${new Date(m.scheduledAt!).toLocaleString(localeTag(locale), { timeZone: t.timezone })} · ${generatedMatchLabel(m, locale)} · ${matchNames(t, m, locale).join(" / ")} · ${t.schedule.resources.find((r) => r.id === m.resourceId)?.name ?? ""}`,
           ),
         locale,
       );
@@ -121,9 +122,9 @@ async function scenePages(
         t,
         title,
         [
-          `${label("Participants", "شرکت‌کنندگان")}: ${t.participants.length.toLocaleString(locale)}`,
-          `${label("Matches completed", "مسابقات کامل‌شده")}: ${t.matches.filter((m) => m.status === "completed").length.toLocaleString(locale)}`,
-          `${label("Matches ready", "مسابقات آماده")}: ${t.matches.filter((m) => m.status === "ready").length.toLocaleString(locale)}`,
+          `${label("Participants", "شرکت‌کنندگان")}: ${t.participants.length.toLocaleString(localeTag(locale))}`,
+          `${label("Matches completed", "مسابقات کامل‌شده")}: ${t.matches.filter((m) => m.status === "completed").length.toLocaleString(localeTag(locale))}`,
+          `${label("Matches ready", "مسابقات آماده")}: ${t.matches.filter((m) => m.status === "ready").length.toLocaleString(localeTag(locale))}`,
         ],
         locale,
       );
@@ -147,7 +148,7 @@ async function scenePages(
         title,
         podiumPlaces(t).map(
           (p) =>
-            `${p.rank.toLocaleString(locale)}${p.tied ? "*" : ""}. ${names.get(p.participantId) ?? ""}`,
+            `${p.rank.toLocaleString(localeTag(locale))}${p.tied ? "*" : ""}. ${names.get(p.participantId) ?? ""}`,
         ),
         locale,
       );
@@ -173,7 +174,7 @@ async function scenePages(
         t,
         scene,
         locale,
-        `${Math.max(0, Math.min(86400, Number(scene.text) || 300)).toLocaleString(locale)} ${label("seconds", "ثانیه")}\n${label("Static countdown snapshot. Open the live presentation for a running timer.", "تصویر ثابت شمارش معکوس. برای زمان‌سنج فعال، نمایش زنده را باز کنید.")}`,
+        `${Math.max(0, Math.min(86400, Number(scene.text) || 300)).toLocaleString(localeTag(locale))} ${label("seconds", "ثانیه")}\n${label("Static countdown snapshot. Open the live presentation for a running timer.", "تصویر ثابت شمارش معکوس. برای زمان‌سنج فعال، نمایش زنده را باز کنید.")}`,
       );
     case "qr": {
       const code = await encodeCode(t);
@@ -221,7 +222,7 @@ async function scenePages(
         t,
         scene,
         locale,
-        `${scene.text || t.subtitle}\n${t.participants.length.toLocaleString(locale)} ${label("participants", "شرکت‌کننده")} · ${t.stages.length.toLocaleString(locale)} ${label("stages", "مرحله")}`,
+        `${scene.text || t.subtitle}\n${t.participants.length.toLocaleString(localeTag(locale))} ${label("participants", "شرکت‌کننده")} · ${t.stages.length.toLocaleString(localeTag(locale))} ${label("stages", "مرحله")}`,
       );
     default:
       return messagePage(
@@ -300,10 +301,10 @@ export function slideViewerHTML(
   const pages = files
     .map(
       (file, i) =>
-        `<section id="slide-${i + 1}"><h2>${escapeXML(file.title)}</h2><img src="slide-${String(i + 1).padStart(3, "0")}.svg" alt="${escapeXML(file.title)}"><nav aria-label="${label("Slide controls", "کنترل نما")}">${i ? `<a href="#slide-${i}">${label("Previous", "قبلی")}</a>` : ""}<span>${i + 1}/${files.length}</span>${i + 1 < files.length ? `<a href="#slide-${i + 2}">${label("Next", "بعدی")}</a>` : ""}</nav></section>`,
+        `<section id="slide-${i + 1}"><h2>${escapeXML(file.title)}</h2><img src="slide-${String(i + 1).padStart(3, "0")}.svg" alt="${escapeXML(file.title)}"><nav aria-label="${label("Slide controls", "کنترل نما")}">${i ? `<a href="#slide-${i}">${label("Previous", "قبلی")}</a>` : ""}<span dir="ltr">${(i + 1).toLocaleString(localeTag(locale))}/${files.length.toLocaleString(localeTag(locale))}</span>${i + 1 < files.length ? `<a href="#slide-${i + 2}">${label("Next", "بعدی")}</a>` : ""}</nav></section>`,
     )
     .join("");
-  return `<!doctype html><html lang="${locale}" dir="${locale === "fa" ? "rtl" : "ltr"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; font-src data:; base-uri 'none'; form-action 'none'"><meta name="referrer" content="no-referrer"><title>${escapeXML(title)}</title><style>body{margin:0;background:#101b19;color:#f5f7f6;font:18px TournaExportArabic,TournaExportLatin,system-ui}header{padding:24px}h1,h2{overflow-wrap:anywhere}header nav{display:flex;flex-wrap:wrap;gap:16px}a{color:#b5edc8;overflow-wrap:anywhere}section{padding:24px;min-height:90vh;scroll-margin-top:0;break-after:page}section img{display:block;width:100%;max-height:80vh;object-fit:contain}section nav{display:flex;justify-content:center;gap:32px;padding:20px}a:focus-visible{outline:3px solid white;outline-offset:5px}@media print{body{background:white;color:black}header,nav,h2{display:none}section{min-height:0;padding:0}section img{max-height:95vh}@page{size:landscape;margin:5mm}}</style></head><body><header><h1>${escapeXML(title)}</h1><p>${label("Offline slide files. These are snapshots and do not receive live updates. Unzip all files together, then open this index. Use browser printing to save a PDF.", "فایل‌های نمایش آفلاین. این‌ها تصاویر ثابت هستند و به‌روز نمی‌شوند. همه فایل‌ها را کنار هم استخراج و این صفحه را باز کنید. برای ذخیره PDF از چاپ مرورگر استفاده کنید.")}</p><nav aria-label="${label("Slide list", "فهرست نماها")}">${links}</nav></header>${pages}</body></html>`;
+  return `<!doctype html><html lang="${locale}" dir="${localeDirection(locale)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; font-src data:; base-uri 'none'; form-action 'none'"><meta name="referrer" content="no-referrer"><title>${escapeXML(title)}</title><style>body{margin:0;background:#101b19;color:#f5f7f6;font:18px TournaExportArabic,TournaExportLatin,TournaExportLatinExtended,TournaExportCyrillic,system-ui}header{padding:24px}h1,h2{overflow-wrap:anywhere}header nav{display:flex;flex-wrap:wrap;gap:16px}a{color:#b5edc8;overflow-wrap:anywhere}section{padding:24px;min-height:90vh;scroll-margin-top:0;break-after:page}section img{display:block;width:100%;max-height:80vh;object-fit:contain}section nav{display:flex;justify-content:center;gap:32px;padding:20px}a:focus-visible{outline:3px solid white;outline-offset:5px}@media print{body{background:white;color:black}header,nav,h2{display:none}section{min-height:0;padding:0}section img{max-height:95vh}@page{size:landscape;margin:5mm}}</style></head><body><header><h1>${escapeXML(title)}</h1><p>${label("Offline slide files. These are snapshots and do not receive live updates. Unzip all files together, then open this index. Use browser printing to save a PDF.", "فایل‌های نمایش آفلاین. این‌ها تصاویر ثابت هستند و به‌روز نمی‌شوند. همه فایل‌ها را کنار هم استخراج و این صفحه را باز کنید. برای ذخیره PDF از چاپ مرورگر استفاده کنید.")}</p><nav aria-label="${label("Slide list", "فهرست نماها")}">${links}</nav></header>${pages}</body></html>`;
 }
 
 export function slideArchive(

@@ -15,7 +15,6 @@ import {
   ArrowUpRight,
   Menu,
   X,
-  Globe2,
   CheckCircle2,
   LoaderCircle,
   WifiOff,
@@ -38,6 +37,13 @@ import {
 } from "../sharing";
 import type { MergeSelection } from "./PatchMergeReview";
 import { LocaleContext, useI18n } from "../i18n";
+import {
+  localeDirection,
+  readLocalePreference,
+  saveLocalePreference,
+} from "../i18n/locales";
+import { LanguageSelector } from "../components/LanguageSelector";
+import { loadLanguage, sourceMessage, translate } from "../i18n/translate";
 import { Modal, Field, ErrorText, Confirm } from "../components/ui";
 import { Home } from "./Home";
 import { HelpDialog } from "./HelpDialog";
@@ -77,26 +83,90 @@ function documentId(path: string) {
   return path.match(/^\/(?:t|present)\/([^/]+)/)?.[1];
 }
 export default function App() {
-  const [locale, setLocale] = useState<Locale>(() =>
-    localStorage.getItem("tournastudio-locale") === "fa" ? "fa" : "en",
+  const [preferredLocale] = useState<Locale>(() => readLocalePreference());
+  const [locale, setLocale] = useState<Locale>(
+    preferredLocale === "fa" ? "fa" : "en",
   );
+  const [starting, setStarting] = useState(
+    preferredLocale !== "en" && preferredLocale !== "fa",
+  );
+  const [languagePending, setLanguagePending] = useState<Locale | null>(null);
+  const [languageError, setLanguageError] = useState<Locale | null>(null);
+  const languageRequest = useRef(0);
+  const changeLanguage = useCallback(async (next: Locale) => {
+    const request = ++languageRequest.current;
+    setLanguagePending(next);
+    setLanguageError(null);
+    try {
+      await loadLanguage(next);
+      if (request !== languageRequest.current) return;
+      setLocale(next);
+      saveLocalePreference(next);
+    } catch {
+      if (request !== languageRequest.current) return;
+      setLanguageError(next);
+    } finally {
+      if (request === languageRequest.current) {
+        setLanguagePending(null);
+        setStarting(false);
+      }
+    }
+  }, []);
+  useEffect(() => {
+    if (preferredLocale !== "en" && preferredLocale !== "fa")
+      void changeLanguage(preferredLocale);
+    return () => {
+      languageRequest.current++;
+    };
+  }, [preferredLocale, changeLanguage]);
   useEffect(() => {
     document.documentElement.lang = locale;
-    document.documentElement.dir = locale === "fa" ? "rtl" : "ltr";
-    localStorage.setItem("tournastudio-locale", locale);
+    document.documentElement.dir = localeDirection(locale);
+    document.title = translate(
+      locale,
+      "TournaStudio | Tournament brackets, scores and displays",
+      "TournaStudio | جدول مسابقات، امتیازها و نمایش",
+    );
   }, [locale]);
   return (
     <LocaleContext.Provider value={locale}>
-      <Studio locale={locale} setLocale={setLocale} />
+      {starting ? (
+        <LanguageLoading />
+      ) : (
+        <Studio
+          locale={locale}
+          setLocale={(next) => void changeLanguage(next)}
+          languagePending={languagePending}
+          languageError={languageError}
+        />
+      )}
     </LocaleContext.Provider>
   );
 }
+
+function LanguageLoading() {
+  const { t } = useI18n();
+  return (
+    <main className="language-loading" aria-busy="true">
+      <h1>TournaStudio</h1>
+      <p role="status">
+        <LoaderCircle size={18} className="spin" aria-hidden="true" />
+        {t("Loading language...", "در حال بارگذاری زبان...")}
+      </p>
+    </main>
+  );
+}
+
 function Studio({
   locale,
   setLocale,
+  languagePending,
+  languageError,
 }: {
   locale: Locale;
   setLocale: (l: Locale) => void;
+  languagePending: Locale | null;
+  languageError: Locale | null;
 }) {
   const { t } = useI18n();
   const [route, setRoute] = useState(getRoute);
@@ -1036,14 +1106,11 @@ function Studio({
               )}
             </span>
             {!online && <WifiOff size={16} />}
-            <button
-              className="language-button"
-              onClick={() => setLocale(locale === "en" ? "fa" : "en")}
-              aria-label={t("Switch to Persian", "تغییر به انگلیسی")}
-            >
-              <Globe2 size={16} />
-              {locale === "en" ? "فارسی" : "English"}
-            </button>
+            <LanguageSelector
+              locale={locale}
+              onChange={setLocale}
+              pending={languagePending !== null}
+            />
           </div>
         </header>
         <main
@@ -1051,6 +1118,22 @@ function Studio({
           tabIndex={-1}
           aria-label={t("Studio content", "محتوای استودیو")}
         >
+          {languageError && (
+            <div className="language-load-error" role="alert">
+              <p>
+                {t(
+                  "The language could not be loaded. Your current language and tournament are unchanged.",
+                  "زبان بارگذاری نشد. زبان فعلی و اطلاعات مسابقات شما تغییری نکرده‌اند.",
+                )}
+              </p>
+              <button
+                className="button secondary"
+                onClick={() => setLocale(languageError)}
+              >
+                {t("Retry language download", "تلاش دوباره برای دریافت زبان")}
+              </button>
+            </div>
+          )}
           <ErrorText error={error} />
           <BackupReminderNotice
             entries={entries}
@@ -1229,7 +1312,7 @@ function Studio({
       {toast && (
         <div className="toast" role="status">
           <CheckCircle2 size={18} />
-          {toast}
+          {translate(locale, sourceMessage(toast))}
         </div>
       )}
       {leavePath && (

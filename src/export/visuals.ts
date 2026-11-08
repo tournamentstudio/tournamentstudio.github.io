@@ -1,3 +1,5 @@
+import { translate } from "../i18n/translate";
+import { localeDirection, localeTag } from "../i18n/locales";
 import type { Locale, Match, Tournament } from "../domain/types";
 import { matchNames } from "../components/Bracket";
 import { getStandings } from "../engine";
@@ -17,7 +19,7 @@ export interface VisualPage {
 }
 
 export const exportLabel = (locale: Locale, en: string, fa: string) =>
-  locale === "fa" ? fa : en;
+  translate(locale, en, fa);
 
 const graphemes = new Intl.Segmenter(undefined, { granularity: "grapheme" });
 
@@ -61,7 +63,7 @@ export function wrapVisualText(value: string, columns: number): string[] {
 }
 
 function measureVisualText(size: number) {
-  const font = `900 ${size}px "Vazirmatn Variable"`;
+  const font = `900 ${size}px "Vazirmatn Variable", "Inter Variable", sans-serif`;
   const context =
     typeof document !== "undefined" &&
     document.fonts?.check(font, "شاهین Team") &&
@@ -107,10 +109,7 @@ export function visualText(
   return lines
     .map((line, i) => {
       const measured = measure(line);
-      const direction = bracketTextDirection(
-        line,
-        locale === "fa" ? "rtl" : "ltr",
-      );
+      const direction = bracketTextDirection(line, localeDirection(locale));
       const fitted =
         measured > width && line
           ? ` font-size="${(size * Math.max(1, width)) / measured}"`
@@ -178,10 +177,10 @@ export function visualFrame(
     Math.min(1, Math.max(1, width - 224) / measureVisualText(28)(masthead));
   const titleDirection = bracketTextDirection(
     masthead,
-    locale === "fa" ? "rtl" : "ltr",
+    localeDirection(locale),
   );
   const header = `<g data-export-masthead="true"><text x="${width / 2}" y="56" fill="${c.muted}" font-size="${titleSize}" text-anchor="middle" direction="${titleDirection}" unicode-bidi="isolate">${escapeXML(masthead)}</text></g>`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="title"><title id="title">${escapeXML(title)}</title><style>text{font-family:TournaExportArabic,TournaExportLatin,sans-serif}</style>${paint}<rect width="100%" height="100%" fill="${gradient ? "url(#scene-gradient)" : c.background}"/>${background}${logo}<path d="M0 0H${width}V12H0Z" fill="${c.accent}"/><g font-weight="${design.success ? (design.data.fontWeight ?? 600) : 600}">${header}${body}${visualText("TournaStudio", width / 2, height - 30, 18, width - 100, "en", c.muted)}</g></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="title"><title id="title">${escapeXML(title)}</title><style>text{font-family:TournaExportArabic,TournaExportLatin,TournaExportLatinExtended,TournaExportCyrillic,sans-serif}</style>${paint}<rect width="100%" height="100%" fill="${gradient ? "url(#scene-gradient)" : c.background}"/>${background}${logo}<path d="M0 0H${width}V12H0Z" fill="${c.accent}"/><g font-weight="${design.success ? (design.data.fontWeight ?? 600) : 600}">${header}${body}${visualText("TournaStudio", width / 2, height - 30, 18, width - 100, "en", c.muted)}</g></svg>`;
 }
 
 export function selectedScoreboardMatch(t: Tournament): Match | undefined {
@@ -233,7 +232,7 @@ export function scoreboardSVG(
             (match.status === "live" ? match.liveScores?.[index] : undefined) ??
             match.result?.scores[index] ??
             0
-          ).toLocaleString(locale)
+          ).toLocaleString(localeTag(locale))
         : "·";
       const lineCount = visualTextLines(name, nameSize, nameWidth).length;
       const textY =
@@ -257,7 +256,7 @@ export function scoreboardSVG(
     " · " +
     exportLabel(locale, "Round", "دور") +
     " " +
-    match.round.toLocaleString(locale);
+    match.round.toLocaleString(localeTag(locale));
   return visualFrame(
     t,
     status,
@@ -388,12 +387,12 @@ export function standingsVisualPages(
         " · " +
         exportLabel(locale, "Standings", "رده‌بندی"),
       getStandings(t, stageId, group).map((row) => {
-        const ranking = `${row.rank.toLocaleString(locale)}${row.tied ? "*" : ""}. ${names.get(row.participantId) ?? ""}`;
+        const ranking = `${row.rank.toLocaleString(localeTag(locale))}${row.tied ? "*" : ""}. ${names.get(row.participantId) ?? ""}`;
         const totals =
           t.sport === "petanque"
-            ? `${row.wins.toLocaleString(locale)} ${exportLabel(locale, "wins", "برد")} · ${row.differential.toLocaleString(locale)} ${exportLabel(locale, "point difference", "تفاضل امتیاز")} · ${row.scored.toLocaleString(locale)} ${exportLabel(locale, "points scored", "امتیاز کسب‌شده")}`
-            : `${row.points.toLocaleString(locale)} ${exportLabel(locale, "points", "امتیاز")}`;
-        return `${ranking} · ${totals} · ${row.played.toLocaleString(locale)} ${exportLabel(locale, "played", "بازی")}`;
+            ? `${row.wins.toLocaleString(localeTag(locale))} ${exportLabel(locale, "wins", "برد")} · ${row.differential.toLocaleString(localeTag(locale))} ${exportLabel(locale, "point difference", "تفاضل امتیاز")} · ${row.scored.toLocaleString(localeTag(locale))} ${exportLabel(locale, "points scored", "امتیاز کسب‌شده")}`
+            : `${row.points.toLocaleString(localeTag(locale))} ${exportLabel(locale, "points", "امتیاز")}`;
+        return `${ranking} · ${totals} · ${row.played.toLocaleString(localeTag(locale))} ${exportLabel(locale, "played", "بازی")}`;
       }),
       locale,
     ),

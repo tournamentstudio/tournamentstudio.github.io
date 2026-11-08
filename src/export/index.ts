@@ -1,3 +1,5 @@
+import { translate } from "../i18n/translate";
+import { localeDirection, localeTag } from "../i18n/locales";
 import { scheduleOccurrences } from "../scheduling/legs";
 import type { Locale, Tournament } from "../domain/types";
 import { layoutBracket, matchNames } from "../components/Bracket";
@@ -59,6 +61,7 @@ export function tournamentCSV(
     kind === "participants"
       ? [
           [
+            // These portable CSV headers retain the existing import contract.
             locale === "fa" ? "نام" : "Name",
             "Seed",
             "Status",
@@ -170,7 +173,7 @@ export function tournamentCalendar(t: Tournament, locale: Locale = "en") {
       `DTEND:${icsDate(new Date(start.getTime() + (m.durationMinutes ?? t.schedule.matchMinutes) * 60000))}`,
       `SUMMARY:${icsEscape(matchNames(t, m, locale).join(" / "))}`,
       `LOCATION:${icsEscape(t.schedule.resources.find((r) => r.id === m.resourceId)?.name ?? "")}`,
-      `DESCRIPTION:${icsEscape(`${t.title} | ${generatedMatchLabel(m, locale)} | ${t.stages.find((s) => s.id === m.stageId)?.name ?? ""} | ${m.round.toLocaleString(locale)}`)}`,
+      `DESCRIPTION:${icsEscape(`${t.title} | ${generatedMatchLabel(m, locale)} | ${t.stages.find((s) => s.id === m.stageId)?.name ?? ""} | ${m.round.toLocaleString(localeTag(locale))}`)}`,
       "END:VEVENT",
     );
   }
@@ -224,14 +227,14 @@ export function bracketSVG(
   const safeColor = (v: string, fallback: string) =>
     /^#[0-9a-f]{6}$/i.test(v) ? v : fallback;
   const nodes = new Map(graph.nodes.map((n) => [n.match.id, n]));
-  const rtl = locale === "fa",
+  const rtl = localeDirection(locale) === "rtl",
     direction = rtl ? "rtl" : "ltr",
     fontScale = t.theme.fontScale ?? 1,
     metrics = bracketTextMetrics(fontScale),
     prefix = `bracket-${t.stages.findIndex((stage) => stage.id === stageId)}`;
   const titleRegion = { x: 24, width: graph.width - 48 },
     titlePlacement = svgTextPlacement(t.title, titleRegion, direction);
-  const exportFont = '12px "Vazirmatn Variable"';
+  const exportFont = '12px "Vazirmatn Variable", "Inter Variable", sans-serif';
   const canvasContext =
     typeof document !== "undefined" &&
     document.fonts?.check(exportFont, "شاهین Team") &&
@@ -245,19 +248,19 @@ export function bracketSVG(
   const measure = (fontSize: number, weight = 400) =>
     canvasContext
       ? (value: string) => {
-          canvasContext.font = `${weight} ${fontSize}px "Vazirmatn Variable"`;
+          canvasContext.font = `${weight} ${fontSize}px "Vazirmatn Variable", "Inter Variable", sans-serif`;
           return canvasContext.measureText(value).width + 2;
         }
       : undefined;
   const parts = [
-    `<svg xmlns="http://www.w3.org/2000/svg" lang="${locale}" direction="ltr" width="${graph.width}" height="${graph.height + 70}" viewBox="0 0 ${graph.width} ${graph.height + 70}" role="img" aria-label="${escapeXML(t.title)}"><title>${escapeXML(t.title)}</title><style>text{font-family:TournaExportArabic,TournaExportLatin,sans-serif}</style><defs><clipPath id="${prefix}-heading"><rect x="24" y="8" width="${titleRegion.width}" height="46"/></clipPath></defs><rect width="100%" height="100%" fill="${safeColor(bg, theme.background)}"/><text x="${titlePlacement.x}" y="40" direction="${titlePlacement.direction}" unicode-bidi="isolate" text-anchor="${titlePlacement.textAnchor}" font-size="24" fill="${safeColor(fg, theme.foreground)}" clip-path="url(#${prefix}-heading)">${escapeXML(fitBracketText(t.title, titleRegion.width, 24, measure(24)))}</text><g transform="translate(0,60)">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" lang="${locale}" direction="ltr" width="${graph.width}" height="${graph.height + 70}" viewBox="0 0 ${graph.width} ${graph.height + 70}" role="img" aria-label="${escapeXML(t.title)}"><title>${escapeXML(t.title)}</title><style>text{font-family:TournaExportArabic,TournaExportLatin,TournaExportLatinExtended,TournaExportCyrillic,sans-serif}</style><defs><clipPath id="${prefix}-heading"><rect x="24" y="8" width="${titleRegion.width}" height="46"/></clipPath></defs><rect width="100%" height="100%" fill="${safeColor(bg, theme.background)}"/><text x="${titlePlacement.x}" y="40" direction="${titlePlacement.direction}" unicode-bidi="isolate" text-anchor="${titlePlacement.textAnchor}" font-size="24" fill="${safeColor(fg, theme.foreground)}" clip-path="url(#${prefix}-heading)">${escapeXML(fitBracketText(t.title, titleRegion.width, 24, measure(24)))}</text><g transform="translate(0,60)">`,
   ];
   for (const n of graph.nodes)
     for (const [i, s] of n.match.slots.entries()) {
       const source = s.source ? nodes.get(s.source.matchId) : undefined;
       if (!source) continue;
       parts.push(
-        `<path d="${bracketConnectorPath(source, n, i, layout, locale === "fa", graph.width)}" fill="none" stroke="${safeColor(accent, theme.accent)}" stroke-opacity=".5"/>`,
+        `<path d="${bracketConnectorPath(source, n, i, layout, localeDirection(locale) === "rtl", graph.width)}" fill="none" stroke="${safeColor(accent, theme.accent)}" stroke-opacity=".5"/>`,
       );
     }
   for (const [nodeIndex, n] of graph.nodes.entries()) {
@@ -278,7 +281,7 @@ export function bracketSVG(
           (
             (n.match.status === "live" ? n.match.liveScores?.[i] : undefined) ??
             n.match.result?.scores[i]
-          )?.toLocaleString(locale) ?? "·";
+          )?.toLocaleString(localeTag(locale)) ?? "·";
       parts.push(
         `<g><title>${escapeXML(name)}: ${escapeXML(score)}</title><text class="bracket-team" x="${placement.x}" y="${metrics.headerHeight + metrics.rowBaseline + i * metrics.rowHeight}" direction="${placement.direction}" unicode-bidi="isolate" text-anchor="${placement.textAnchor}" font-size="${metrics.nameFontSize}" fill="${safeColor(winner ? accent : fg, theme.foreground)}" clip-path="url(#${id}-names)" data-region-x="${regions.name.x}" data-region-width="${regions.name.width}" aria-label="${escapeXML(name)}">${escapeXML(fitBracketText(name, regions.name.width, metrics.nameFontSize, measure(metrics.nameFontSize)))}</text><text class="bracket-score" x="${regions.score.x + regions.score.width / 2}" y="${metrics.headerHeight + metrics.rowBaseline + i * metrics.rowHeight}" direction="ltr" unicode-bidi="isolate" text-anchor="middle" font-size="${fitBracketScoreFontSize(score, regions.score.width, metrics.scoreFontSize, measure(metrics.scoreFontSize, 700))}" font-weight="700" fill="${safeColor(fg, theme.foreground)}" clip-path="url(#${id}-scores)" data-region-x="${regions.score.x}" data-region-width="${regions.score.width}" aria-label="${escapeXML(score)}">${escapeXML(score)}</text></g>`,
       );
@@ -312,24 +315,26 @@ export async function exportBracketPNG(
   );
 }
 export function printableHTML(t: Tournament, locale: Locale = "en") {
-  const heading = locale === "fa" ? "برنامه مسابقات" : "Match schedule";
+  const heading = translate(locale, "Match schedule", "برنامه مسابقات");
   const isolate = (value: string) => `<bdi>${escapeXML(value)}</bdi>`;
   const rows = scheduleOccurrences({ ...t, locale })
     .map(
       (m) =>
-        `<tr><td>${isolate(generatedMatchLabel(m, locale))}<br>${matchNames(t, m, locale).map(isolate).join(" / ")}</td><td><bdi dir="ltr">${escapeXML(m.result?.scores.map((score) => score.toLocaleString(locale)).join(" / ") ?? "")}</bdi></td><td>${isolate(m.scheduledAt ? new Date(m.scheduledAt).toLocaleString(locale, { timeZone: t.timezone }) : "")}</td><td>${isolate(t.schedule.resources.find((r) => r.id === m.resourceId)?.name ?? "")}</td></tr>`,
+        `<tr><td>${isolate(generatedMatchLabel(m, locale))}<br>${matchNames(t, m, locale).map(isolate).join(" / ")}</td><td><bdi dir="ltr">${escapeXML(m.result?.scores.map((score) => score.toLocaleString(localeTag(locale))).join(" / ") ?? "")}</bdi></td><td>${isolate(m.scheduledAt ? new Date(m.scheduledAt).toLocaleString(localeTag(locale), { timeZone: t.timezone }) : "")}</td><td>${isolate(t.schedule.resources.find((r) => r.id === m.resourceId)?.name ?? "")}</td></tr>`,
     )
     .join("");
-  return `<!doctype html><html lang="${locale}" dir="${locale === "fa" ? "rtl" : "ltr"}"><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><title>${escapeXML(t.title)}</title><style>body{font:14px TournaExportArabic,TournaExportLatin,system-ui;margin:32px;color:#182c25}h1{font-size:32px}table{width:100%;border-collapse:collapse;table-layout:fixed}td,th{padding:10px;border-bottom:1px solid #ddd;text-align:start}td,th,h1,p{overflow-wrap:anywhere}svg{max-width:100%;height:auto}tr{break-inside:avoid}@page{size:landscape;margin:15mm}</style></head><body><h1 dir="auto">${escapeXML(t.title)}</h1><p dir="auto">${escapeXML(t.subtitle)}</p><h2>${heading}</h2><table><thead><tr><th>${locale === "fa" ? "شرکت‌کنندگان" : "Participants"}</th><th>${locale === "fa" ? "امتیاز" : "Score"}</th><th>${locale === "fa" ? "زمان" : "Time"}</th><th>${locale === "fa" ? "مکان" : "Resource"}</th></tr></thead><tbody>${rows}</tbody></table>${t.stages.map((s) => bracketSVG(t, s.id, locale)).join("")}<p>TournaStudio</p></body></html>`;
+  return `<!doctype html><html lang="${locale}" dir="${localeDirection(locale)}"><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><title>${escapeXML(t.title)}</title><style>body{font:14px TournaExportArabic,TournaExportLatin,TournaExportLatinExtended,TournaExportCyrillic,system-ui;margin:32px;color:#182c25}h1{font-size:32px}table{width:100%;border-collapse:collapse;table-layout:fixed}td,th{padding:10px;border-bottom:1px solid #ddd;text-align:start}td,th,h1,p{overflow-wrap:anywhere}svg{max-width:100%;height:auto}tr{break-inside:avoid}@page{size:landscape;margin:15mm}</style></head><body><h1 dir="auto">${escapeXML(t.title)}</h1><p dir="auto">${escapeXML(t.subtitle)}</p><h2>${heading}</h2><table><thead><tr><th>${translate(locale, "Participants", "شرکت‌کنندگان")}</th><th>${translate(locale, "Score", "امتیاز")}</th><th>${translate(locale, "Time", "زمان")}</th><th>${translate(locale, "Resource", "مکان")}</th></tr></thead><tbody>${rows}</tbody></table>${t.stages.map((s) => bracketSVG(t, s.id, locale)).join("")}<p>TournaStudio</p></body></html>`;
 }
 /** The browser print dialog offers PDF when the platform supports it. */
 export async function printTournament(t: Tournament, locale: Locale = "en") {
   const popup = window.open("", "_blank");
   if (!popup)
     throw new Error(
-      locale === "fa"
-        ? "مرورگر پنجره چاپ را مسدود کرده است."
-        : "The browser blocked the print window.",
+      translate(
+        locale,
+        "The browser blocked the print window.",
+        "مرورگر پنجره چاپ را مسدود کرده است.",
+      ),
     );
   try {
     const { standaloneTournamentHTML } = await import("./files");
@@ -341,6 +346,8 @@ export async function printTournament(t: Tournament, locale: Locale = "en") {
     const fonts = await Promise.all([
       popup.document.fonts.load("14px TournaExportArabic", "شاهین"),
       popup.document.fonts.load("14px TournaExportLatin", "TournaStudio"),
+      popup.document.fonts.load("14px TournaExportLatinExtended", "Čế"),
+      popup.document.fonts.load("14px TournaExportCyrillic", "Турнір"),
     ]);
     if (
       fonts.some(
@@ -349,9 +356,11 @@ export async function printTournament(t: Tournament, locale: Locale = "en") {
       )
     )
       throw new Error(
-        locale === "fa"
-          ? "قلم‌های چاپ بارگیری نشدند. دوباره تلاش کنید."
-          : "The print fonts could not be loaded. Please try again.",
+        translate(
+          locale,
+          "The print fonts could not be loaded. Please try again.",
+          "قلم‌های چاپ بارگیری نشدند. دوباره تلاش کنید.",
+        ),
       );
     await popup.document.fonts.ready;
     if (!popup.closed) popup.print();

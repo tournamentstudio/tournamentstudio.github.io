@@ -165,9 +165,7 @@ test("moves the losing incumbent to the back of a saved King of the Hill queue",
   await saved(page);
   await section(page, "Matches");
   await expect(queue.nth(0)).toHaveText("Player 3 (Incumbent)");
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(
     page.getByRole("heading", { name: "صف پادشاه میدان", exact: true }),

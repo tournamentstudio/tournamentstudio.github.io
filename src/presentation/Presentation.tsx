@@ -1,3 +1,5 @@
+import { translate } from "../i18n/translate";
+import { localeDirection, localeTag } from "../i18n/locales";
 import { SponsorWall } from "./SponsorWall";
 import { scheduleOccurrences } from "../scheduling/legs";
 import { tabbableControls } from "../components/focus";
@@ -52,7 +54,7 @@ export const sceneTypes: { id: SceneType; en: string; fa: string }[] = [
 ];
 export const sceneLabel = (type: SceneType, locale: Locale) => {
   const item = sceneTypes.find((s) => s.id === type);
-  return locale === "fa" ? item?.fa : item?.en;
+  return item ? translate(locale, item.en, item.fa) : undefined;
 };
 export function podiumPlaces(
   tournament: Tournament,
@@ -112,7 +114,7 @@ function Scoreboard({
   match?: Match;
   locale: Locale;
 }) {
-  const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
+  const t = (en: string, fa: string) => translate(locale, en, fa);
   if (!match)
     return (
       <p className="presentation-empty">
@@ -131,18 +133,18 @@ function Scoreboard({
     >
       <p className="sr-only" role="status" aria-atomic="true">
         {t("Scoreboard", "تابلو امتیاز")}: {t("Round", "دور")}{" "}
-        {match.round.toLocaleString(locale)}.{" "}
+        {match.round.toLocaleString(localeTag(locale))}.{" "}
         {names
           .map((name, index) =>
             tournament.presentation.showScores
-              ? `${name}: ${visibleScore(index).toLocaleString(locale)}`
+              ? `${name}: ${visibleScore(index).toLocaleString(localeTag(locale))}`
               : name,
           )
           .join("; ")}
       </p>
       <div className="scoreboard-eyebrow">
         {match.status === "live" ? t("LIVE", "زنده") : t("MATCH", "مسابقه")} ·{" "}
-        {t("Round", "دور")} {match.round.toLocaleString(locale)}
+        {t("Round", "دور")} {match.round.toLocaleString(localeTag(locale))}
       </div>
       <div className="scoreboard-entrants">
         {match.slots.map((slot, i) => {
@@ -167,7 +169,7 @@ function Scoreboard({
               </h2>
               <strong className="scorecard-value">
                 {tournament.presentation.showScores
-                  ? visibleScore(i).toLocaleString(locale)
+                  ? visibleScore(i).toLocaleString(localeTag(locale))
                   : "·"}
               </strong>
             </div>
@@ -176,7 +178,7 @@ function Scoreboard({
       </div>
       <p className="scoreboard-footnote">
         {match.scheduledAt
-          ? new Date(match.scheduledAt).toLocaleString(locale, {
+          ? new Date(match.scheduledAt).toLocaleString(localeTag(locale), {
               timeZone: tournament.timezone,
             })
           : tournament.subtitle}
@@ -221,27 +223,29 @@ function QRScene({
     <div className="qr-scene">
       <img
         src={state.image}
-        alt={
-          locale === "fa"
-            ? "کد QR حاوی نسخه مسابقات"
-            : "QR containing a tournament snapshot"
-        }
+        alt={translate(
+          locale,
+          "QR containing a tournament snapshot",
+          "کد QR حاوی نسخه مسابقات",
+        )}
       />
       <p>
-        {locale === "fa"
-          ? "اسکن برای دریافت نسخه ثابت نتایج"
-          : "Scan to take a snapshot of these results"}
+        {translate(
+          locale,
+          "Scan to take a snapshot of these results",
+          "اسکن برای دریافت نسخه ثابت نتایج",
+        )}
       </p>
     </div>
   ) : (
     <p className="presentation-empty">
       {state.tooLarge
-        ? locale === "fa"
-          ? "مسابقات برای QR بزرگ است. از فایل یا کد اشتراک استفاده کنید."
-          : "This tournament is too large for a readable QR. Use a file or share code."
-        : locale === "fa"
-          ? "آماده‌سازی QR"
-          : "Preparing QR"}
+        ? translate(
+            locale,
+            "This tournament is too large for a readable QR. Use a file or share code.",
+            "مسابقات برای QR بزرگ است. از فایل یا کد اشتراک استفاده کنید.",
+          )
+        : translate(locale, "Preparing QR", "آماده‌سازی QR")}
     </p>
   );
 }
@@ -256,7 +260,7 @@ function SceneContent({
   locale: Locale;
   elapsed: number;
 }) {
-  const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
+  const t = (en: string, fa: string) => translate(locale, en, fa);
   const completed = tournament.matches.filter((m) => m.status === "completed");
   const names = new Map(tournament.participants.map((p) => [p.id, p.name]));
   switch (scene.type) {
@@ -285,11 +289,17 @@ function SceneContent({
             <dl className="presentation-program-facts">
               <div>
                 <dt>{t("Participants", "شرکت‌کنندگان")}</dt>
-                <dd>{tournament.participants.length.toLocaleString(locale)}</dd>
+                <dd>
+                  {tournament.participants.length.toLocaleString(
+                    localeTag(locale),
+                  )}
+                </dd>
               </div>
               <div>
                 <dt>{t("Stages", "مرحله‌ها")}</dt>
-                <dd>{tournament.stages.length.toLocaleString(locale)}</dd>
+                <dd>
+                  {tournament.stages.length.toLocaleString(localeTag(locale))}
+                </dd>
               </div>
             </dl>
           </div>
@@ -303,7 +313,7 @@ function SceneContent({
         <div className="presentation-team-list">
           {tournament.participants.map((p, i) => (
             <div key={p.id}>
-              <span>{(i + 1).toLocaleString(locale)}</span>
+              <span>{(i + 1).toLocaleString(localeTag(locale))}</span>
               {p.logo && <img src={p.logo} alt="" />}
               <bdi>{p.name}</bdi>
             </div>
@@ -371,8 +381,9 @@ function SceneContent({
                         </span>
                         {tournament.presentation.showScores && (
                           <strong>
-                            {m.result?.scores[index]?.toLocaleString(locale) ??
-                              "·"}
+                            {m.result?.scores[index]?.toLocaleString(
+                              localeTag(locale),
+                            ) ?? "·"}
                           </strong>
                         )}
                       </div>
@@ -405,11 +416,14 @@ function SceneContent({
                   {matchNames(tournament, m, locale).join(" / ")}
                 </span>
                 <strong>
-                  {new Date(m.scheduledAt!).toLocaleTimeString(locale, {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    timeZone: tournament.timezone,
-                  })}
+                  {new Date(m.scheduledAt!).toLocaleTimeString(
+                    localeTag(locale),
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      timeZone: tournament.timezone,
+                    },
+                  )}
                 </strong>
                 <small>
                   {
@@ -434,7 +448,9 @@ function SceneContent({
             [tournament.participants.length, t("Participants", "شرکت‌کنندگان")],
           ].map(([number, label]) => (
             <div key={label}>
-              <strong>{Number(number).toLocaleString(locale)}</strong>
+              <strong>
+                {Number(number).toLocaleString(localeTag(locale))}
+              </strong>
               <span>{label}</span>
             </div>
           ))}
@@ -446,8 +462,8 @@ function SceneContent({
       return (
         <div className="presentation-title-scene">
           <strong className="countdown-time" dir="ltr">
-            {Math.floor(remaining / 60).toLocaleString(locale)}:
-            {(remaining % 60).toLocaleString(locale, {
+            {Math.floor(remaining / 60).toLocaleString(localeTag(locale))}:
+            {(remaining % 60).toLocaleString(localeTag(locale), {
               minimumIntegerDigits: 2,
               useGrouping: false,
             })}
@@ -467,20 +483,20 @@ function SceneContent({
           <ul>
             <li>
               {t("Win points", "امتیاز برد")}:{" "}
-              {tournament.rules.pointsWin.toLocaleString(locale)}
+              {tournament.rules.pointsWin.toLocaleString(localeTag(locale))}
             </li>
             <li>
               {t("Draw points", "امتیاز مساوی")}:{" "}
-              {tournament.rules.pointsDraw.toLocaleString(locale)}
+              {tournament.rules.pointsDraw.toLocaleString(localeTag(locale))}
             </li>
             <li>
               {t("Best of", "بهترین از")}:{" "}
-              {tournament.rules.bestOf.toLocaleString(locale)}
+              {tournament.rules.bestOf.toLocaleString(localeTag(locale))}
             </li>
             {tournament.sport === "gol-ya-pooch" && (
               <li>
                 {t("Target score", "امتیاز هدف")}:{" "}
-                {tournament.rules.targetScore.toLocaleString(locale)}
+                {tournament.rules.targetScore.toLocaleString(localeTag(locale))}
               </li>
             )}
           </ul>
@@ -524,7 +540,7 @@ function SceneContent({
             <GameScene sport={tournament.sport} />
             {champion && (
               <span className="competition-champion-place">
-                {(1).toLocaleString(locale)}
+                {(1).toLocaleString(localeTag(locale))}
               </span>
             )}
           </div>
@@ -542,7 +558,7 @@ function SceneContent({
                 style={{ minHeight: `${260 - s.rank * 40}px` }}
               >
                 <strong>
-                  {s.rank.toLocaleString(locale)}
+                  {s.rank.toLocaleString(localeTag(locale))}
                   {s.tied ? "*" : ""}
                 </strong>
                 <h2>{names.get(s.participantId)}</h2>
@@ -623,7 +639,7 @@ export function Presentation({
     [playing, setPlaying] = useState(safe.presentation.autoRotate),
     [elapsed, setElapsed] = useState(0);
   const scene = scenes[index % Math.max(1, scenes.length)] ?? fallback;
-  const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
+  const t = (en: string, fa: string) => translate(locale, en, fa);
   const step = (delta: number) => {
     setIndex(
       (i) =>
@@ -674,7 +690,8 @@ export function Presentation({
       if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
         event.preventDefault();
         const forward =
-          event.key === (locale === "fa" ? "ArrowLeft" : "ArrowRight");
+          event.key ===
+          (localeDirection(locale) === "rtl" ? "ArrowLeft" : "ArrowRight");
         setIndex(
           (i) =>
             (i + (forward ? 1 : -1) + Math.max(1, scenes.length)) %
@@ -728,7 +745,7 @@ export function Presentation({
           : {}),
       }}
       data-pattern={getTheme(safe.theme.preset).pattern}
-      dir={locale === "fa" ? "rtl" : "ltr"}
+      dir={localeDirection(locale)}
     >
       <p className="sr-only" role="status" aria-atomic="true">
         {safe.presentation.overlay?.enabled ? (
@@ -736,8 +753,11 @@ export function Presentation({
         ) : (
           <>
             {t("Scene", "نما")}{" "}
-            {((index % Math.max(1, scenes.length)) + 1).toLocaleString(locale)}{" "}
-            {t("of", "از")} {Math.max(1, scenes.length).toLocaleString(locale)}:{" "}
+            {((index % Math.max(1, scenes.length)) + 1).toLocaleString(
+              localeTag(locale),
+            )}{" "}
+            {t("of", "از")}{" "}
+            {Math.max(1, scenes.length).toLocaleString(localeTag(locale))}:{" "}
             {scene.title || sceneLabel(scene.type, locale)}
           </>
         )}
@@ -761,7 +781,7 @@ export function Presentation({
               <span>{safe.title}</span>
               <span>
                 {t("LOCAL DISPLAY", "نمایش محلی")} · {t("Rev.", "نسخه")}{" "}
-                {safe.revision.toLocaleString(locale)}
+                {safe.revision.toLocaleString(localeTag(locale))}
               </span>
             </div>
             {safe.theme.design?.sponsorPosition === "top" && (
@@ -822,7 +842,7 @@ export function Presentation({
           onClick={() => step(-1)}
           aria-label={t("Previous scene", "نمای قبلی")}
         >
-          {locale === "fa" ? "→" : "←"}
+          {localeDirection(locale) === "rtl" ? "→" : "←"}
         </button>
         <button
           type="button"
@@ -839,11 +859,13 @@ export function Presentation({
           onClick={() => step(1)}
           aria-label={t("Next scene", "نمای بعدی")}
         >
-          {locale === "fa" ? "←" : "→"}
+          {localeDirection(locale) === "rtl" ? "←" : "→"}
         </button>
         <span>
-          {((index % Math.max(1, scenes.length)) + 1).toLocaleString(locale)} /{" "}
-          {Math.max(1, scenes.length).toLocaleString(locale)}
+          {((index % Math.max(1, scenes.length)) + 1).toLocaleString(
+            localeTag(locale),
+          )}{" "}
+          / {Math.max(1, scenes.length).toLocaleString(localeTag(locale))}
         </span>
         <button
           type="button"

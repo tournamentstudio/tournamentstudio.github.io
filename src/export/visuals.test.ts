@@ -87,7 +87,9 @@ describe("public graphics", () => {
         true,
       );
       expect(visualTextLines("iiiiiiii", 10, 50)).toEqual(["iiiiiiii"]);
-      expect(context.font).toBe('900 10px "Vazirmatn Variable"');
+      expect(context.font).toBe(
+        '900 10px "Vazirmatn Variable", "Inter Variable", sans-serif',
+      );
       const svg = visualText("iii", 100, 100, 10, 50, "en", "#000000");
       expect(svg).not.toContain("textLength");
       expect(svg).toContain('<tspan x="100" dy="0">iii</tspan>');

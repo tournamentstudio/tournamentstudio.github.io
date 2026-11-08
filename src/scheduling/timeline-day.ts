@@ -1,3 +1,4 @@
+import { localeTag } from "../i18n/locales";
 import type { Locale } from "../domain/types";
 
 export interface TimelineDay {
@@ -23,7 +24,7 @@ export function timelineDay(
   const end = new Date(start);
   end.setDate(end.getDate() + 1);
   end.setHours(0, 0, 0, 0);
-  const time = new Intl.DateTimeFormat(locale === "fa" ? "fa-IR" : "en-US", {
+  const time = new Intl.DateTimeFormat(localeTag(locale), {
     hour: "2-digit",
     minute: "2-digit",
     hourCycle: "h23",

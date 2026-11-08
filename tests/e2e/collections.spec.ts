@@ -267,7 +267,7 @@ test("event controls fit Persian at 320px and pass automated AA checks", async (
   await createEvent(page, "جشنواره دانشگاه تهران");
   await link(page, "Persian cup");
   await page.setViewportSize({ width: 320, height: 860 });
-  await page.getByRole("button", { name: "Switch to Persian" }).click();
+  await page.getByTestId("language-select").selectOption("fa");
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   const overflow = await page.evaluate(() => ({
     width: innerWidth,

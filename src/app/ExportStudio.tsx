@@ -1,3 +1,4 @@
+import { localeDirection } from "../i18n/locales";
 import { useEffect, useMemo, useState } from "react";
 import { Download, Image as ImageIcon, Presentation } from "lucide-react";
 import type { Tournament } from "../domain/types";
@@ -34,7 +35,7 @@ export function ExportStudio({ tournament }: { tournament: Tournament }) {
   const [excluded, setExcluded] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>();
-  const [status, setStatus] = useState("");
+  const [exportReady, setExportReady] = useState(false);
   const [preview, setPreview] = useState("");
   const graphic = useMemo(() => {
     try {
@@ -71,10 +72,10 @@ export function ExportStudio({ tournament }: { tournament: Tournament }) {
   async function work(action: () => Promise<void>) {
     setBusy(true);
     setError(undefined);
-    setStatus("");
+    setExportReady(false);
     try {
       await action();
-      setStatus(t("Your export is ready.", "خروجی شما آماده است."));
+      setExportReady(true);
     } catch (error) {
       setError(error);
     } finally {
@@ -85,7 +86,7 @@ export function ExportStudio({ tournament }: { tournament: Tournament }) {
   return (
     <section
       className="export-studio"
-      dir={locale === "fa" ? "rtl" : "ltr"}
+      dir={localeDirection(locale)}
       aria-labelledby="export-studio-heading"
     >
       <header>
@@ -309,7 +310,9 @@ export function ExportStudio({ tournament }: { tournament: Tournament }) {
           {t("Preparing export…", "در حال آماده‌سازی خروجی…")}
         </p>
       )}
-      {status && <Notice>{status}</Notice>}
+      {exportReady && (
+        <Notice>{t("Your export is ready.", "خروجی شما آماده است.")}</Notice>
+      )}
       <ErrorText error={error} />
     </section>
   );

@@ -165,9 +165,7 @@ test("Persian recovery navigation can explicitly discard without deleting the sa
   page,
 }, testInfo) => {
   await failedSave(page);
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.setViewportSize({ width: 320, height: 720 });
   await page.evaluate(() => {
     location.hash = "/library";

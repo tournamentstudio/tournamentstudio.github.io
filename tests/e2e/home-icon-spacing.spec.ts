@@ -6,9 +6,7 @@ for (const locale of ["en", "fa"] as const)
   }, testInfo) => {
     await page.goto("/");
     if (locale === "fa")
-      await page
-        .getByRole("button", { name: "Switch to Persian", exact: true })
-        .click();
+      await page.getByTestId("language-select").selectOption("fa");
     await expect(page.locator(".template-card")).toHaveCount(3);
     await page.evaluate(() => document.fonts.ready);
     for (const width of [320, 390, 768, 1280]) {
@@ -46,10 +44,8 @@ for (const locale of ["en", "fa"] as const)
           return failures;
         });
       expect.soft(collisions, `${locale} at ${width}px`).toEqual([]);
-      await page
-        .locator(".template-grid")
-        .screenshot({
-          path: testInfo.outputPath(`templates-${locale}-${width}.png`),
-        });
+      await page.locator(".template-grid").screenshot({
+        path: testInfo.outputPath(`templates-${locale}-${width}.png`),
+      });
     }
   });

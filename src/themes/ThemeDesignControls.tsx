@@ -1,3 +1,4 @@
+import { translate } from "../i18n/translate";
 import type { Locale } from "../domain/types";
 import type { ThemeDesign } from "../domain/display-options";
 import type { DesignedTheme } from "./library";
@@ -13,7 +14,7 @@ export function ThemeDesignControls({
   onChange: (theme: DesignedTheme) => void;
   locale: Locale;
 }) {
-  const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
+  const t = (en: string, fa: string) => translate(locale, en, fa);
   const design = theme.design ?? {},
     base = getTheme(theme.preset);
   const update = (changes: Partial<ThemeDesign>) =>

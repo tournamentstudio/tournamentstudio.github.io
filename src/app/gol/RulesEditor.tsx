@@ -1,3 +1,4 @@
+import { translate } from "../../i18n/translate";
 import { Trash2 } from "lucide-react";
 import type { Locale } from "../../domain/types";
 import { uid } from "../../domain/types";
@@ -20,7 +21,7 @@ export function GolRulesEditor({
   onChange: (value: GolRules) => void;
   locale: Locale;
 }) {
-  const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
+  const t = (en: string, fa: string) => translate(locale, en, fa);
   const policy = value.policy ?? defaultGolPolicy;
   const updatePolicy = (changes: Partial<GolPolicy>) =>
     onChange({ ...value, policy: { ...policy, ...changes } });

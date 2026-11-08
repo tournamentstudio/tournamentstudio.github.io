@@ -257,9 +257,7 @@ test("GSL groups finish through winners and deciders with correct Persian standi
   page,
 }, testInfo) => {
   await open(page, fixture(8, "gsl"));
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await page.setViewportSize({ width: 390, height: 844 });
   await draw(page);
   await complete(page, 10);
@@ -324,9 +322,7 @@ for (const meetings of [2, 3]) {
     expect(pairs.size).toBe(6);
     expect([...pairs.values()]).toEqual(Array(6).fill(meetings));
     if (meetings === 3)
-      await page
-        .getByRole("button", { name: "Switch to Persian", exact: true })
-        .click();
+      await page.getByTestId("language-select").selectOption("fa");
     await page.setViewportSize({ width: 320, height: 760 });
     await section(page, "Matches", "دیدارها");
     await result(page);
@@ -383,9 +379,7 @@ test("group labels beyond Z keep separate standings and reload correctly", async
   await expect(
     page.getByRole("heading", { name: "Group AA", exact: true }),
   ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Switch to Persian", exact: true })
-    .click();
+  await page.getByTestId("language-select").selectOption("fa");
   await expect(
     page.getByRole("heading", { name: "گروه AA", exact: true }),
   ).toBeVisible();

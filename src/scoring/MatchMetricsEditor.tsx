@@ -1,3 +1,4 @@
+import { translate } from "../i18n/translate";
 import type { Locale } from "../domain/types";
 import type { MetricDefinition, MetricValues } from "./metrics";
 import { Field } from "../components/ui";
@@ -57,7 +58,7 @@ export function MatchMetricsEditor({
   names: string[];
   locale: Locale;
 }) {
-  const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
+  const t = (en: string, fa: string) => translate(locale, en, fa);
   const edit = (id: string, index: number, value: number | number[] | null) =>
     onChange({
       ...values,

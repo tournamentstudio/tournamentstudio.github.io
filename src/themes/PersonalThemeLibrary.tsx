@@ -1,3 +1,4 @@
+import { translate } from "../i18n/translate";
 import { useEffect, useState } from "react";
 import type { Locale } from "../domain/types";
 import { Field, Modal } from "../components/ui";
@@ -22,12 +23,12 @@ export function PersonalThemeLibrary({
   onApply: (theme: DesignedTheme) => void;
   locale: Locale;
 }) {
-  const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
+  const t = (en: string, fa: string) => translate(locale, en, fa);
   const [themes, setThemes] = useState<SavedTheme[]>([]),
     [name, setName] = useState(""),
     [images, setImages] = useState(false),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
+    [error, setError] = useState<unknown>(),
     [removing, setRemoving] = useState<SavedTheme>(),
     [renaming, setRenaming] = useState<SavedTheme>(),
     [rename, setRename] = useState("");
@@ -36,18 +37,15 @@ export function PersonalThemeLibrary({
   }
   async function work(action: () => Promise<void>) {
     setBusy(true);
-    setError("");
+    setError(undefined);
     try {
       await action();
       await refresh();
     } catch (error) {
       setError(
-        localizedDiagnostic(
-          error instanceof Error
-            ? error
-            : "The theme library could not be saved.",
-          locale,
-        ),
+        error instanceof Error
+          ? error
+          : "The theme library could not be saved.",
       );
     } finally {
       setBusy(false);
@@ -62,18 +60,15 @@ export function PersonalThemeLibrary({
       .catch((error) => {
         if (active)
           setError(
-            localizedDiagnostic(
-              error instanceof Error
-                ? error
-                : "The theme library could not be loaded.",
-              locale,
-            ),
+            error instanceof Error
+              ? error
+              : "The theme library could not be loaded.",
           );
       });
     return () => {
       active = false;
     };
-  }, [locale]);
+  }, []);
   return (
     <section
       className="personal-theme-library"
@@ -204,7 +199,7 @@ export function PersonalThemeLibrary({
           )}
         </p>
       )}
-      {error && <p role="alert">{error}</p>}
+      {!!error && <p role="alert">{localizedDiagnostic(error, locale)}</p>}
       {removing && (
         <Modal
           title={t("Delete saved theme", "حذف قالب ذخیره‌شده")}

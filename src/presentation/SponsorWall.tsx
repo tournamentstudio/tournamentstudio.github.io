@@ -1,3 +1,5 @@
+import { translate } from "../i18n/translate";
+import { localeTag } from "../i18n/locales";
 import type { Locale, PresentationSettings } from "../domain/types";
 import { sponsorPages } from "./sponsors";
 import "./sponsors.css";
@@ -13,7 +15,7 @@ export function SponsorWall({
   elapsed?: number;
   band?: boolean;
 }) {
-  const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
+  const t = (en: string, fa: string) => translate(locale, en, fa);
   const pages = sponsorPages(settings),
     index = Math.floor(elapsed / 5) % Math.max(1, pages.length);
   if (!pages.length)
@@ -47,8 +49,8 @@ export function SponsorWall({
       ))}
       {!band && pages.length > 1 && (
         <small className="sponsor-page-number">
-          {(index + 1).toLocaleString(locale)} /{" "}
-          {pages.length.toLocaleString(locale)}
+          {(index + 1).toLocaleString(localeTag(locale))} /{" "}
+          {pages.length.toLocaleString(localeTag(locale))}
         </small>
       )}
     </div>

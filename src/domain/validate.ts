@@ -2,6 +2,7 @@ import { validateCustomFields } from "./custom-fields";
 import { validatePlayerStatistics } from "../players/model";
 import { readRouteNetwork } from "../scheduling/route-network";
 import { z } from "zod";
+import { localeCodes } from "../i18n/locales";
 import { validateResult } from "../scoring";
 import { validatePlacements } from "../scoring/placements";
 import { timingSchema } from "../timing/model";
@@ -503,7 +504,7 @@ export const tournamentSchema = z
     slug: shortText,
     createdAt: timestamp,
     updatedAt: timestamp,
-    locale: z.enum(["en", "fa"]),
+    locale: z.enum(localeCodes),
     timezone,
     sport: shortText,
     status: statusSchema,

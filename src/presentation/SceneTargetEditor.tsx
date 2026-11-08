@@ -1,3 +1,5 @@
+import { translate } from "../i18n/translate";
+import { localeTag } from "../i18n/locales";
 import { useState } from "react";
 import type { Locale, Scene, Tournament } from "../domain/types";
 import { matchNames } from "../components/Bracket";
@@ -20,7 +22,7 @@ export function SceneTargetEditor({
   locale: Locale;
 }) {
   const [search, setSearch] = useState("");
-  const t = (en: string, fa: string) => (locale === "fa" ? fa : en);
+  const t = (en: string, fa: string) => translate(locale, en, fa);
   if (scene.type === "semifinal" || scene.type === "final-intro")
     return (
       <Field label={t("Introduction match", "مسابقه معرفی")}>
@@ -52,8 +54,8 @@ export function SceneTargetEditor({
   const visible = participants.filter((p) =>
     p.name
       .normalize("NFKC")
-      .toLocaleLowerCase(locale)
-      .includes(search.normalize("NFKC").toLocaleLowerCase(locale)),
+      .toLocaleLowerCase(localeTag(locale))
+      .includes(search.normalize("NFKC").toLocaleLowerCase(localeTag(locale))),
   );
   const apply = (ids: string[] | undefined) =>
     onChange({
@@ -113,7 +115,8 @@ export function SceneTargetEditor({
         ))}
       </fieldset>
       <small>
-        {selected.size.toLocaleString(locale)} {t("selected", "انتخاب‌شده")}
+        {selected.size.toLocaleString(localeTag(locale))}{" "}
+        {t("selected", "انتخاب‌شده")}
       </small>
     </div>
   );
